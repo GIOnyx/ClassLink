@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import './App.css'; // We'll use the same CSS file for simplicity
+import '../App.css'; // We'll use the same CSS file for simplicity
 
 const Login = () => {
   // State for email, password, and error messages
