@@ -30,6 +30,7 @@ server/.idea/
 server/.project
 server/.classpath
 server/.settings/
+server/src/main/resources/application.properties
 
 # Sensitive configuration - you should use environment variables instead
 # server/src/main/resources/application.properties
