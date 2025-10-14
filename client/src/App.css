@@ -1,3 +1,9 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Kumbh+Sans:wght@700&display=swap');
+
+/* Reset and Base Styles */
+/* ...rest of your CSS... */
+
 /* Reset and Base Styles */
 * {
   margin: 0;
@@ -11,9 +17,7 @@ html, body, #root {
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  font-family: 'Inter', sans-serif; /* <-- This is the new font */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-color: #f4f7f6;
@@ -38,15 +42,28 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: #333;
+  background-color: #f4f7f6;
   color: white;
   padding: 0 40px;
-  height: 70px;
+  height: 100px;
 }
 
 .navbar-brand {
-  font-size: 1.8rem;
+  display: flex;
+  gap: 15px;
+  font-size: 1rem;
   font-weight: bold;
+  line-height: 1.3;
+  align-items: center;
+  color: #000;
+}
+
+.navbar-logo {
+  height: 70px; /* Adjust the height of your logo as needed */
+}
+
+.online-text {
+  color: #800000; /* This is a common red color used for alerts */
 }
 
 .navbar-links {
@@ -76,6 +93,7 @@ body {
 /* Login Form */
 .login-container {
   display: flex;
+  flex-direction: column; /* This stacks the title on top of the form */
   justify-content: center;
   align-items: center;
   width: 100%;
@@ -87,48 +105,61 @@ body {
   border-radius: 12px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
   width: 100%;
-  max-width: 500px;
+  max-width: 700px;
 }
 
 .login-form h2 {
-  margin-bottom: 35px;
-  color: #333;
-  font-size: 2rem;
+  font-family: 'Inter', sans-serif;
+  font-size: 1.1rem;      /* Makes the font smaller */
+  color: #667085;          /* Sets the color */
+  font-weight: 400;       /* Makes the font regular, not bold */
+  margin-bottom: 30px;
   text-align: center;
 }
 
-.form-group {
-  margin-bottom: 25px;
+.login-title {
+  font-family: 'Kumbh Sans', sans-serif;
+  font-size: 2.5rem;
+  color: #333;
+  text-align: center;
+  margin-bottom: 25px; /* Adds space between the title and the form */
 }
 
-.form-group label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 600;
-  color: #555;
-  font-size: 1rem;
+.class-text {
+  color: #800000; /* This is a standard red color */
+}
+
+.link-text {
+  color: #D89925; /* This is the hex code for gold */
+}
+
+.form-group {
+  font-family: 'Inter', sans-serif;
+  margin-bottom: 10px;
 }
 
 .form-group input {
   width: 100%;
-  padding: 14px 16px;
-  border: 2px solid #ddd;
-  border-radius: 6px;
+  padding: 22px 20px;
+  border: 2px solid #949494;
+  border-radius: 18px;
   font-size: 1rem;
+  color: #000;
+  background-color: #fff;
   transition: border-color 0.3s;
 }
 
 .form-group input:focus {
   outline: none;
-  border-color: #007bff;
+  border-color: #800000;
 }
 
 .signin-button {
   width: 100%;
-  padding: 16px;
+  padding: 22px;
   border: none;
-  border-radius: 6px;
-  background-color: #007bff;
+  border-radius: 18px;
+  background-color: #800000;
   color: white;
   font-size: 1.1rem;
   font-weight: 600;
@@ -138,7 +169,7 @@ body {
 }
 
 .signin-button:hover {
-  background-color: #0056b3;
+  background-color: #9b3434;
 }
 
 /* Validation Errors */
