@@ -5,5 +5,4 @@ spring.datasource.url=jdbc:mysql://localhost:3306/classlink_db
 spring.datasource.username=onyx
 spring.datasource.password=122633090003Nyxo
 
-# This tells Spring Boot's Hibernate to automatically create/update tables
 spring.jpa.hibernate.ddl-auto=update
