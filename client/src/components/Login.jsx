@@ -41,29 +41,32 @@ const Login = () => {
 
     return (
         <div className="login-container">
+            <h2 className="login-title">
+                Welcome to <span className="class-text">Class</span><span className="link-text">Link</span>
+            </h2>
         <form onSubmit={handleSubmit} className="login-form">
-            <h2>Sign In</h2>
+            <h2>It is our great pleasure to have you on board!</h2>
             <div className="form-group">
-            <label htmlFor="email">Email Address</label>
-            <input
-                type="email"
-                id="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className={errors.email ? 'error-input' : ''}
-            />
-            {errors.email && <p className="error-text">{errors.email}</p>}
-            </div>
-            <div className="form-group">
-            <label htmlFor="password">Password</label>
-            <input
-                type="password"
-                id="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className={errors.password ? 'error-input' : ''}
-            />
-            {errors.password && <p className="error-text">{errors.password}</p>}
+                <input
+                    type="email"
+                    id="email"
+                    placeholder="Enter email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className={errors.email ? 'error-input' : ''}
+                />
+                {errors.email && <p className="error-text">{errors.email}</p>}
+                </div>
+                <div className="form-group">
+                <input
+                    type="password"
+                    id="password"
+                    placeholder="Enter Password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className={errors.password ? 'error-input' : ''}
+                />
+                {errors.password && <p className="error-text">{errors.password}</p>}
             </div>
             <button type="submit" className="signin-button">Sign In</button>
         </form>

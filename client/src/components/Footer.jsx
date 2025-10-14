@@ -4,7 +4,8 @@ import '../App.css';
 const Footer = () => {
     return (
         <footer className="footer">
-        <p>&copy; 2025 MyApp. All rights reserved.</p>
+        <p>&copy; For inquiries and comments, email us at </p>
+        <p>citu@classlink.com</p>
         </footer>
     );
 };
