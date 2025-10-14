@@ -114,6 +114,16 @@ body {
 
 /* Login Form */
 /* This container fills the remaining space and centers its content */
+.form-group input:-webkit-autofill,
+.form-group input:-webkit-autofill:hover,
+.form-group input:-webkit-autofill:focus,
+.form-group input:-webkit-autofill:active {
+  -webkit-text-fill-color: #000 !important; /* Forces the font color to be black */
+  box-shadow: 0 0 0 1000px #fff inset !important; /* Fills the background with white */
+  -webkit-box-shadow: 0 0 0 1000px #fff inset !important; /* Same as above for wider compatibility */
+  transition: background-color 5000s ease-in-out 0s; /* Prevents the browser from changing it back */
+}
+
 .login-container {
   flex-grow: 1; /* This is the key change: it makes this container fill the rest of the page */
   display: flex;
