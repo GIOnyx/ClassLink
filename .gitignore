@@ -1,0 +1,57 @@
+# .gitignore
+
+# General
+# Ignore OS-specific files
+.DS_Store
+Thumbs.db
+
+# Ignore environment variables files, which contain secret keys
+.env
+.env.local
+.env.*.local
+
+# Ignore log files
+*.log
+logs/
+
+
+### Server (Java / Spring Boot) ###
+# Compiled Java class files
+server/target/
+server/build/
+server/**/*.class
+
+# Jar and War archives
+server/*.jar
+server/*.war
+
+# IDE-specific files (IntelliJ, Eclipse)
+server/.idea/
+server/.project
+server/.classpath
+server/.settings/
+
+# Sensitive configuration - you should use environment variables instead
+# server/src/main/resources/application.properties
+
+
+### Mobile (React Native / Node.js) ###
+# Dependency directories
+mobile/node_modules/
+
+# Debug and error logs
+mobile/npm-debug.log*
+mobile/yarn-debug.log*
+mobile/yarn-error.log*
+
+# Build artifacts for iOS and Android
+mobile/ios/build/
+mobile/android/app/build/
+mobile/android/build/
+
+# Expo cache and local settings
+mobile/.expo/
+mobile/.expo-shared/
+
+# Metro bundler cache
+mobile/metro-cache
