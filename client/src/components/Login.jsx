@@ -37,7 +37,6 @@ import BrandHeader from './BrandHeader.jsx'; // Import the reusable brand header
         } else {
         // If validation passes, proceed with login logic
         console.log('Login successful:', { email, password });
-        alert('Sign in successful!');
         setErrors({}); // Clear any previous errors
         onLoginSuccess(); // Call the function from App.jsx to switch to the home page
         }
