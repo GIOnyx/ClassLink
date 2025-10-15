@@ -226,6 +226,10 @@ body {
   color: #D89925;
 }
 
+.link-text .class-text {
+  letter-spacing: 6px; /* Adjust this value to make it wider or narrower */
+}
+
 .form-group {
   font-family: 'Inter', sans-serif;
   margin-bottom: 10px;
@@ -278,7 +282,6 @@ body {
 
 /* Footer */
 .footer {
-  position: fixed;
   bottom: 0;
   left: 0;
   width: 100%;
@@ -1041,4 +1044,59 @@ body {
 .value-bar h3 {
   font-size: 1.5rem;
   font-weight: 700;
+}
+
+.programs-section {
+  padding: 80px 20px;
+  background-color: #ffffff; /* Light background to contrast with the dark section above */
+  text-align: center;
+}
+
+.programs-content h2 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #000000;
+  margin-bottom: 15px;
+}
+
+.programs-subtitle {
+  font-size: 1.1rem;
+  color: #000000;
+  margin-bottom: 50px;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.programs-grid {
+  display: grid;
+  /* Creates 3 columns on larger screens, 2 on medium, 1 on small */
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 30px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.program-card {
+  background-color: #800000; /* Maroon background */
+  color: #fff;
+  border-radius: 12px;
+  padding: 40px 20px;
+  min-height: 200px; /* Ensures all cards have the same height */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  cursor: pointer;
+}
+
+.program-card:hover {
+  transform: translateY(-10px); /* Lifts the card on hover */
+  box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+}
+
+.program-card h3 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.4;
 }

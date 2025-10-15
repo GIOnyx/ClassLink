@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import BrandHeader from '../components/BrandHeader.jsx';
 import Login from '../components/Login.jsx';
+import Footer from '../components/Footer.jsx';
 import '../App.css';
 
 const LandingPage = ({ onLoginSuccess }) => {
@@ -87,6 +88,23 @@ const LandingPage = ({ onLoginSuccess }) => {
                         </div>
                     </div>
                 </section>
+
+                <section id="programs" className="programs-section">
+                    <div className="programs-content">
+                        <h2>Program Offerings</h2>
+                        <p className="programs-subtitle">
+                            Enroll NOW in our Future-Forward programs and UNLEASH your creative power!
+                        </p>
+                        <div className="programs-grid">
+                            <div className="program-card"><h3>College of Computer Studies</h3></div>
+                            <div className="program-card"><h3>College of Arts, Sciences & Education</h3></div>
+                            <div className="program-card"><h3>College of Management, Business & Accountancy</h3></div>
+                            <div className="program-card"><h3>College of Nursing & Allied Sciences</h3></div>
+                            <div className="program-card"><h3>College of Criminal Justice</h3></div>
+                            <div className="program-card"><h3>College of Engineering & Architecture</h3></div>
+                        </div>
+                    </div>
+                </section>
             </main>
 
             {/* Conditionally render the Login modal based on state */}
@@ -96,6 +114,8 @@ const LandingPage = ({ onLoginSuccess }) => {
                     onClose={() => setIsLoginVisible(false)}
                 />
             )}
+
+            <Footer />
         </div>
     );
 };
