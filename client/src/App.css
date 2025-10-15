@@ -49,7 +49,7 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: #f4f7f6;
+  background-color: #ffffff;
   padding: 0 40px;
   height: 100px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.05);
@@ -869,7 +869,7 @@ body {
 
 .vision-section {
   padding: 80px 20px;
-  background-color: #f4f7f6; /* Dark background color from the image */
+  background-color: #ffffff; /* Dark background color from the image */
   text-align: center;
   color: #fff;
 }
@@ -936,7 +936,7 @@ body {
 
 .mission-section {
   padding: 80px 20px;
-  background-color: #f4f7f6; /* A light background to contrast with the vision section */
+  background-color: #ffffff; /* A light background to contrast with the vision section */
   text-align: center;
 }
 
@@ -995,4 +995,50 @@ body {
 
 .pillar-box p strong {
   font-weight: 700; /* Ensure the first word is bold */
+}
+
+.core-values-section {
+  padding: 80px 20px;
+  background-color: #ffffff; /* Reusing the dark background for consistency */
+  text-align: center;
+}
+
+.core-values-content {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.core-values-title-box {
+  background-color: #800000; /* Maroon with slight transparency */
+  display: inline-block;
+  padding: 20px 80px;
+  border-radius: 10px;
+  margin-bottom: 50px;
+}
+
+.core-values-title-box h2 {
+  font-size: 3.5rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.values-list {
+  display: flex;
+  flex-direction: column; /* Stack the bars vertically */
+  align-items: center;   /* Center the bars horizontally */
+  gap: 15px;
+}
+
+.value-bar {
+  background-color: #F4C522; /* Reusing the gold/yellow color */
+  color: #333;
+  padding: 15px 20px;
+  border-radius: 5px;
+  width: 100%;
+  max-width: 500px; /* Constrain the width for a cleaner look */
+}
+
+.value-bar h3 {
+  font-size: 1.5rem;
+  font-weight: 700;
 }

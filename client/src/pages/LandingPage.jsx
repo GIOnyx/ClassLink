@@ -65,6 +65,28 @@ const LandingPage = ({ onLoginSuccess }) => {
                         </div>
                     </div>
                 </section>
+
+                <section id="core-values" className="core-values-section">
+                    <div className="core-values-content">
+                        <div className="core-values-title-box">
+                            <h2>Core Values</h2>
+                        </div>
+                        <div className="values-list">
+                            <div className="value-bar">
+                                <h3>Culture of Excellence</h3>
+                            </div>
+                            <div className="value-bar">
+                                <h3>Integrity</h3>
+                            </div>
+                            <div className="value-bar">
+                                <h3>Teamwork</h3>
+                            </div>
+                            <div className="value-bar">
+                                <h3>Universality</h3>
+                            </div>
+                        </div>
+                    </div>
+                </section>
             </main>
 
             {/* Conditionally render the Login modal based on state */}
