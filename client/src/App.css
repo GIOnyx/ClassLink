@@ -256,3 +256,197 @@ body {
   font-size: 0.8rem;
 }
 
+.secondary-navbar {
+  position: fixed;
+  top: 100px; /* Position below the 100px main navbar */
+  left: 0;
+  width: 100%;
+  background-color: #2A2A2A;
+  height: 60px;
+  z-index: 999;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  display: flex;
+  align-items: center;
+  border-top: 1px solid #e0e0e0;
+  /* Remove padding from the navbar itself */
+  padding: 0;
+}
+
+.secondary-navbar ul {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  /* Make the list take up the full width of its container */
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* NEW: Make each list item an equal-width flex container */
+.secondary-navbar li {
+  flex: 1; /* This is the magic property! Each item will grow equally. */
+  height: 100%;
+}
+
+.secondary-navbar a {
+  text-decoration: none;
+  color: #fff;
+  font-weight: 600;
+  font-size: 1rem;
+  transition: color 0.3s ease, background-color 0.3s ease; /* Added background transition */
+  /* Make the link fill the entire list item for a larger clickable area */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+}
+
+.secondary-navbar a:hover,
+.secondary-navbar a.active {
+  color: #fff;
+  background-color: #800000;
+}
+
+.enrollment-page-container {
+  padding: 180px 40px 80px;
+  background-color: #f0f2f5;
+  font-family: 'Inter', sans-serif;
+}
+
+.enrollment-main-content {
+  display: flex;
+  gap: 30px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.enrollment-left-column {
+  flex: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.enrollment-right-column {
+  flex: 1;
+}
+
+.request-card {
+  background-color: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+  border: 1px solid #e0e0e0;
+}
+
+.avatar-placeholder {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background-color: #e0e0e0;
+  flex-shrink: 0;
+}
+
+.info-container {
+  flex-grow: 1;
+}
+
+.line {
+  background-color: #e0e0e0;
+  height: 10px;
+  border-radius: 5px;
+  margin-bottom: 10px;
+}
+
+.line-short {
+  width: 60%;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.enrollment-button {
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.approve-button {
+  background-color: #28a745;
+  color: white;
+}
+
+.decline-button {
+  background-color: #dc3545;
+  color: white;
+}
+
+.enrollment-button:hover {
+  opacity: 0.85;
+}
+
+.view-icon {
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  stroke: #6c757d;
+}
+
+.profile-card {
+  background-color: #fff;
+  border-radius: 12px;
+  padding: 30px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+  border: 1px solid #e0e0e0;
+  text-align: center;
+}
+
+.profile-avatar {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background-color: #e0e0e0;
+  margin: 0 auto 20px auto;
+}
+
+.profile-line {
+  height: 12px;
+  background-color: #e0e0e0;
+  border-radius: 6px;
+  margin-bottom: 15px;
+}
+
+.profile-line-short {
+  width: 70%;
+  margin: 0 auto 15px auto;
+}
+
+.manage-admin-button {
+  width: 100%;
+  margin-top: 20px;
+  background-color: #800000;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.manage-admin-button:hover {
+  background-color: #9b3434;
+}
