@@ -1,12 +1,9 @@
 import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
-// Imports from the 'components' folder
+// Component & Page Imports
 import MainLayout from './components/MainLayout.jsx';
-import Login from './components/Login.jsx';
-import Footer from './components/Footer.jsx';
-
-// Imports from the 'pages' folder
+import LandingPage from './pages/LandingPage.jsx'; // This will be our main public page
 import EnrollmentPage from './pages/EnrollmentPage.jsx';
 import FacultyPage from './pages/FacultyPage.jsx';
 import StudentPage from './pages/StudentPage.jsx';
@@ -17,8 +14,6 @@ import './App.css';
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-
-  // ... (rest of your App.jsx code remains the same)
 
   const handleLoginSuccess = () => {
     setIsLoggedIn(true);
@@ -32,7 +27,8 @@ function App() {
     <BrowserRouter>
       <Routes>
         {isLoggedIn ? (
-          <Route path="/" element={<MainLayout onLogout={handleLogout} />}>
+          // --- LOGGED-IN ROUTES ---
+          <Route path="/*" element={<MainLayout onLogout={handleLogout} />}>
             <Route index element={<EnrollmentPage />} />
             <Route path="faculty" element={<FacultyPage />} />
             <Route path="student" element={<StudentPage />} />
@@ -41,19 +37,11 @@ function App() {
             <Route path="*" element={<Navigate to="/" />} />
           </Route>
         ) : (
-          <Route
-            path="/login"
-            element={
-              <div className="app-container">
-                <main className="main-content">
-                  <Login onLoginSuccess={handleLoginSuccess} />
-                </main>
-                <Footer />
-              </div>
-            } 
-          />
+          // --- PUBLIC (NOT LOGGED-IN) ROUTES ---
+          // This is now much simpler. We only have one public view.
+          // It handles all paths (/*) and passes the login function down.
+          <Route path="/*" element={<LandingPage onLoginSuccess={handleLoginSuccess} />} />
         )}
-        {!isLoggedIn && <Route path="*" element={<Navigate to="/login" />} />}
       </Routes>
     </BrowserRouter>
   );
