@@ -310,7 +310,7 @@ body {
 }
 
 .enrollment-page-container {
-  padding: 180px 40px 80px;
+  padding: 180px 20px 80px;
   background-color: #f0f2f5;
   font-family: 'Inter', sans-serif;
 }
@@ -449,4 +449,84 @@ body {
 
 .manage-admin-button:hover {
   background-color: #9b3434;
+}
+
+.faculty-page-container {
+  /* 100px (nav) + 60px (sec-nav) = 160px from the top */
+  padding: 180px 40px 80px;
+  background-color: #f0f2f5; /* Same background as enrollment page */
+}
+
+.faculty-content-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 30px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.faculty-column {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.course-header {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 5px;
+  padding-left: 5px;
+}
+
+.faculty-card {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid #e0e0e0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+}
+
+.faculty-checkbox {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #ccc;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.faculty-line {
+  height: 10px;
+  width: 100%;
+  background-color: #e0e0e0;
+  border-radius: 5px;
+}
+
+.manage-faculty-button {
+  width: 100%;
+  margin-top: 15px;
+  background-color: #800000;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.manage-faculty-button:hover {
+  background-color: #9b3434;
+}
+
+.page-content {
+  /* 100px (navbar) + 60px (secondary navbar) = 160px */
+  padding-top: 160px;
+  padding-left: 40px;  /* Added for side spacing */
+  padding-right: 40px; /* Added for side spacing */
+  padding-bottom: 80px; /* Ensures space above the footer */
 }
