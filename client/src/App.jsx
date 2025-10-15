@@ -10,11 +10,11 @@ import Footer from './components/Footer.jsx';
 import EnrollmentPage from './pages/EnrollmentPage.jsx';
 import FacultyPage from './pages/FacultyPage.jsx';
 import StudentPage from './pages/StudentPage.jsx';
+import CoursePage from './pages/CoursePage.jsx';
 
 import './App.css';
 
 // 🗑️ The line for FacultyPage has been DELETED from here.
-const CoursePage = () => <div style={{ textAlign: 'center', padding: '180px 20px 50px' }}><h1>Course Page</h1></div>;
 const AccountPage = () => <div style={{ textAlign: 'center', padding: '180px 20px 50px' }}><h1>Account Page</h1></div>;
 
 function App() {
@@ -36,15 +36,15 @@ function App() {
         {isLoggedIn ? (
           <Route path="/" element={<MainLayout onLogout={handleLogout} />}>
             <Route index element={<EnrollmentPage />} />
-            <Route path="faculty" element={<FacultyPage />} /> {/* This now uses the imported component */}
+            <Route path="faculty" element={<FacultyPage />} />
             <Route path="student" element={<StudentPage />} />
             <Route path="course" element={<CoursePage />} />
             <Route path="account" element={<AccountPage />} />
             <Route path="*" element={<Navigate to="/" />} />
           </Route>
         ) : (
-          <Route 
-            path="/login" 
+          <Route
+            path="/login"
             element={
               <div className="app-container">
                 <main className="main-content">
