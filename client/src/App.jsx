@@ -11,11 +11,9 @@ import EnrollmentPage from './pages/EnrollmentPage.jsx';
 import FacultyPage from './pages/FacultyPage.jsx';
 import StudentPage from './pages/StudentPage.jsx';
 import CoursePage from './pages/CoursePage.jsx';
+import AccountPage from './pages/AccountPage.jsx';
 
 import './App.css';
-
-// 🗑️ The line for FacultyPage has been DELETED from here.
-const AccountPage = () => <div style={{ textAlign: 'center', padding: '180px 20px 50px' }}><h1>Account Page</h1></div>;
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
