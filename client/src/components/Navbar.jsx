@@ -1,7 +1,7 @@
 import React from 'react';
 import '../App.css';
 
-const Navbar = () => {
+const Navbar = ({ onLogout }) => {
     return (
         <nav className="navbar">
         <div className="navbar-brand">
@@ -12,7 +12,6 @@ const Navbar = () => {
             </div>
         </div>
         <ul className="navbar-links">
-            {/* The "About" link is now a notification icon */}
             <li>
                 <a href="#notifications" className="notification-link">
                     <svg
@@ -33,7 +32,7 @@ const Navbar = () => {
                 </a>
             </li>
             <li>
-                <button className="logout-button">Logout</button>
+                <button onClick={onLogout} className="logout-button">Logout</button>
             </li>
         </ul>
         </nav>

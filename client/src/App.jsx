@@ -1,43 +1,59 @@
 import React, { useState } from 'react';
-import Navbar from './components/Navbar.jsx';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import MainLayout from './components/MainLayout.jsx';
 import Login from './components/Login.jsx';
-import Footer from './components/Footer.jsx';
+import Footer from './components/Footer.jsx'; // ✨ Make sure Footer is imported
+import EnrollmentPage from './pages/EnrollmentPage.jsx';
 import './App.css';
 
-// A simple placeholder for your home page content
-const HomePage = () => {
-  return (
-    <div style={{ textAlign: 'center', padding: '50px' }}>
-      <h1>Welcome to the Home Page!</h1>
-      <p>This is where your main content will go.</p>
-    </div>
-  );
-};
+// Placeholder Pages
+const FacultyPage = () => <div style={{ textAlign: 'center', padding: '180px 20px 50px' }}><h1>Faculty Page</h1></div>;
+const StudentPage = () => <div style={{ textAlign: 'center', padding: '180px 20px 50px' }}><h1>Student Page</h1></div>;
+const CoursePage = () => <div style={{ textAlign: 'center', padding: '180px 20px 50px' }}><h1>Course Page</h1></div>;
+const AccountPage = () => <div style={{ textAlign: 'center', padding: '180px 20px 50px' }}><h1>Account Page</h1></div>;
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  // This function will be passed to the Login component
   const handleLoginSuccess = () => {
     setIsLoggedIn(true);
   };
 
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+  };
+
   return (
-    <div className="app-container">
-      {/* Conditionally render Navbar or nothing */}
-      {isLoggedIn ? <Navbar /> : null}
-
-      <main className="main-content">
-        {/* Show Login page or Home page based on state */}
-        {!isLoggedIn ? (
-          <Login onLoginSuccess={handleLoginSuccess} />
+    <BrowserRouter>
+      <Routes>
+        {/* If logged in, show the main layout and its nested pages */}
+        {isLoggedIn ? (
+          <Route path="/" element={<MainLayout onLogout={handleLogout} />}>
+            <Route index element={<EnrollmentPage />} /> 
+            <Route path="faculty" element={<FacultyPage />} />
+            <Route path="student" element={<StudentPage />} />
+            <Route path="course" element={<CoursePage />} />
+            <Route path="account" element={<AccountPage />} />
+            <Route path="*" element={<Navigate to="/" />} />
+          </Route>
         ) : (
-          <HomePage />
+          /* If not logged in, show a layout with Login + Footer */
+          <Route 
+            path="/login" 
+            element={
+              <div className="app-container"> {/* Use the same container class */}
+                <main className="main-content">
+                  <Login onLoginSuccess={handleLoginSuccess} />
+                </main>
+                <Footer /> {/* ✅ Add the Footer here */}
+              </div>
+            } 
+          />
         )}
-      </main>
-
-      <Footer />
-    </div>
+        {/* If not logged in, redirect any other path to the login page */}
+        {!isLoggedIn && <Route path="*" element={<Navigate to="/login" />} />}
+      </Routes>
+    </BrowserRouter>
   );
 }
 
