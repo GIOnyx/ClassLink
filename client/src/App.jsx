@@ -8,12 +8,12 @@ import Footer from './components/Footer.jsx';
 
 // Imports from the 'pages' folder
 import EnrollmentPage from './pages/EnrollmentPage.jsx';
-import FacultyPage from './pages/FacultyPage.jsx'; // ✅ You correctly added this import
+import FacultyPage from './pages/FacultyPage.jsx';
+import StudentPage from './pages/StudentPage.jsx';
 
 import './App.css';
 
 // 🗑️ The line for FacultyPage has been DELETED from here.
-const StudentPage = () => <div style={{ textAlign: 'center', padding: '180px 20px 50px' }}><h1>Student Page</h1></div>;
 const CoursePage = () => <div style={{ textAlign: 'center', padding: '180px 20px 50px' }}><h1>Course Page</h1></div>;
 const AccountPage = () => <div style={{ textAlign: 'center', padding: '180px 20px 50px' }}><h1>Account Page</h1></div>;
 
@@ -35,7 +35,7 @@ function App() {
       <Routes>
         {isLoggedIn ? (
           <Route path="/" element={<MainLayout onLogout={handleLogout} />}>
-            <Route index element={<EnrollmentPage />} /> 
+            <Route index element={<EnrollmentPage />} />
             <Route path="faculty" element={<FacultyPage />} /> {/* This now uses the imported component */}
             <Route path="student" element={<StudentPage />} />
             <Route path="course" element={<CoursePage />} />
