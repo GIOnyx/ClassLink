@@ -903,7 +903,7 @@ body {
 .vision-main-title {
   font-size: 3.5rem;
   font-weight: 700;
-  color: #000;
+  color: #333;
   text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
   margin-bottom: 50px;
 }
@@ -932,4 +932,67 @@ body {
   font-size: 1.2rem;
   font-weight: 700;
   line-height: 1.4;
+}
+
+.mission-section {
+  padding: 80px 20px;
+  background-color: #f4f7f6; /* A light background to contrast with the vision section */
+  text-align: center;
+}
+
+.mission-content {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.mission-title-box {
+  background-color: #800000; /* Maroon color */
+  display: inline-block;
+  padding: 10px 40px;
+  border-radius: 8px;
+  margin-bottom: 30px;
+}
+
+.mission-title-box span {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: #fff;
+}
+
+.mission-main-title {
+  font-size: 3.5rem;
+  font-weight: 700;
+  color: #333;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+  margin-bottom: 20px;
+}
+
+.mission-main-title .emphasize-gear {
+  color: #800000; /* Emphasize the word "GEAR" */
+}
+
+.mission-subtitle {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #2A2A2A;
+  margin-bottom: 40px;
+}
+
+.mission-pillars {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  flex-wrap: wrap; /* Allows boxes to stack on smaller screens */
+}
+
+/* We can reuse the .pillar-box style from the Vision section for consistency */
+.pillar-box p {
+  font-size: 1.1rem;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.pillar-box p strong {
+  font-weight: 700; /* Ensure the first word is bold */
 }
