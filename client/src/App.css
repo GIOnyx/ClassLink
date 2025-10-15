@@ -1,42 +1,816 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Kumbh+Sans:wght@700&display=swap');
+
+/* Reset and Base Styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #f4f7f6;
+  overflow: hidden; /* Prevents body from scrolling when content scrolls */
+}
+
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+/* This is the main scrollable area */
+.main-content {
+  flex: 1;
+  overflow-y: auto; /* Allow this section to scroll vertically */
+}
+
+.page-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+}
+
+/* Navbar */
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 1000;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #f4f7f6;
+  padding: 0 40px;
+  height: 100px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.navbar-brand {
+  display: flex;
+  gap: 15px;
+  font-size: 1rem;
+  font-weight: bold;
+  line-height: 1.3;
+  align-items: center;
+  color: #000;
+  padding: 0 40px; /* Set horizontal padding for the login page */
+  height: 100px;    /* Set height to exactly match the navbar's height */
+}
+
+/* This rule resets padding and height when the brand is inside the actual navbar */
+.navbar .navbar-brand {
+  padding: 0;
+  height: 100%;
+}
+
+.navbar-logo {
+  height: 70px;
+}
+
+.online-text {
+  color: #800000;
+}
+
+.navbar-links {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 30px;
+  margin: 0;
+  padding: 0;
+}
+
+/* Style for the text-based links */
+.navbar-links a {
+  color: #333;
+  text-decoration: none;
+  font-size: 1.1rem;
+  font-weight: 600;
+  transition: color 0.3s;
+}
+
+/* This makes the icon's link a proper container */
+.notification-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #333; /* The icon will inherit this color */
+}
+
+.navbar-links a:hover,
+.notification-link:hover {
+  color: #800000; /* Set a consistent hover color */
+}
+
+.notification-icon {
+  /* This tells the SVG to use the color from its parent link (the .notification-link) */
+  stroke: currentColor; 
+}
+
+.logout-button {
+  font-family: 'Inter', sans-serif;
+  background-color: #800000;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 40px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.logout-button:hover {
+  background-color: #9b3434;
+}
+
+/* Autofill Fix */
+.form-group input:-webkit-autofill,
+.form-group input:-webkit-autofill:hover,
+.form-group input:-webkit-autofill:focus,
+.form-group input:-webkit-autofill:active {
+  -webkit-text-fill-color: #000 !important;
+  box-shadow: 0 0 0 1000px #fff inset !important;
+  -webkit-box-shadow: 0 0 0 1000px #fff inset !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Login Form */
+.login-container {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
+.login-form {
+  background: white;
+  padding: 50px 60px;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  width: 100%;
+  max-width: 700px;
   text-align: center;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+.login-form h2 {
+  font-family: 'Inter', sans-serif;
+  font-size: 1.1rem;
+  color: #667085;
+  font-weight: 400;
+  margin-bottom: 30px;
+  text-align: center;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.login-title {
+  font-family: 'Kumbh Sans', sans-serif;
+  font-size: 2rem;
+  color: #333;
+  text-align: center;
+  margin-bottom: 25px;
+  margin-top: -100px;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+.class-text {
+  color: #800000;
 }
 
-.card {
-  padding: 2em;
+.link-text {
+  color: #D89925;
 }
 
-.read-the-docs {
-  color: #888;
+.form-group {
+  font-family: 'Inter', sans-serif;
+  margin-bottom: 10px;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 22px 20px;
+  border: 2px solid #949494;
+  border-radius: 18px;
+  font-size: 1rem;
+  color: #000;
+  background-color: #fff;
+  transition: border-color 0.3s;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #800000;
+}
+
+.signin-button {
+  width: 100%;
+  padding: 22px;
+  border: none;
+  border-radius: 18px;
+  background-color: #800000;
+  color: white;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  margin-top: 10px;
+}
+
+.signin-button:hover {
+  background-color: #9b3434;
+}
+
+/* Validation Errors */
+.error-input {
+  border-color: #dc3545 !important;
+}
+
+.error-text {
+  color: #dc3545;
+  font-size: 0.9rem;
+  margin-top: 5px;
+}
+
+/* Footer */
+.footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  z-index: 1000;
+  background-color: #333;
+  color: white;
+  text-align: center;
+  padding: 15px;
+  font-size: 0.8rem;
+}
+
+.secondary-navbar {
+  position: fixed;
+  top: 100px; /* Position below the 100px main navbar */
+  left: 0;
+  width: 100%;
+  background-color: #2A2A2A;
+  height: 60px;
+  z-index: 999;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  display: flex;
+  align-items: center;
+  border-top: 1px solid #e0e0e0;
+  /* Remove padding from the navbar itself */
+  padding: 0;
+}
+
+.secondary-navbar ul {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  /* Make the list take up the full width of its container */
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* NEW: Make each list item an equal-width flex container */
+.secondary-navbar li {
+  flex: 1; /* This is the magic property! Each item will grow equally. */
+  height: 100%;
+}
+
+.secondary-navbar a {
+  text-decoration: none;
+  color: #fff;
+  font-weight: 600;
+  font-size: 1rem;
+  transition: color 0.3s ease, background-color 0.3s ease; /* Added background transition */
+  /* Make the link fill the entire list item for a larger clickable area */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+}
+
+.secondary-navbar a:hover,
+.secondary-navbar a.active {
+  color: #fff;
+  background-color: #800000;
+}
+
+.enrollment-page-container {
+  padding: 180px 20px 80px;
+  background-color: #f0f2f5;
+  font-family: 'Inter', sans-serif;
+}
+
+.enrollment-main-content {
+  display: flex;
+  gap: 30px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.enrollment-left-column {
+  flex: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.enrollment-right-column {
+  flex: 1;
+}
+
+.request-card {
+  background-color: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+  border: 1px solid #e0e0e0;
+}
+
+.avatar-placeholder {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background-color: #e0e0e0;
+  flex-shrink: 0;
+}
+
+.info-container {
+  flex-grow: 1;
+}
+
+.line {
+  background-color: #e0e0e0;
+  height: 10px;
+  border-radius: 5px;
+  margin-bottom: 10px;
+}
+
+.line-short {
+  width: 60%;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.enrollment-button {
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.approve-button {
+  background-color: #28a745;
+  color: white;
+}
+
+.decline-button {
+  background-color: #dc3545;
+  color: white;
+}
+
+.enrollment-button:hover {
+  opacity: 0.85;
+}
+
+.view-icon {
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  stroke: #6c757d;
+}
+
+.profile-card {
+  background-color: #fff;
+  border-radius: 12px;
+  padding: 30px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+  border: 1px solid #e0e0e0;
+  text-align: center;
+}
+
+.profile-avatar {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background-color: #e0e0e0;
+  margin: 0 auto 20px auto;
+}
+
+.profile-line {
+  height: 12px;
+  background-color: #e0e0e0;
+  border-radius: 6px;
+  margin-bottom: 15px;
+}
+
+.profile-line-short {
+  width: 70%;
+  margin: 0 auto 15px auto;
+}
+
+.manage-admin-button {
+  width: 100%;
+  margin-top: 20px;
+  background-color: #800000;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.manage-admin-button:hover {
+  background-color: #9b3434;
+}
+
+.faculty-page-container {
+  /* 100px (nav) + 60px (sec-nav) = 160px from the top */
+  padding: 180px 40px 80px;
+  background-color: #f0f2f5; /* Same background as enrollment page */
+}
+
+.faculty-content-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 30px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.faculty-column {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.course-header {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 5px;
+  padding-left: 5px;
+}
+
+.faculty-card {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid #e0e0e0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+}
+
+.faculty-checkbox {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #ccc;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.faculty-line {
+  height: 10px;
+  width: 100%;
+  background-color: #e0e0e0;
+  border-radius: 5px;
+}
+
+.manage-faculty-button {
+  width: 100%;
+  margin-top: 15px;
+  background-color: #800000;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.manage-faculty-button:hover {
+  background-color: #9b3434;
+}
+
+.page-content {
+  /* 100px (navbar) + 60px (secondary navbar) = 160px */
+  padding-top: 160px;
+  padding-left: 40px;  /* Added for side spacing */
+  padding-right: 40px; /* Added for side spacing */
+  padding-bottom: 80px; /* Ensures space above the footer */
+}
+
+.student-page-container {
+  padding: 180px 40px 80px; /* Top, Left/Right, Bottom */
+  background-color: #f0f2f5;
+}
+
+.student-content-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 30px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.student-column {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.student-card {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid #e0e0e0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+}
+
+.student-checkbox {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #ccc;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.student-line {
+  height: 10px;
+  width: 100%;
+  background-color: #e0e0e0;
+  border-radius: 5px;
+}
+
+.manage-student-button {
+  width: 100%;
+  margin-top: 15px;
+  background-color: #800000;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.manage-student-button:hover {
+  background-color: #9b3434;
+}
+
+.course-page-container {
+  padding: 180px 40px 80px; /* Top, Left/Right, Bottom */
+  background-color: #f0f2f5;
+}
+
+.course-content-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 30px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.course-column {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.course-card {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid #e0e0e0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+}
+
+.course-checkbox {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #ccc;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.course-line {
+  height: 10px;
+  width: 100%;
+  background-color: #e0e0e0;
+  border-radius: 5px;
+}
+
+.manage-course-button {
+  width: 100%;
+  margin-top: 15px;
+  background-color: #800000;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.manage-course-button:hover {
+  background-color: #9b3434;
+}
+
+.account-page-container {
+  padding: 180px 40px 80px; /* Top, Left/Right, Bottom */
+  background-color: #f0f2f5;
+  display: flex;
+  gap: 30px;
+  align-items: flex-start;
+  max-width: 1440px;
+  margin: 0 auto;
+}
+
+.account-sidebar {
+  flex: 0 0 320px; /* Do not grow, do not shrink, base width 320px */
+  background-color: #fff;
+  border-radius: 12px;
+  padding: 25px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.sidebar-profile-summary {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding-bottom: 25px;
+  border-bottom: 1px solid #eee;
+}
+
+.avatar-placeholder-sm {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background-color: #e0e0e0;
+  flex-shrink: 0;
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.user-name {
+  font-weight: 600;
+  color: #333;
+}
+
+.user-email {
+  font-size: 0.9rem;
+  color: #777;
+}
+
+.sidebar-nav ul {
+  list-style: none;
+  margin-top: 20px;
+}
+
+.sidebar-nav li a {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 15px;
+  border-radius: 8px;
+  text-decoration: none;
+  color: #555;
+  font-weight: 600;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.sidebar-nav li a:hover {
+  background-color: #f4f4f4;
+}
+
+.sidebar-nav li a.active {
+  background-color: #800000;
+  color: #fff;
+}
+
+.sidebar-nav li a svg {
+  stroke-width: 2.5;
+}
+
+.sidebar-nav li a :last-child {
+  margin-left: auto; /* Pushes the chevron or text to the end */
+  color: #999;
+}
+
+.sidebar-nav li a.active :last-child {
+  color: #fff;
+}
+
+.account-main-content {
+  flex-grow: 1;
+  background-color: #fff;
+  border-radius: 12px;
+  padding: 30px 40px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.account-header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding-bottom: 30px;
+  border-bottom: 1px solid #eee;
+}
+
+.avatar-placeholder-md {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  background-color: #e0e0e0;
+}
+
+.account-details-form {
+  margin: 40px 0;
+}
+
+.form-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 25px 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.form-row:last-child {
+  border-bottom: none;
+}
+
+.form-row label {
+  font-weight: 600;
+  color: #333;
+}
+
+.form-row span {
+  color: #555;
+}
+
+.form-row .placeholder-text {
+  color: #999;
+}
+
+.save-changes-button {
+  background-color: #800000;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 25px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  display: block; /* Makes it a block element */
+  margin-left: auto; /* Pushes button to the right */
+}
+
+.save-changes-button:hover {
+  background-color: #9b3434;
 }

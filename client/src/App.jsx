@@ -1,35 +1,62 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import React, { useState } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+
+// Imports from the 'components' folder
+import MainLayout from './components/MainLayout.jsx';
+import Login from './components/Login.jsx';
+import Footer from './components/Footer.jsx';
+
+// Imports from the 'pages' folder
+import EnrollmentPage from './pages/EnrollmentPage.jsx';
+import FacultyPage from './pages/FacultyPage.jsx';
+import StudentPage from './pages/StudentPage.jsx';
+import CoursePage from './pages/CoursePage.jsx';
+import AccountPage from './pages/AccountPage.jsx';
+
+import './App.css';
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  // ... (rest of your App.jsx code remains the same)
+
+  const handleLoginSuccess = () => {
+    setIsLoggedIn(true);
+  };
+
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+  };
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <BrowserRouter>
+      <Routes>
+        {isLoggedIn ? (
+          <Route path="/" element={<MainLayout onLogout={handleLogout} />}>
+            <Route index element={<EnrollmentPage />} />
+            <Route path="faculty" element={<FacultyPage />} />
+            <Route path="student" element={<StudentPage />} />
+            <Route path="course" element={<CoursePage />} />
+            <Route path="account" element={<AccountPage />} />
+            <Route path="*" element={<Navigate to="/" />} />
+          </Route>
+        ) : (
+          <Route
+            path="/login"
+            element={
+              <div className="app-container">
+                <main className="main-content">
+                  <Login onLoginSuccess={handleLoginSuccess} />
+                </main>
+                <Footer />
+              </div>
+            } 
+          />
+        )}
+        {!isLoggedIn && <Route path="*" element={<Navigate to="/login" />} />}
+      </Routes>
+    </BrowserRouter>
+  );
 }
 
-export default App
+export default App;
