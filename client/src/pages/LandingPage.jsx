@@ -39,6 +39,32 @@ const LandingPage = ({ onLoginSuccess }) => {
                         </div>
                     </div>
                 </section>
+
+                <section id="mission" className="mission-section">
+                    <div className="mission-content">
+                        <div className="mission-title-box">
+                            <span>MISSION</span>
+                        </div>
+                        <h2 className="mission-main-title">
+                            We <span className="emphasize-gear">GEAR</span> for Life.
+                        </h2>
+                        <p className="mission-subtitle">CIT commits to:</p>
+                        <div className="mission-pillars">
+                            <div className="pillar-box">
+                                <p><strong>Guide</strong> learners to become industry-preferred and life ready professionals</p>
+                            </div>
+                            <div className="pillar-box">
+                                <p><strong>Empower</strong> people for knowledge generation and creativity</p>
+                            </div>
+                            <div className="pillar-box">
+                                <p><strong>Accelerate</strong> community development</p>
+                            </div>
+                            <div className="pillar-box">
+                                <p><strong>Respond</strong> proactively to a fast-changing world</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
             </main>
 
             {/* Conditionally render the Login modal based on state */}
