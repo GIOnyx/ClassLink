@@ -1,52 +1,78 @@
-import React from 'react';
+import React, { useState } from 'react';
+import '../App.css';
 
 // --- MOCK DATA ---
-// In a real app, this data would come from an API
-const enrollmentRequests = [
-    { id: 1, name: 'John Doe' },
-    { id: 2, name: 'Jane Smith' },
-    { id: 3, name: 'Peter Jones' },
-    ];
+const programs = [
+    'College of Computer Studies',
+    'College of Arts, Sciences & Education',
+    'College of Management, Business & Accountancy',
+    'College of Nursing & Allied Sciences',
+    'College of Criminal Justice',
+    'College of Engineering & Architecture',
+];
 
-    // --- COMPONENT ---
-    const EnrollmentPage = () => {
+const semesters = ['First Semester', 'Second Semester', 'Summer Semester'];
+
+// --- COMPONENT ---
+const EnrollmentPage = () => {
+    // State to track the active filters
+    const [activeProgram, setActiveProgram] = useState('College of Computer Studies');
+    const [activeSemester, setActiveSemester] = useState('First Semester');
+
     return (
-        <div className="enrollment-page-container">
-        <div className="enrollment-main-content">
+        <div className="page-content">
+            <div className="enrollment-grid">
+                {/* Left Column: Filters */}
+                <div className="enrollment-filters">
+                    {/* Programs Filter */}
+                    <div className="filter-card">
+                        <ul>
+                            {programs.map((program) => (
+                                <li
+                                    key={program}
+                                    className={activeProgram === program ? 'active' : ''}
+                                    onClick={() => setActiveProgram(program)}
+                                >
+                                    {program}
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
 
-            {/* Left Column: Enrollment Requests */}
-            <div className="enrollment-left-column">
-            {enrollmentRequests.map((request) => (
-                <div key={request.id} className="request-card">
-                <div className="avatar-placeholder"></div>
-                <div className="info-container">
-                    <div className="line"></div>
-                    <div className="line line-short"></div>
-                    <div className="actions">
-                    <button className="enrollment-button approve-button">Approve</button>
-                    <button className="enrollment-button decline-button">Decline</button>
+                    {/* Semester Filter */}
+                    <div className="filter-card">
+                        <ul>
+                            {semesters.map((semester) => (
+                                <li
+                                    key={semester}
+                                    className={activeSemester === semester ? 'active' : ''}
+                                    onClick={() => setActiveSemester(semester)}
+                                >
+                                    {semester}
+                                </li>
+                            ))}
+                        </ul>
                     </div>
                 </div>
-                <svg className="view-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-                </div>
-            ))}
-            <button className="manage-admin-button">Manage Admin</button>
-            </div>
 
-            {/* Right Column: Profile Preview */}
-            <div className="enrollment-right-column">
-            <div className="profile-card">
-                <div className="profile-avatar"></div>
-                <div className="profile-line"></div>
-                <div className="profile-line profile-line-short"></div>
-                <div className="profile-line"></div>
+                {/* Right Column: Student List */}
+                <div className="enrollment-student-list">
+                    {/* Placeholder for student cards - you can map over real data here */}
+                    <div className="student-enrollment-card"></div>
+                    <div className="student-enrollment-card"></div>
+                    <div className="student-enrollment-card"></div>
+                    <div className="student-enrollment-card"></div>
+                    <div className="student-enrollment-card"></div>
+                    <div className="student-enrollment-card"></div>
+                    <div className="student-enrollment-card"></div>
+                    <div className="student-enrollment-card"></div>
+                    <div className="student-enrollment-card"></div>
+                    <div className="student-enrollment-card"></div>
+                    <div className="student-enrollment-card"></div>
+                </div>
             </div>
-            </div>
-            
-        </div>
         </div>
     );
 };
 
 export default EnrollmentPage;
-

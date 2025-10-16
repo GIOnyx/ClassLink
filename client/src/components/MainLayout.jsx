@@ -22,7 +22,6 @@ const MainLayout = ({ onLogout }) => {
             <Outlet context={{ handleLogout: onLogout }} />
         </main>
 
-        <Footer />
         </div>
     );
 };

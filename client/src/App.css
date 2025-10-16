@@ -17,7 +17,7 @@ body {
   font-family: 'Inter', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #f4f7f6;
+  background-color: #ffffff;
 }
 
 .app-container {
@@ -346,146 +346,74 @@ body {
   background-color: #800000;
 }
 
-.enrollment-page-container {
-  padding: 180px 20px 80px;
-  background-color: #f0f2f5;
-  font-family: 'Inter', sans-serif;
-}
-
-.enrollment-main-content {
-  display: flex;
+.enrollment-grid {
+  display: grid;
+  grid-template-columns: 450px 1fr; /* Fixed width for filters, flexible for student list */
   gap: 30px;
-  max-width: 1400px;
+  align-items: flex-start; /* Aligns items to the top of the grid */
+  max-width: 1840px;
   margin: 0 auto;
 }
 
-.enrollment-left-column {
-  flex: 2;
+.enrollment-filters {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 30px;
 }
 
-.enrollment-right-column {
-  flex: 1;
-}
-
-.request-card {
-  background-color: #fff;
+.filter-card {
+  background-color: #2A2A2A;
   border-radius: 12px;
-  padding: 20px;
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
-  border: 1px solid #e0e0e0;
+  color: #fff;
+  overflow: hidden; /* Ensures the border-radius is respected by the list items */
 }
 
-.avatar-placeholder {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  background-color: #e0e0e0;
-  flex-shrink: 0;
+.filter-card ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
-.info-container {
-  flex-grow: 1;
-}
-
-.line {
-  background-color: #e0e0e0;
-  height: 10px;
-  border-radius: 5px;
-  margin-bottom: 10px;
-}
-
-.line-short {
-  width: 60%;
-}
-
-.actions {
-  display: flex;
-  gap: 10px;
-  margin-top: 15px;
-}
-
-.enrollment-button {
-  border: none;
-  border-radius: 8px;
-  padding: 8px 16px;
-  font-size: 14px;
+.filter-card li {
+  padding: 15px 20px;
   font-weight: 600;
   cursor: pointer;
-  transition: opacity 0.2s;
-}
-
-.approve-button {
-  background-color: #28a745;
-  color: white;
-}
-
-.decline-button {
-  background-color: #dc3545;
-  color: white;
-}
-
-.enrollment-button:hover {
-  opacity: 0.85;
-}
-
-.view-icon {
-  width: 24px;
-  height: 24px;
-  cursor: pointer;
-  stroke: #6c757d;
-}
-
-.profile-card {
-  background-color: #fff;
-  border-radius: 12px;
-  padding: 30px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
-  border: 1px solid #e0e0e0;
-  text-align: center;
-}
-
-.profile-avatar {
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
-  background-color: #e0e0e0;
-  margin: 0 auto 20px auto;
-}
-
-.profile-line {
-  height: 12px;
-  background-color: #e0e0e0;
-  border-radius: 6px;
-  margin-bottom: 15px;
-}
-
-.profile-line-short {
-  width: 70%;
-  margin: 0 auto 15px auto;
-}
-
-.manage-admin-button {
-  width: 100%;
-  margin-top: 20px;
-  background-color: #800000;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  padding: 12px;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
+  border-bottom: 1px solid #444; /* Separator line */
   transition: background-color 0.2s;
 }
 
-.manage-admin-button:hover {
-  background-color: #9b3434;
+.filter-card li:last-child {
+  border-bottom: none; /* Remove border from the last item */
+}
+
+/* Style for the active/selected list item */
+.filter-card li.active {
+  background-color: #F4C522; /* Gold/yellow color */
+  color: #2A2A2A;
+}
+
+.enrollment-student-list {
+  /* We remove the flex properties */
+  max-height: 705px; /* This sets the fixed container height */
+  overflow-y: auto;  /* This creates the scrollbar when content overflows */
+  padding-right: 5px; /* Keeps the scrollbar from touching the cards */
+  scrollbar-width: none;
+}
+
+.enrollment-student-list::-webkit-scrollbar {
+  display: none;
+}
+
+.student-enrollment-card {
+  background-color: #e0e0e0;
+  border-radius: 12px;
+  height: 120px;         /* ✅ Each card has a fixed height */
+  flex-shrink: 0;        /* ✅ Prevents the item from shrinking */
+  margin-bottom: 20px;   /* ✅ Replaces 'gap' for spacing between items */
+}
+
+.student-enrollment-card:last-child {
+  margin-bottom: 0;
 }
 
 .faculty-page-container {
@@ -561,11 +489,7 @@ body {
 }
 
 .page-content {
-  /* 100px (navbar) + 60px (secondary navbar) = 160px */
-  padding-top: 160px;
-  padding-left: 40px;  /* Added for side spacing */
-  padding-right: 40px; /* Added for side spacing */
-  padding-bottom: 80px; /* Ensures space above the footer */
+  padding: 200px 0 40px;
 }
 
 .student-page-container {
