@@ -14,7 +14,11 @@ public class Student {
     private String firstName;
     private String lastName;
     private String email;
-    // ... other fields from your diagram like program, yearLevel etc.
+    // Additional fields from the UML diagram
+    private String program;
+    private Integer yearLevel;
+    private String department;
+    private String password;
 
     // Add this to create the other side of the relationship
     @OneToMany(mappedBy = "student")

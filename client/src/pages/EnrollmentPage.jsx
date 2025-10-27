@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { getCourses, postEnrollment } from '../services/backend';
 import '../App.css';
 
 // --- MOCK DATA ---
@@ -30,6 +31,8 @@ const EnrollmentPage = () => {
     const [newName, setNewName] = useState('');
     const [newProgram, setNewProgram] = useState(programs[0]);
     const [newSemester, setNewSemester] = useState(semesters[0]);
+    const [courses, setCourses] = useState([]);
+    const [selectedCourseId, setSelectedCourseId] = useState(null);
 
     const addEnrollment = async (e) => {
         e.preventDefault();
@@ -47,13 +50,14 @@ const EnrollmentPage = () => {
 
         // Optional: try to POST to backend if available; ignore errors for mock testing
         try {
-            await fetch('/api/enrollments', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(newEntry),
-            });
+            const payload = { studentName: newEntry.name, courseId: selectedCourseId };
+            const resp = await postEnrollment(payload);
+            // server returns the saved enrollment; optionally update local list
+            const saved = resp.data;
+            setStudents((prev) => [{ id: saved.enrollmentID, name: newEntry.name, program: newEntry.program, semester: newEntry.semester }, ...prev]);
         } catch (err) {
             // network/back-end may not be present; that's fine for local testing
+            console.error('Enrollment POST failed', err);
         }
 
         // reset form
@@ -66,6 +70,16 @@ const EnrollmentPage = () => {
     const filteredStudents = students.filter(
         (s) => s.program === activeProgram && s.semester === activeSemester
     );
+
+    useEffect(() => {
+        const load = async () => {
+            try {
+                const res = await getCourses();
+                setCourses(res.data || []);
+            } catch (e) { console.warn('Failed to load courses', e); }
+        };
+        load();
+    }, []);
 
     return (
         <div className="page-content">
@@ -120,6 +134,10 @@ const EnrollmentPage = () => {
                             </select>
                             <select value={newSemester} onChange={(e) => setNewSemester(e.target.value)}>
                                 {semesters.map((s) => <option key={s} value={s}>{s}</option>)}
+                            </select>
+                            <select value={selectedCourseId ?? ''} onChange={(e) => setSelectedCourseId(e.target.value ? Number(e.target.value) : null)}>
+                                <option value="">-- Select Course (optional) --</option>
+                                {courses.map(c => <option key={c.courseID} value={c.courseID}>{c.title}</option>)}
                             </select>
                             <div style={{ display: 'flex', gap: 8 }}>
                                 <button type="submit">Add Enrollment</button>

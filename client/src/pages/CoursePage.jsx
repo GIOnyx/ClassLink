@@ -1,50 +1,75 @@
-import React from 'react';
-import '../App.css'; 
+import React, { useState, useEffect } from 'react';
+import '../App.css';
+import { getCourses, addCourse } from '../services/backend';
 
-// --- MOCK DATA ---
-// This would be replaced with actual course data from an API
-const mockItems = [
-    { id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }, { id: 5 },
-    ];
+const CoursePage = () => {
+    const [courses, setCourses] = useState([]);
+    const [newCourse, setNewCourse] = useState({ title: '', courseCode: '' });
 
-    const CoursePage = () => {
+    useEffect(() => {
+        loadCourses();
+    }, []);
+
+    const loadCourses = async () => {
+        try {
+            const response = await getCourses();
+            setCourses(response.data);
+        } catch (error) {
+            console.error('Failed to fetch courses:', error);
+        }
+    };
+
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        setNewCourse({ ...newCourse, [name]: value });
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            await addCourse(newCourse);
+            setNewCourse({ title: '', courseCode: '' });
+            loadCourses();
+        } catch (err) {
+            console.error('Failed to add course:', err);
+        }
+    };
+
     return (
         <div className="course-page-container">
-        <div className="course-content-grid">
-            {/* Column 1 */}
-            <div className="course-column">
-            <div className="course-header">Course:</div>
-            {mockItems.map(item => (
-                <div key={item.id} className="course-card">
-                <div className="course-checkbox"></div>
-                <div className="course-line"></div>
-                </div>
-            ))}
+            <div style={{ marginBottom: '30px', padding: '20px', background: '#fff', borderRadius: '12px' }}>
+                <h3>Add a New Course</h3>
+                <form onSubmit={handleSubmit} style={{ display: 'flex', gap: '10px' }}>
+                    <input
+                        type="text"
+                        name="title"
+                        placeholder="Course Title"
+                        value={newCourse.title}
+                        onChange={handleInputChange}
+                    />
+                    <input
+                        type="text"
+                        name="courseCode"
+                        placeholder="Course Code (e.g., CS101)"
+                        value={newCourse.courseCode}
+                        onChange={handleInputChange}
+                    />
+                    <button type="submit">Add Course</button>
+                </form>
             </div>
 
-            {/* Column 2 */}
-            <div className="course-column">
-            <div className="course-header">Course:</div>
-            {mockItems.map(item => (
-                <div key={item.id} className="course-card">
-                <div className="course-checkbox"></div>
-                <div className="course-line"></div>
+            <div className="course-content-grid">
+                <div className="course-column">
+                    <div className="course-header">Available Courses</div>
+                    {courses.map((course) => (
+                        <div key={course.courseID} className="course-card">
+                            <div className="course-line" style={{ background: 'none' }}>
+                                <strong>{course.title}</strong> ({course.courseCode})
+                            </div>
+                        </div>
+                    ))}
                 </div>
-            ))}
             </div>
-
-            {/* Column 3 */}
-            <div className="course-column">
-            <div className="course-header">Course:</div>
-            {mockItems.map(item => (
-                <div key={item.id} className="course-card">
-                <div className="course-checkbox"></div>
-                <div className="course-line"></div>
-                </div>
-            ))}
-            <button className="manage-course-button">Manage Course</button>
-            </div>
-        </div>
         </div>
     );
 };
