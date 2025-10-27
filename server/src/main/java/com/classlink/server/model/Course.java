@@ -17,6 +17,16 @@ public class Course {
     private int units;
     private int capacity;
 
+    // The teacher assigned to this course
+    @ManyToOne
+    @JoinColumn(name = "assigned_teacher_id")
+    private Teacher assignedTeacher;
+
+    // Optional schedule for this course
+    @ManyToOne
+    @JoinColumn(name = "schedule_id")
+    private Schedule schedule;
+
     // Establishes the One-to-Many relationship with Enrollment
     @OneToMany(mappedBy = "course")
     private List<Enrollment> enrolledStudents;
