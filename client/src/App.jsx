@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
 // Component & Page Imports
@@ -11,15 +11,29 @@ import CoursePage from './pages/CoursePage.jsx';
 import AccountPage from './pages/AccountPage.jsx';
 
 import './App.css';
+import { me, logout as apiLogout } from './services/backend';
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  // On first load, ask the server if there's an active session
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await me();
+        if (res.data?.authenticated) setIsLoggedIn(true);
+      } catch (e) {
+        // not logged in or server unavailable
+      }
+    })();
+  }, []);
 
   const handleLoginSuccess = () => {
     setIsLoggedIn(true);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try { await apiLogout(); } catch {}
     setIsLoggedIn(false);
   };
 

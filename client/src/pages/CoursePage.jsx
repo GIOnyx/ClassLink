@@ -1,10 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import '../App.css';
 import { getCourses, addCourse } from '../services/backend';
+const programs = [
+    'College of Computer Studies',
+    'College of Arts, Sciences & Education',
+    'College of Management, Business & Accountancy',
+    'College of Nursing & Allied Sciences',
+    'College of Criminal Justice',
+    'College of Engineering & Architecture',
+];
 
 const CoursePage = () => {
     const [courses, setCourses] = useState([]);
-    const [newCourse, setNewCourse] = useState({ title: '', courseCode: '' });
+    const [newCourse, setNewCourse] = useState({ title: '', courseCode: '', program: programs[0] });
 
     useEffect(() => {
         loadCourses();
@@ -28,7 +36,7 @@ const CoursePage = () => {
         e.preventDefault();
         try {
             await addCourse(newCourse);
-            setNewCourse({ title: '', courseCode: '' });
+            setNewCourse({ title: '', courseCode: '', program: programs[0] });
             loadCourses();
         } catch (err) {
             console.error('Failed to add course:', err);
@@ -39,7 +47,7 @@ const CoursePage = () => {
         <div className="course-page-container">
             <div style={{ marginBottom: '30px', padding: '20px', background: '#fff', borderRadius: '12px' }}>
                 <h3>Add a New Course</h3>
-                <form onSubmit={handleSubmit} style={{ display: 'flex', gap: '10px' }}>
+                <form onSubmit={handleSubmit} style={{ display: 'grid', gap: '10px', gridTemplateColumns: '1fr 1fr 1fr auto' }}>
                     <input
                         type="text"
                         name="title"
@@ -54,6 +62,9 @@ const CoursePage = () => {
                         value={newCourse.courseCode}
                         onChange={handleInputChange}
                     />
+                    <select name="program" value={newCourse.program} onChange={handleInputChange}>
+                        {programs.map(p => <option key={p} value={p}>{p}</option>)}
+                    </select>
                     <button type="submit">Add Course</button>
                 </form>
             </div>
@@ -63,8 +74,9 @@ const CoursePage = () => {
                     <div className="course-header">Available Courses</div>
                     {courses.map((course) => (
                         <div key={course.courseID} className="course-card">
-                            <div className="course-line" style={{ background: 'none' }}>
-                                <strong>{course.title}</strong> ({course.courseCode})
+                            <div className="course-line" style={{ background: 'none', display: 'flex', justifyContent: 'space-between' }}>
+                                <span><strong>{course.title}</strong> ({course.courseCode})</span>
+                                <span style={{ fontSize: 12, color: '#666' }}>{course.program || '—'}</span>
                             </div>
                         </div>
                     ))}

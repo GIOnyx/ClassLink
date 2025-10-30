@@ -17,6 +17,9 @@ public class Course {
     private int units;
     private int capacity;
 
+    // Program/College this course belongs to (e.g., "College of Computer Studies")
+    private String program;
+
     // The teacher assigned to this course
     @ManyToOne
     @JoinColumn(name = "assigned_teacher_id")

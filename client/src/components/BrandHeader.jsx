@@ -2,7 +2,7 @@ import React from 'react';
 import '../App.css';
 
 // The header now accepts an 'onLoginClick' function as a prop
-const BrandHeader = ({ onLoginClick }) => {
+const BrandHeader = ({ onLoginClick, onRegisterClick }) => {
     return (
         <header className="navbar">
             <div className="navbar-brand">
@@ -22,6 +22,7 @@ const BrandHeader = ({ onLoginClick }) => {
                     <li><a href="#programs">Programs</a></li>
                     {/* ✨ This is now a button that calls the function from LandingPage */}
                     <li><button onClick={onLoginClick} className="login-button-link">Login</button></li>
+                    <li><button onClick={onRegisterClick} className="login-button-link">Register</button></li>
                 </ul>
             </nav>
         </header>

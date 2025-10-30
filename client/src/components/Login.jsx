@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import '../App.css';
+import { login } from '../services/backend';
 
 const Login = ({ onLoginSuccess, onClose }) => {
     const [email, setEmail] = useState('');
@@ -15,15 +16,22 @@ const Login = ({ onLoginSuccess, onClose }) => {
         return newErrors;
     };
 
-    const handleSubmit = (event) => {
+    const handleSubmit = async (event) => {
         event.preventDefault();
         const formErrors = validateForm();
         if (Object.keys(formErrors).length > 0) {
             setErrors(formErrors);
-        } else {
-            console.log('Login successful:', { email, password });
+            return;
+        }
+        try {
+            const res = await login(email, password, 'student');
+            console.log('Logged in:', res.data);
             setErrors({});
-            onLoginSuccess();
+            onLoginSuccess?.();
+            onClose?.();
+        } catch (err) {
+            console.error('Login failed:', err);
+            setErrors({ form: 'Invalid email or password' });
         }
     };
 
@@ -46,6 +54,7 @@ const Login = ({ onLoginSuccess, onClose }) => {
                     <input type="password" placeholder="Enter Password" value={password} onChange={(e) => setPassword(e.target.value)} className={errors.password ? 'error-input' : ''} />
                     {errors.password && <p className="error-text">{errors.password}</p>}
                 </div>
+                {errors.form && <p className="error-text">{errors.form}</p>}
                 <button type="submit" className="signin-button">Sign In</button>
             </form>
         </div>

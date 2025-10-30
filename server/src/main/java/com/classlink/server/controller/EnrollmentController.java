@@ -15,7 +15,6 @@ import java.util.Date;
 
 @RestController
 @RequestMapping("/api/enrollments")
-@CrossOrigin(origins = "*")
 public class EnrollmentController {
 
     private final EnrollmentRepository enrollmentRepository;
@@ -28,6 +27,11 @@ public class EnrollmentController {
         this.enrollmentRepository = enrollmentRepository;
         this.studentRepository = studentRepository;
         this.courseRepository = courseRepository;
+    }
+
+    @GetMapping
+    public ResponseEntity<?> getAllEnrollments() {
+        return ResponseEntity.ok(enrollmentRepository.findAll());
     }
 
     // Minimal DTO expected: { "studentName": "Full Name", "courseId": 1 }

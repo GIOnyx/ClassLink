@@ -7,10 +7,10 @@ import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/courses")
-@CrossOrigin(origins = "*")
 public class CourseController {
 
     private final CourseRepository courseRepository;
@@ -20,8 +20,10 @@ public class CourseController {
     }
 
     @GetMapping
-    public List<Course> getAll() {
-        return courseRepository.findAll();
+    public List<Course> getAll(@RequestParam(name = "program", required = false) Optional<String> program) {
+        return program.filter(p -> !p.isBlank())
+                .map(courseRepository::findByProgramIgnoreCase)
+                .orElseGet(courseRepository::findAll);
     }
 
     @PostMapping

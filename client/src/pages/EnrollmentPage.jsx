@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { getCourses, postEnrollment } from '../services/backend';
+import { getCourses, getCoursesByProgram, postEnrollment, getEnrollments } from '../services/backend';
 import '../App.css';
 
-// --- MOCK DATA ---
 const programs = [
     'College of Computer Studies',
     'College of Arts, Sciences & Education',
@@ -14,79 +13,95 @@ const programs = [
 
 const semesters = ['First Semester', 'Second Semester', 'Summer Semester'];
 
-// --- COMPONENT ---
 const EnrollmentPage = () => {
-    // State to track the active filters
     const [activeProgram, setActiveProgram] = useState('College of Computer Studies');
     const [activeSemester, setActiveSemester] = useState('First Semester');
-
-    // Local mock "database" of enrollments to test filters/UI
-    const [students, setStudents] = useState([
-        { id: 1, name: 'Alice Santos', program: 'College of Computer Studies', semester: 'First Semester' },
-        { id: 2, name: 'Ben Reyes', program: 'College of Management, Business & Accountancy', semester: 'Second Semester' },
-        { id: 3, name: 'Carla Dela Cruz', program: 'College of Computer Studies', semester: 'First Semester' },
-    ]);
-
-    // Form state for adding a new mock enrollment
+    const [enrollments, setEnrollments] = useState([]);
+    const [courses, setCourses] = useState([]);
+    const [loading, setLoading] = useState(false);
+    
+    // Form state
     const [newName, setNewName] = useState('');
     const [newProgram, setNewProgram] = useState(programs[0]);
     const [newSemester, setNewSemester] = useState(semesters[0]);
-    const [courses, setCourses] = useState([]);
     const [selectedCourseId, setSelectedCourseId] = useState(null);
+
+    useEffect(() => {
+        loadData();
+    }, []);
+
+    // Reload courses when activeProgram changes
+    useEffect(() => {
+        const loadCourses = async () => {
+            try {
+                const res = await getCoursesByProgram(activeProgram);
+                setCourses(res.data || []);
+                setSelectedCourseId(null);
+            } catch (e) {
+                console.warn('Failed to load courses by program, falling back to all', e);
+                try {
+                    const all = await getCourses();
+                    setCourses(all.data || []);
+                } catch (err) {
+                    console.error('Failed to load all courses', err);
+                }
+            }
+        };
+        loadCourses();
+    }, [activeProgram]);
+
+    const loadData = async () => {
+        setLoading(true);
+        try {
+            const [coursesRes, enrollmentsRes] = await Promise.all([
+                getCourses(),
+                getEnrollments()
+            ]);
+            setCourses(coursesRes.data || []);
+            setEnrollments(enrollmentsRes.data || []);
+        } catch (e) {
+            console.error('Failed to load data', e);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const addEnrollment = async (e) => {
         e.preventDefault();
         if (!newName.trim()) return alert('Please enter a student name.');
+        if (!selectedCourseId) return alert('Please select a course.');
 
-        const newEntry = {
-            id: Date.now(),
-            name: newName.trim(),
-            program: newProgram,
-            semester: newSemester,
-        };
-
-        // Add locally for UI testing
-        setStudents((prev) => [newEntry, ...prev]);
-
-        // Optional: try to POST to backend if available; ignore errors for mock testing
+        setLoading(true);
         try {
-            const payload = { studentName: newEntry.name, courseId: selectedCourseId };
-            const resp = await postEnrollment(payload);
-            // server returns the saved enrollment; optionally update local list
-            const saved = resp.data;
-            setStudents((prev) => [{ id: saved.enrollmentID, name: newEntry.name, program: newEntry.program, semester: newEntry.semester }, ...prev]);
+            const payload = { studentName: newName.trim(), courseId: selectedCourseId };
+            await postEnrollment(payload);
+            
+            // Reload enrollments from server
+            await loadData();
+            
+            // Reset form
+            setNewName('');
+            setSelectedCourseId(null);
         } catch (err) {
-            // network/back-end may not be present; that's fine for local testing
-            console.error('Enrollment POST failed', err);
+            console.error('Enrollment failed', err);
+            alert('Failed to enroll student. Please try again.');
+        } finally {
+            setLoading(false);
         }
-
-        // reset form
-        setNewName('');
-        setNewProgram(programs[0]);
-        setNewSemester(semesters[0]);
     };
 
-    // Filter students by active filters
-    const filteredStudents = students.filter(
-        (s) => s.program === activeProgram && s.semester === activeSemester
-    );
-
-    useEffect(() => {
-        const load = async () => {
-            try {
-                const res = await getCourses();
-                setCourses(res.data || []);
-            } catch (e) { console.warn('Failed to load courses', e); }
-        };
-        load();
-    }, []);
+    // Filter enrollments by active filters (mock filtering since we don't have program/semester in DB)
+    const filteredEnrollments = enrollments.filter((enrollment) => {
+        // Since the Student model doesn't have program/semester in your DB,
+        // we'll show all for now. You can add these fields to Student later.
+        return true;
+    });
 
     return (
         <div className="page-content">
             <div className="enrollment-grid">
                 {/* Left Column: Filters */}
                 <div className="enrollment-filters">
-                    {/* Programs Filter */}
                     <div className="filter-card">
                         <ul>
                             {programs.map((program) => (
@@ -101,12 +116,11 @@ const EnrollmentPage = () => {
                         </ul>
                     </div>
 
-                    {/* Semester Filter */}
                     <div className="filter-card">
                         <ul>
                             {semesters.map((semester) => (
                                 <li
-                                    key={semester}
+                                    key={activeSemester === semester ? 'active' : ''}
                                     className={activeSemester === semester ? 'active' : ''}
                                     onClick={() => setActiveSemester(semester)}
                                 >
@@ -117,63 +131,163 @@ const EnrollmentPage = () => {
                     </div>
                 </div>
 
-                {/* Right Column: Student List + Mock Input */}
+                {/* Right Column: Enrollment Form & List */}
                 <div className="enrollment-student-list">
-                    {/* Mock input form to create a test enrollment */}
-                    <div className="filter-card" style={{ marginBottom: 16 }}>
-                        <h3>Mock Enrollment (test DB & filters)</h3>
-                        <form onSubmit={addEnrollment} style={{ display: 'grid', gap: 8 }}>
-                            <input
-                                type="text"
-                                placeholder="Student full name"
-                                value={newName}
-                                onChange={(e) => setNewName(e.target.value)}
-                            />
-                            <select value={newProgram} onChange={(e) => setNewProgram(e.target.value)}>
-                                {programs.map((p) => <option key={p} value={p}>{p}</option>)}
-                            </select>
-                            <select value={newSemester} onChange={(e) => setNewSemester(e.target.value)}>
-                                {semesters.map((s) => <option key={s} value={s}>{s}</option>)}
-                            </select>
-                            <select value={selectedCourseId ?? ''} onChange={(e) => setSelectedCourseId(e.target.value ? Number(e.target.value) : null)}>
-                                <option value="">-- Select Course (optional) --</option>
-                                {courses.map(c => <option key={c.courseID} value={c.courseID}>{c.title}</option>)}
-                            </select>
-                            <div style={{ display: 'flex', gap: 8 }}>
-                                <button type="submit">Add Enrollment</button>
-                                <button type="button" onClick={() => {
-                                    // quick test helper: set filters to newly selected values
-                                    setActiveProgram(newProgram);
-                                    setActiveSemester(newSemester);
-                                }}>
+                    {/* Enrollment Form */}
+                    <div className="filter-card" style={{ marginBottom: 20 }}>
+                        <h3 style={{ marginTop: 0 }}>Mock Enrollment (test DB & filters)</h3>
+                        <form onSubmit={addEnrollment} style={{ display: 'grid', gap: 12 }}>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: 4, fontWeight: 500 }}>Student Full Name</label>
+                                <input
+                                    type="text"
+                                    placeholder="e.g., John Doe"
+                                    value={newName}
+                                    onChange={(e) => setNewName(e.target.value)}
+                                    style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
+                                />
+                            </div>
+                            
+                            <div>
+                                <label style={{ display: 'block', marginBottom: 4, fontWeight: 500 }}>Program</label>
+                                <select 
+                                    value={newProgram} 
+                                    onChange={(e) => setNewProgram(e.target.value)}
+                                    style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
+                                >
+                                    {programs.map((p) => <option key={p} value={p}>{p}</option>)}
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label style={{ display: 'block', marginBottom: 4, fontWeight: 500 }}>Semester</label>
+                                <select 
+                                    value={newSemester} 
+                                    onChange={(e) => setNewSemester(e.target.value)}
+                                    style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
+                                >
+                                    {semesters.map((s) => <option key={s} value={s}>{s}</option>)}
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label style={{ display: 'block', marginBottom: 4, fontWeight: 500 }}>Course for {activeProgram} <span style={{ color: 'red' }}>*</span></label>
+                                <select 
+                                    value={selectedCourseId ?? ''} 
+                                    onChange={(e) => setSelectedCourseId(e.target.value ? Number(e.target.value) : null)}
+                                    style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
+                                >
+                                    <option value="">-- Select Course (required) --</option>
+                                    {courses.map(c => (
+                                        <option key={c.courseID} value={c.courseID}>
+                                            {c.courseCode} - {c.title}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            
+                            <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                                <button 
+                                    type="submit" 
+                                    disabled={loading}
+                                    style={{ 
+                                        flex: 1, 
+                                        padding: '10px', 
+                                        backgroundColor: loading ? '#ccc' : '#8B0000',
+                                        color: 'white',
+                                        border: 'none',
+                                        borderRadius: '4px',
+                                        cursor: loading ? 'not-allowed' : 'pointer',
+                                        fontWeight: 'bold'
+                                    }}
+                                >
+                                    {loading ? 'Processing...' : 'Add Enrollment'}
+                                </button>
+                                <button 
+                                    type="button" 
+                                    onClick={() => {
+                                        setActiveProgram(newProgram);
+                                        setActiveSemester(newSemester);
+                                    }}
+                                    style={{
+                                        padding: '10px 16px',
+                                        backgroundColor: '#333',
+                                        color: 'white',
+                                        border: 'none',
+                                        borderRadius: '4px',
+                                        cursor: 'pointer'
+                                    }}
+                                >
                                     Set Filters To Form
                                 </button>
                             </div>
                         </form>
-                        <small>Note: entry is stored locally for UI testing. If backend /api/enrollments exists, a POST is attempted.</small>
+                        <small style={{ display: 'block', marginTop: 12, color: '#666' }}>
+                            Note: entry is stored locally for UI testing. If backend /api/enrollments exists, a POST is attempted.
+                        </small>
                     </div>
 
-                    {/* Render filtered students */}
-                    {filteredStudents.length === 0 ? (
-                        <div className="student-enrollment-card">No enrollments match the selected filters.</div>
-                    ) : (
-                        filteredStudents.map((s) => (
-                            <div key={s.id} className="student-enrollment-card">
-                                <strong>{s.name}</strong>
-                                <div>{s.program}</div>
-                                <div>{s.semester}</div>
+                    {/* Enrollments List */}
+                    <div>
+                        <h3 style={{ marginBottom: 16 }}>
+                            Enrolled Students ({filteredEnrollments.length})
+                        </h3>
+                        
+                        {loading ? (
+                            <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
+                                Loading enrollments...
                             </div>
-                        ))
-                    )}
-
-                    {/* Debug listing of all mock enrollments */}
-                    <div style={{ marginTop: 20 }}>
-                        <h4>All Mock Enrollments (debug)</h4>
-                        {students.map((s) => (
-                            <div key={`all-${s.id}`} style={{ fontSize: 12, color: '#666' }}>
-                                {s.name} — {s.program} — {s.semester}
+                        ) : filteredEnrollments.length === 0 ? (
+                            <div className="student-enrollment-card" style={{ textAlign: 'center', padding: '40px' }}>
+                                No enrollments found. Add your first enrollment above!
                             </div>
-                        ))}
+                        ) : (
+                            <div style={{ display: 'grid', gap: '12px' }}>
+                                {filteredEnrollments.map((enrollment) => (
+                                    <div 
+                                        key={enrollment.enrollmentID} 
+                                        className="student-enrollment-card"
+                                        style={{
+                                            padding: '16px',
+                                            backgroundColor: 'white',
+                                            borderRadius: '8px',
+                                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                                            border: '1px solid #e0e0e0'
+                                        }}
+                                    >
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
+                                            <div style={{ flex: 1 }}>
+                                                <strong style={{ fontSize: '16px', color: '#333' }}>
+                                                    {enrollment.student?.firstName} {enrollment.student?.lastName}
+                                                </strong>
+                                                <div style={{ color: '#666', marginTop: '4px', fontSize: '14px' }}>
+                                                    {activeProgram}
+                                                </div>
+                                                <div style={{ color: '#888', fontSize: '13px', marginTop: '2px' }}>
+                                                    {activeSemester}
+                                                </div>
+                                            </div>
+                                            <div style={{ textAlign: 'right' }}>
+                                                {enrollment.course && (
+                                                    <div style={{ 
+                                                        backgroundColor: '#f0f0f0', 
+                                                        padding: '4px 8px', 
+                                                        borderRadius: '4px',
+                                                        fontSize: '12px',
+                                                        fontWeight: '500'
+                                                    }}>
+                                                        {enrollment.course.courseCode}
+                                                    </div>
+                                                )}
+                                                <div style={{ fontSize: '11px', color: '#999', marginTop: '4px' }}>
+                                                    {enrollment.status}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

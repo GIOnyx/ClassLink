@@ -1,17 +1,19 @@
 import React, { useState } from 'react';
 import BrandHeader from '../components/BrandHeader.jsx';
 import Login from '../components/Login.jsx';
+import Register from '../components/Register.jsx';
 import Footer from '../components/Footer.jsx';
 import '../App.css';
 
 const LandingPage = ({ onLoginSuccess }) => {
     // State to control the visibility of the login pop-up
     const [isLoginVisible, setIsLoginVisible] = useState(false);
+    const [isRegisterVisible, setIsRegisterVisible] = useState(false);
 
     return (
         <div className="landing-page">
-            {/* Pass a function to the header to open the modal */}
-            <BrandHeader onLoginClick={() => setIsLoginVisible(true)} />
+            {/* Pass functions to open login/register modals */}
+            <BrandHeader onLoginClick={() => setIsLoginVisible(true)} onRegisterClick={() => setIsRegisterVisible(true)} />
             
             <main className="landing-page-content">
                 {/* The hero content has been removed from this section */}
@@ -112,6 +114,13 @@ const LandingPage = ({ onLoginSuccess }) => {
                 <Login
                     onLoginSuccess={onLoginSuccess}
                     onClose={() => setIsLoginVisible(false)}
+                />
+            )}
+
+            {isRegisterVisible && (
+                <Register
+                    onRegisterSuccess={onLoginSuccess}
+                    onClose={() => setIsRegisterVisible(false)}
                 />
             )}
 
