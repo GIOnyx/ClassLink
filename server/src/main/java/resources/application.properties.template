@@ -1,0 +1,13 @@
+# MySQL Database Connection Settings
+# The README recommends using 'classlink_db' as the database name.
+spring.datasource.url=jdbc:mysql://localhost:3306/classlink_db !!!CHECK IF PORT MATCHES
+
+# Replace these placeholders with your MySQL credentials.
+# The README mentions the default setup might use 'root' and 'gwapo123', 
+# but it's better to use a dedicated user like 'classlink_user' if you created one.
+spring.datasource.username=YOUR_MYSQL_USERNAME
+spring.datasource.password=YOUR_MYSQL_PASSWORD
+
+# JPA (Hibernate) Settings
+# This tells Spring Boot to automatically create or update tables based on your @Entity models.
+spring.jpa.hibernate.ddl-auto=update
