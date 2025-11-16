@@ -34,4 +34,9 @@ export const getMyStudent = () => API.get('/students/me');
 export const getDepartments = () => API.get('/departments');
 export const getPrograms = (departmentId) => API.get('/programs', { params: { departmentId } });
 
+export const getTeachers = () => API.get('/teachers');
+export const addTeacher = (teacherData) => API.post('/teachers', teacherData);
+export const updateTeacher = (id, teacherData) => API.put(`/teachers/${id}`, teacherData);
+export const deleteTeacher = (id) => API.delete(`/teachers/${id}`);
+
 export default API;

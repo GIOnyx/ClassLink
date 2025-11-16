@@ -17,9 +17,11 @@ const MainLayout = ({ onLogout, role }) => {
         <main className="main-content">
             {/*
             The 'context' prop on Outlet passes data down to the child route component that is being rendered.
-            This is how AccountPage will get access to the onLogout function.
+            
+            ✅ FIXED: We must pass the 'role' in the context so child pages
+            (like FacultyPage) can check permissions.
             */}
-            <Outlet context={{ handleLogout: onLogout }} />
+            <Outlet context={{ handleLogout: onLogout, role: role }} />
         </main>
 
         </div>
