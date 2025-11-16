@@ -30,5 +30,8 @@ export const approveStudent = (id) => API.post(`/admin/students/${id}/approve`);
 export const rejectStudent = (id) => API.post(`/admin/students/${id}/reject`);
 
 export const submitStudentApplication = (payload) => API.put('/students/me', payload);
+export const getMyStudent = () => API.get('/students/me');
+export const getDepartments = () => API.get('/departments');
+export const getPrograms = (departmentId) => API.get('/programs', { params: { departmentId } });
 
 export default API;

@@ -5,5 +5,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
 public interface CourseRepository extends JpaRepository<Course, Integer> {
-	List<Course> findByProgramIgnoreCase(String program);
+	List<Course> findByProgramId(Long programId);
 }

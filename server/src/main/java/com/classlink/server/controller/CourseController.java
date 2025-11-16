@@ -20,9 +20,9 @@ public class CourseController {
     }
 
     @GetMapping
-    public List<Course> getAll(@RequestParam(name = "program", required = false) Optional<String> program) {
-        return program.filter(p -> !p.isBlank())
-                .map(courseRepository::findByProgramIgnoreCase)
+    public List<Course> getAll(@RequestParam(name = "programId", required = false) Optional<Long> programId) {
+        return programId
+                .map(courseRepository::findByProgramId)
                 .orElseGet(courseRepository::findAll);
     }
 

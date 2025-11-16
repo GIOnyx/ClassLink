@@ -10,7 +10,10 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToMany;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 
 @Entity
@@ -26,15 +29,19 @@ public class Student {
     @Column(unique = true)
     private String email;
 
-    private String program;
+    @ManyToOne
+    @JoinColumn(name = "program_id")
+    private Program program;
+
     private Integer yearLevel;
-    private String department;
+    private String semester;
     private String password;
 
     @Enumerated(EnumType.STRING)
     private StudentStatus status;
 
     @OneToMany(mappedBy = "student")
+    @JsonIgnore
     private List<Enrollment> enrollments;
 
     // --- ✅ ADD ALL THESE NEW FIELDS ---
@@ -46,6 +53,6 @@ public class Student {
     private String relationshipToStudent;
     private String parentContactNumber;
     private String parentEmailAddress;
-    private String gradeProgramApplyingFor;
+    // removed gradeProgramApplyingFor string in favor of Program relation
     private String previousSchool;
 }
