@@ -1,13 +1,19 @@
 package com.classlink.server.controller;
 
-import com.classlink.server.model.Student;
-import com.classlink.server.repository.StudentRepository;
+import java.net.URI;
+import java.util.List; // ✅ 1. Import the new Enum
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.net.URI;
-import java.util.List;
+import com.classlink.server.model.Student;
+import com.classlink.server.model.StudentStatus;
+import com.classlink.server.repository.StudentRepository;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -37,6 +43,10 @@ public class AdminController {
 		if (input.getPassword() == null || input.getPassword().isBlank()) {
 			input.setPassword("123456");
 		}
+
+		// ✅ 2. Admin-created students are automatically APPROVED
+		// They don't need to wait in the "Pending" queue like self-registered users.
+		input.setStatus(StudentStatus.APPROVED);
 
 		Student saved = studentRepository.save(input);
 		return ResponseEntity.created(URI.create("/api/admin/students/" + saved.getId())).body(saved);
