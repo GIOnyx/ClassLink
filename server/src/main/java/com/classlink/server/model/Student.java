@@ -1,26 +1,39 @@
 package com.classlink.server.model;
 
-import jakarta.persistence.*; // Make sure all jakarta.persistence imports are present
+import java.util.List;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany; // ✅ ADD THIS LINE
 import lombok.Data;
-import java.util.List; // Import List
 
 @Entity
 @Data
 public class Student {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id; // Your diagram uses studentID (int), I'm keeping Long for consistency, but you can change it.
+    private Long id;
 
     private String firstName;
     private String lastName;
+
+    @Column(unique = true) // This line needs the import
     private String email;
-    // Additional fields from the UML diagram
+
     private String program;
     private Integer yearLevel;
     private String department;
     private String password;
 
-    // Add this to create the other side of the relationship
+    // NEW FIELD: Stores the status as a string (e.g., "PENDING")
+    @Enumerated(EnumType.STRING)
+    private StudentStatus status;
+
     @OneToMany(mappedBy = "student")
     private List<Enrollment> enrollments;
 }
