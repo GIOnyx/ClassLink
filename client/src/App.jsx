@@ -13,6 +13,7 @@ import AccountPage from './pages/AccountPage.jsx';
 
 import './App.css';
 import { me, logout as apiLogout } from './services/backend';
+import ErrorBoundary from './components/ErrorBoundary.jsx';
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -52,6 +53,7 @@ function App() {
 
   return (
     <BrowserRouter>
+      <ErrorBoundary>
       <Routes>
         {isLoggedIn ? (
           // --- LOGGED-IN ROUTES ---
@@ -72,6 +74,7 @@ function App() {
           <Route path="/*" element={<LandingPage onLoginSuccess={handleLoginSuccess} />} />
         )}
       </Routes>
+      </ErrorBoundary>
     </BrowserRouter>
   );
 }

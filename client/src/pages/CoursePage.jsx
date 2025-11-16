@@ -76,7 +76,7 @@ const CoursePage = () => {
                         <div key={course.courseID} className="course-card">
                             <div className="course-line" style={{ background: 'none', display: 'flex', justifyContent: 'space-between' }}>
                                 <span><strong>{course.title}</strong> ({course.courseCode})</span>
-                                <span style={{ fontSize: 12, color: '#666' }}>{course.program || '—'}</span>
+                                <span style={{ fontSize: 12, color: '#666' }}>{course.program ? course.program.name : '—'}</span>
                             </div>
                         </div>
                     ))}

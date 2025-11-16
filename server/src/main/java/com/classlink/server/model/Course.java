@@ -3,6 +3,7 @@ package com.classlink.server.model;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.util.List;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
 @Data
@@ -17,8 +18,10 @@ public class Course {
     private int units;
     private int capacity;
 
-    // Program/College this course belongs to (e.g., "College of Computer Studies")
-    private String program;
+    // Program/College this course belongs to
+    @ManyToOne
+    @JoinColumn(name = "program_id")
+    private Program program;
 
     // The teacher assigned to this course
     @ManyToOne
@@ -32,5 +35,6 @@ public class Course {
 
     // Establishes the One-to-Many relationship with Enrollment
     @OneToMany(mappedBy = "course")
+    @JsonIgnore
     private List<Enrollment> enrolledStudents;
 }

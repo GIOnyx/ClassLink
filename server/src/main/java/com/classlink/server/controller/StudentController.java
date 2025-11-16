@@ -2,25 +2,29 @@ package com.classlink.server.controller;
 
 import com.classlink.server.model.Student;
 import com.classlink.server.repository.StudentRepository;
+import com.classlink.server.repository.ProgramRepository;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import com.classlink.server.model.StudentStatus;
 
 @RestController
 @RequestMapping("/api/students")
 public class StudentController {
 
     private final StudentRepository studentRepository;
+    private final ProgramRepository programRepository;
 
-    public StudentController(StudentRepository studentRepository) {
+    public StudentController(StudentRepository studentRepository, ProgramRepository programRepository) {
         this.studentRepository = studentRepository;
+        this.programRepository = programRepository;
     }
 
     // DTO for receiving the application form data
-    public record StudentApplicationRequest(
+        public record StudentApplicationRequest(
             String firstName,
             String lastName,
             LocalDate birthDate,
@@ -32,9 +36,11 @@ public class StudentController {
             String relationshipToStudent,
             String parentContactNumber,
             String parentEmailAddress,
-            String gradeProgramApplyingFor,
-            String previousSchool) {
-    }
+            Long programId,
+            String previousSchool,
+            Integer yearLevel,
+            String semester) {
+        }
 
     @PutMapping("/me")
     public ResponseEntity<?> updateStudentApplication(@RequestBody StudentApplicationRequest body,
@@ -73,11 +79,42 @@ public class StudentController {
         student.setRelationshipToStudent(body.relationshipToStudent());
         student.setParentContactNumber(body.parentContactNumber());
         student.setParentEmailAddress(body.parentEmailAddress());
-        student.setGradeProgramApplyingFor(body.gradeProgramApplyingFor());
         student.setPreviousSchool(body.previousSchool());
+        // year level and semester
+        if (body.yearLevel() != null) student.setYearLevel(body.yearLevel());
+        if (body.semester() != null) student.setSemester(body.semester());
+        // set program relation if provided
+        if (body.programId() != null) {
+            programRepository.findById(body.programId()).ifPresent(student::setProgram);
+        } else {
+            student.setProgram(null);
+        }
 
         // 4. Save the updated record
+        // Mark as PENDING so admins can review submitted applications
+        student.setStatus(StudentStatus.PENDING);
         Student savedStudent = studentRepository.save(student);
         return ResponseEntity.ok(savedStudent);
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<?> getMyStudent(HttpSession session) {
+        Object userIdObj = session.getAttribute("userId");
+        if (userIdObj == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("You are not logged in.");
+        }
+
+        Long userId;
+        if (userIdObj instanceof Integer) {
+            userId = ((Integer) userIdObj).longValue();
+        } else if (userIdObj instanceof Long) {
+            userId = (Long) userIdObj;
+        } else {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Invalid session user ID format.");
+        }
+
+        Student student = studentRepository.findById(userId).orElse(null);
+        if (student == null) return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Student record not found.");
+        return ResponseEntity.ok(student);
     }
 }
