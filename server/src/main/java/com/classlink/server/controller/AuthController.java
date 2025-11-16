@@ -3,7 +3,7 @@ package com.classlink.server.controller;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.springframework.http.ResponseEntity; // ✅ 1. Import the enum
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.classlink.server.model.Admin;
 import com.classlink.server.model.Student;
-import com.classlink.server.model.StudentStatus;
+import com.classlink.server.model.StudentStatus; // Make sure this is imported
 import com.classlink.server.repository.AdminRepository;
 import com.classlink.server.repository.StudentRepository;
 
@@ -63,15 +63,13 @@ public class AuthController {
         if (student == null)
             return ResponseEntity.status(401).body(Map.of("error", "Invalid credentials"));
 
-        // Enforce approval: block PENDING, REJECTED or INACTIVE
-        if (student.getStatus() == StudentStatus.PENDING) {
-            return ResponseEntity.status(403).body(Map.of("error", "Account is pending approval"));
-        }
+        // ✅ CHANGE 1: We REMOVED the check for PENDING.
+        // We only block rejected or inactive users.
         if (student.getStatus() == StudentStatus.REJECTED || student.getStatus() == StudentStatus.INACTIVE) {
             return ResponseEntity.status(403).body(Map.of("error", "Account is inactive or has been rejected"));
         }
 
-        // Approved student
+        // Approved (or Pending) student can log in
         session.setAttribute("userType", "student");
         session.setAttribute("role", "STUDENT");
         session.setAttribute("userId", student.getId());
@@ -114,16 +112,23 @@ public class AuthController {
         s.setLastName(body.lastName());
         s.setEmail(body.email());
         s.setPassword(body.password());
-        s.setStatus(StudentStatus.PENDING); // ✅ 3. Set status to PENDING
-    studentRepository.save(s);
+        s.setStatus(StudentStatus.PENDING); // Set status to PENDING
 
-    // Auto-login is optional; since approval is required, we will NOT log in pending users.
-    // Return created response instead.
-    return ResponseEntity.status(201).body(Map.of(
-        "status", "PENDING",
-        "message", "Registration received and pending approval",
-        "firstName", s.getFirstName(),
-        "lastName", s.getLastName(),
-        "email", s.getEmail()));
+        // Save the student to get their new ID
+        Student saved = studentRepository.save(s);
+
+        // ✅ CHANGE 2: We are ADDING the auto-login logic back.
+        // This creates their session immediately.
+        session.setAttribute("userType", "student");
+        session.setAttribute("role", "STUDENT");
+        session.setAttribute("userId", saved.getId());
+
+        // Return the user data so the frontend can log them in
+        return ResponseEntity.status(201).body(Map.of(
+                "userType", "student",
+                "userId", saved.getId(),
+                "role", "STUDENT",
+                "firstName", saved.getFirstName(),
+                "lastName", saved.getLastName()));
     }
 }
