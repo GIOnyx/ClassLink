@@ -1,298 +1,247 @@
-import React, { useState, useEffect } from 'react';
-import { getCourses, getCoursesByProgram, postEnrollment, getEnrollments } from '../services/backend';
+import React, { useState } from 'react';
+import { submitStudentApplication } from '../services/backend';
 import '../App.css';
 
-const programs = [
-    'College of Computer Studies',
-    'College of Arts, Sciences & Education',
-    'College of Management, Business & Accountancy',
-    'College of Nursing & Allied Sciences',
-    'College of Criminal Justice',
-    'College of Engineering & Architecture',
-];
-
-const semesters = ['First Semester', 'Second Semester', 'Summer Semester'];
+// Helper styles for the form layout
+const formStyles = {
+  container: {
+    padding: '40px',
+    maxWidth: '900px',
+    margin: '0 auto',
+    backgroundColor: '#fff',
+    borderRadius: '12px',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+    border: '1px solid #eee',
+  },
+  header: {
+    fontSize: '2.5rem',
+    fontWeight: '700',
+    color: '#333',
+    borderBottom: '2px solid #eee',
+    paddingBottom: '20px',
+    marginBottom: '30px',
+  },
+  sectionTitle: {
+    fontSize: '1.8rem',
+    fontWeight: '600',
+    color: '#800000', // Maroon
+    marginTop: '30px',
+    marginBottom: '20px',
+  },
+  grid: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: '20px',
+  },
+  gridFull: {
+    gridColumn: '1 / -1',
+  },
+  formGroup: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '8px',
+  },
+  label: {
+    fontWeight: '600',
+    color: '#333',
+  },
+  input: {
+    width: '100%',
+    padding: '12px 15px',
+    border: '1px solid #ccc',
+    borderRadius: '8px',
+    fontSize: '1rem',
+  },
+  radioGroup: {
+    display: 'flex',
+    gap: '20px',
+    alignItems: 'center',
+  },
+  radioLabel: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '5px',
+    fontSize: '1rem',
+    color: '#333',
+  },
+  submitButton: {
+    width: '100%',
+    padding: '15px',
+    border: 'none',
+    borderRadius: '8px',
+    backgroundColor: '#800000',
+    color: 'white',
+    fontSize: '1.1rem',
+    fontWeight: '600',
+    cursor: 'pointer',
+    marginTop: '30px',
+    transition: 'background-color 0.2s',
+  },
+  successMessage: {
+    textAlign: 'center',
+    fontSize: '1.5rem',
+    fontWeight: '600',
+    color: '#087f23',
+    padding: '50px',
+  },
+  error: {
+    color: '#b00020',
+    marginTop: '10px',
+  }
+};
 
 const EnrollmentPage = () => {
-    const [activeProgram, setActiveProgram] = useState('College of Computer Studies');
-    const [activeSemester, setActiveSemester] = useState('First Semester');
-    const [enrollments, setEnrollments] = useState([]);
-    const [courses, setCourses] = useState([]);
-    const [loading, setLoading] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    birthDate: '',
+    gender: 'Male',
+    studentAddress: '',
+    contactNumber: '',
+    emailAddress: '',
+    parentGuardianName: '',
+    relationshipToStudent: '',
+    parentContactNumber: '',
+    parentEmailAddress: '',
+    gradeProgramApplyingFor: '',
+    previousSchool: '',
+  });
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
     
-    // Form state
-    const [newName, setNewName] = useState('');
-    const [newProgram, setNewProgram] = useState(programs[0]);
-    const [newSemester, setNewSemester] = useState(semesters[0]);
-    const [selectedCourseId, setSelectedCourseId] = useState(null);
+    // Basic validation
+    if (!formData.firstName || !formData.lastName || !formData.emailAddress || !formData.birthDate) {
+      setError('Please fill out all required fields.');
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      // Submit to backend
+      await submitStudentApplication(formData);
+      
+      // Show success
+      setIsSubmitted(true);
+    } catch (err) {
+      console.error('Application submission failed:', err);
+      setError('Submission failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    useEffect(() => {
-        loadData();
-    }, []);
-
-    // Reload courses when activeProgram changes
-    useEffect(() => {
-        const loadCourses = async () => {
-            try {
-                const res = await getCoursesByProgram(activeProgram);
-                setCourses(res.data || []);
-                setSelectedCourseId(null);
-            } catch (e) {
-                console.warn('Failed to load courses by program, falling back to all', e);
-                try {
-                    const all = await getCourses();
-                    setCourses(all.data || []);
-                } catch (err) {
-                    console.error('Failed to load all courses', err);
-                }
-            }
-        };
-        loadCourses();
-    }, [activeProgram]);
-
-    const loadData = async () => {
-        setLoading(true);
-        try {
-            const [coursesRes, enrollmentsRes] = await Promise.all([
-                getCourses(),
-                getEnrollments()
-            ]);
-            setCourses(coursesRes.data || []);
-            setEnrollments(enrollmentsRes.data || []);
-        } catch (e) {
-            console.error('Failed to load data', e);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const addEnrollment = async (e) => {
-        e.preventDefault();
-        if (!newName.trim()) return alert('Please enter a student name.');
-        if (!selectedCourseId) return alert('Please select a course.');
-
-        setLoading(true);
-        try {
-            const payload = { studentName: newName.trim(), courseId: selectedCourseId };
-            await postEnrollment(payload);
-            
-            // Reload enrollments from server
-            await loadData();
-            
-            // Reset form
-            setNewName('');
-            setSelectedCourseId(null);
-        } catch (err) {
-            console.error('Enrollment failed', err);
-            alert('Failed to enroll student. Please try again.');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    // Filter enrollments by active filters (mock filtering since we don't have program/semester in DB)
-    const filteredEnrollments = enrollments.filter((enrollment) => {
-        // Since the Student model doesn't have program/semester in your DB,
-        // we'll show all for now. You can add these fields to Student later.
-        return true;
-    });
-
+  if (isSubmitted) {
     return (
-        <div className="page-content">
-            <div className="enrollment-grid">
-                {/* Left Column: Filters */}
-                <div className="enrollment-filters">
-                    <div className="filter-card">
-                        <ul>
-                            {programs.map((program) => (
-                                <li
-                                    key={program}
-                                    className={activeProgram === program ? 'active' : ''}
-                                    onClick={() => setActiveProgram(program)}
-                                >
-                                    {program}
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-
-                    <div className="filter-card">
-                        <ul>
-                            {semesters.map((semester) => (
-                                <li
-                                    key={activeSemester === semester ? 'active' : ''}
-                                    className={activeSemester === semester ? 'active' : ''}
-                                    onClick={() => setActiveSemester(semester)}
-                                >
-                                    {semester}
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-                </div>
-
-                {/* Right Column: Enrollment Form & List */}
-                <div className="enrollment-student-list">
-                    {/* Enrollment Form */}
-                    <div className="filter-card" style={{ marginBottom: 20 }}>
-                        <h3 style={{ marginTop: 0 }}>Mock Enrollment (test DB & filters)</h3>
-                        <form onSubmit={addEnrollment} style={{ display: 'grid', gap: 12 }}>
-                            <div>
-                                <label style={{ display: 'block', marginBottom: 4, fontWeight: 500 }}>Student Full Name</label>
-                                <input
-                                    type="text"
-                                    placeholder="e.g., John Doe"
-                                    value={newName}
-                                    onChange={(e) => setNewName(e.target.value)}
-                                    style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
-                                />
-                            </div>
-                            
-                            <div>
-                                <label style={{ display: 'block', marginBottom: 4, fontWeight: 500 }}>Program</label>
-                                <select 
-                                    value={newProgram} 
-                                    onChange={(e) => setNewProgram(e.target.value)}
-                                    style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
-                                >
-                                    {programs.map((p) => <option key={p} value={p}>{p}</option>)}
-                                </select>
-                            </div>
-                            
-                            <div>
-                                <label style={{ display: 'block', marginBottom: 4, fontWeight: 500 }}>Semester</label>
-                                <select 
-                                    value={newSemester} 
-                                    onChange={(e) => setNewSemester(e.target.value)}
-                                    style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
-                                >
-                                    {semesters.map((s) => <option key={s} value={s}>{s}</option>)}
-                                </select>
-                            </div>
-                            
-                            <div>
-                                <label style={{ display: 'block', marginBottom: 4, fontWeight: 500 }}>Course for {activeProgram} <span style={{ color: 'red' }}>*</span></label>
-                                <select 
-                                    value={selectedCourseId ?? ''} 
-                                    onChange={(e) => setSelectedCourseId(e.target.value ? Number(e.target.value) : null)}
-                                    style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
-                                >
-                                    <option value="">-- Select Course (required) --</option>
-                                    {courses.map(c => (
-                                        <option key={c.courseID} value={c.courseID}>
-                                            {c.courseCode} - {c.title}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                            
-                            <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                                <button 
-                                    type="submit" 
-                                    disabled={loading}
-                                    style={{ 
-                                        flex: 1, 
-                                        padding: '10px', 
-                                        backgroundColor: loading ? '#ccc' : '#8B0000',
-                                        color: 'white',
-                                        border: 'none',
-                                        borderRadius: '4px',
-                                        cursor: loading ? 'not-allowed' : 'pointer',
-                                        fontWeight: 'bold'
-                                    }}
-                                >
-                                    {loading ? 'Processing...' : 'Add Enrollment'}
-                                </button>
-                                <button 
-                                    type="button" 
-                                    onClick={() => {
-                                        setActiveProgram(newProgram);
-                                        setActiveSemester(newSemester);
-                                    }}
-                                    style={{
-                                        padding: '10px 16px',
-                                        backgroundColor: '#333',
-                                        color: 'white',
-                                        border: 'none',
-                                        borderRadius: '4px',
-                                        cursor: 'pointer'
-                                    }}
-                                >
-                                    Set Filters To Form
-                                </button>
-                            </div>
-                        </form>
-                        <small style={{ display: 'block', marginTop: 12, color: '#666' }}>
-                            Note: entry is stored locally for UI testing. If backend /api/enrollments exists, a POST is attempted.
-                        </small>
-                    </div>
-
-                    {/* Enrollments List */}
-                    <div>
-                        <h3 style={{ marginBottom: 16 }}>
-                            Enrolled Students ({filteredEnrollments.length})
-                        </h3>
-                        
-                        {loading ? (
-                            <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
-                                Loading enrollments...
-                            </div>
-                        ) : filteredEnrollments.length === 0 ? (
-                            <div className="student-enrollment-card" style={{ textAlign: 'center', padding: '40px' }}>
-                                No enrollments found. Add your first enrollment above!
-                            </div>
-                        ) : (
-                            <div style={{ display: 'grid', gap: '12px' }}>
-                                {filteredEnrollments.map((enrollment) => (
-                                    <div 
-                                        key={enrollment.enrollmentID} 
-                                        className="student-enrollment-card"
-                                        style={{
-                                            padding: '16px',
-                                            backgroundColor: 'white',
-                                            borderRadius: '8px',
-                                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                                            border: '1px solid #e0e0e0'
-                                        }}
-                                    >
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
-                                            <div style={{ flex: 1 }}>
-                                                <strong style={{ fontSize: '16px', color: '#333' }}>
-                                                    {enrollment.student?.firstName} {enrollment.student?.lastName}
-                                                </strong>
-                                                <div style={{ color: '#666', marginTop: '4px', fontSize: '14px' }}>
-                                                    {activeProgram}
-                                                </div>
-                                                <div style={{ color: '#888', fontSize: '13px', marginTop: '2px' }}>
-                                                    {activeSemester}
-                                                </div>
-                                            </div>
-                                            <div style={{ textAlign: 'right' }}>
-                                                {enrollment.course && (
-                                                    <div style={{ 
-                                                        backgroundColor: '#f0f0f0', 
-                                                        padding: '4px 8px', 
-                                                        borderRadius: '4px',
-                                                        fontSize: '12px',
-                                                        fontWeight: '500'
-                                                    }}>
-                                                        {enrollment.course.courseCode}
-                                                    </div>
-                                                )}
-                                                <div style={{ fontSize: '11px', color: '#999', marginTop: '4px' }}>
-                                                    {enrollment.status}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </div>
+      <div className="page-content" style={{ paddingTop: '40px' }}>
+        <div style={formStyles.container}>
+          <div style={formStyles.successMessage}>
+            Application Successfully Submitted!
+            <p style={{ fontSize: '1rem', color: '#333', marginTop: '10px' }}>
+              An admin will review your application shortly.
+            </p>
+          </div>
         </div>
+      </div>
     );
+  }
+
+  return (
+    // Use page-content for correct padding from the navbar
+    <div className="page-content" style={{ paddingTop: '40px' }}>
+      <form style={formStyles.container} onSubmit={handleSubmit}>
+        <h2 style={formStyles.header}>Student Enrollment Form</h2>
+
+        <h3 style={formStyles.sectionTitle}>Student Information</h3>
+        <div style={formStyles.grid}>
+          <div style={formStyles.formGroup}>
+            <label htmlFor="firstName" style={formStyles.label}>Student Name: First Name</label>
+            <input type="text" id="firstName" name="firstName" value={formData.firstName} onChange={handleChange} style={formStyles.input} />
+          </div>
+          <div style={formStyles.formGroup}>
+            <label htmlFor="lastName" style={formStyles.label}>Last Name</label>
+            <input type="text" id="lastName" name="lastName" value={formData.lastName} onChange={handleChange} style={formStyles.input} />
+          </div>
+          <div style={formStyles.formGroup}>
+            <label htmlFor="birthDate" style={formStyles.label}>Birth Date</label>
+            <input type="date" id="birthDate" name="birthDate" value={formData.birthDate} onChange={handleChange} style={formStyles.input} />
+          </div>
+          <div style={formStyles.formGroup}>
+            <label style={formStyles.label}>Gender</label>
+            <div style={formStyles.radioGroup}>
+              <label style={formStyles.radioLabel}>
+                <input type="radio" name="gender" value="Male" checked={formData.gender === 'Male'} onChange={handleChange} />
+                Male
+              </label>
+              <label style={formStyles.radioLabel}>
+                <input type="radio" name="gender" value="Female" checked={formData.gender === 'Female'} onChange={handleChange} />
+                Female
+              </label>
+            </div>
+          </div>
+          <div style={{ ...formStyles.formGroup, ...formStyles.gridFull }}>
+            <label htmlFor="studentAddress" style={formStyles.label}>Student Address</label>
+            <input type="text" id="studentAddress" name="studentAddress" value={formData.studentAddress} onChange={handleChange} style={formStyles.input} />
+          </div>
+          <div style={formStyles.formGroup}>
+            <label htmlFor="contactNumber" style={formStyles.label}>Contact Number</label>
+            <input type="tel" id="contactNumber" name="contactNumber" value={formData.contactNumber} onChange={handleChange} style={formStyles.input} />
+          </div>
+          <div style={formStyles.formGroup}>
+            <label htmlFor="emailAddress" style={formStyles.label}>Email Address</label>
+            <input type="email" id="emailAddress" name="emailAddress" value={formData.emailAddress} onChange={handleChange} style={formStyles.input} />
+          </div>
+        </div>
+
+        <h3 style={formStyles.sectionTitle}>Parent/Guardian Information</h3>
+        <div style={formStyles.grid}>
+          <div style={{ ...formStyles.formGroup, ...formStyles.gridFull }}>
+            <label htmlFor="parentGuardianName" style={formStyles.label}>Parent/Guardian Name</label>
+            <input type="text" id="parentGuardianName" name="parentGuardianName" value={formData.parentGuardianName} onChange={handleChange} style={formStyles.input} />
+          </div>
+          <div style={formStyles.formGroup}>
+            <label htmlFor="relationshipToStudent" style={formStyles.label}>Relationship To Student</label>
+            <input type="text" id="relationshipToStudent" name="relationshipToStudent" value={formData.relationshipToStudent} onChange={handleChange} style={formStyles.input} />
+          </div>
+          <div style={formStyles.formGroup}>
+            <label htmlFor="parentContactNumber" style={formStyles.label}>Contact Number</label>
+            <input type="tel" id="parentContactNumber" name="parentContactNumber" value={formData.parentContactNumber} onChange={handleChange} style={formStyles.input} />
+          </div>
+          <div style={{ ...formStyles.formGroup, ...formStyles.gridFull }}>
+            <label htmlFor="parentEmailAddress" style={formStyles.label}>Email Address</label>
+            <input type="email" id="parentEmailAddress" name="parentEmailAddress" value={formData.parentEmailAddress} onChange={handleChange} style={formStyles.input} />
+          </div>
+        </div>
+
+        <h3 style={formStyles.sectionTitle}>Academic Information</h3>
+        <div style={formStyles.grid}>
+          <div style={formStyles.formGroup}>
+            <label htmlFor="gradeProgramApplyingFor" style={formStyles.label}>Grade/Program Applying For</label>
+            <input type="text" id="gradeProgramApplyingFor" name="gradeProgramApplyingFor" value={formData.gradeProgramApplyingFor} onChange={handleChange} style={formStyles.input} />
+          </div>
+          <div style={formStyles.formGroup}>
+            <label htmlFor="previousSchool" style={formStyles.label}>Previous School (if applicable)</label>
+            <input type="text" id="previousSchool" name="previousSchool" value={formData.previousSchool} onChange={handleChange} style={formStyles.input} />
+          </div>
+        </div>
+
+        {error && <p style={formStyles.error}>{error}</p>}
+
+        <button type="submit" style={formStyles.submitButton} disabled={loading}>
+          {loading ? 'Submitting...' : 'Submit Application'}
+        </button>
+      </form>
+    </div>
+  );
 };
 
 export default EnrollmentPage;
