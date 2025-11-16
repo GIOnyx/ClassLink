@@ -5,59 +5,101 @@ import '../App.css';
 const SecondaryNavbar = ({ role }) => {
     return (
         <nav className="secondary-navbar">
-        <ul>
-            {role === 'ADMIN' && (
-                <li>
-                    <NavLink
-                        to="/admin"
-                        className={({ isActive }) => isActive ? 'active' : ''}
-                    >
-                        Admin
-                    </NavLink>
-                </li>
-            )}
-            {/* Replace <a> with <NavLink> and href with to */}
-            <li>
-                <NavLink
-                    to="/"
-                    className={({ isActive }) => isActive ? 'active' : ''}
-                >
-                    Enrollment
-                </NavLink>
-            </li>
-            <li>
-                <NavLink
-                    to="/faculty"
-                    className={({ isActive }) => isActive ? 'active' : ''}
-                >
-                    Faculty
-                </NavLink>
-            </li>
-            <li>
-                <NavLink
-                    to="/student"
-                    className={({ isActive }) => isActive ? 'active' : ''}
-                >
-                    Student
-                </NavLink>
-            </li>
-            <li>
-                <NavLink
-                    to="/course"
-                    className={({ isActive }) => isActive ? 'active' : ''}
-                >
-                    Courses
-                </NavLink>
-            </li>
-            <li>
-                <NavLink
-                    to="/account"
-                    className={({ isActive }) => isActive ? 'active' : ''}
-                >
-                    Account
-                </NavLink>
-            </li>
-        </ul>
+            <ul>
+                {role === 'ADMIN' ? (
+                    <>
+                        {/* --- ADMIN LINKS --- */}
+                        {/* 'Enrollment' for admin links to '/' which App.jsx maps to AdminPage */}
+                        <li>
+                            <NavLink
+                                to="/"
+                                className={({ isActive }) => isActive ? 'active' : ''}
+                                end 
+                            >
+                                Enrollment
+                            </NavLink>
+                        </li>
+                        <li>
+                            <NavLink
+                                to="/faculty"
+                                className={({ isActive }) => isActive ? 'active' : ''}
+                            >
+                                Faculty
+                            </NavLink>
+                        </li>
+                        <li>
+                            <NavLink
+                                to="/student"
+                                className={({ isActive }) => isActive ? 'active' : ''}
+                            >
+                                Students
+                            </NavLink>
+                        </li>
+                        <li>
+                            <NavLink
+                                to="/course"
+                                className={({ isActive }) => isActive ? 'active' : ''}
+                            >
+                                Courses
+                            </NavLink>
+                        </li>
+                        <li>
+                            <NavLink
+                                to="/account"
+                                className={({ isActive }) => isActive ? 'active' : ''}
+                            >
+                                Profile
+                            </NavLink>
+                        </li>
+                    </>
+                ) : (
+                    <>
+                        {/* --- STUDENT LINKS --- */}
+                        {/* 'Enrollment' for student links to '/' which App.jsx maps to EnrollmentPage */}
+                        <li>
+                            <NavLink
+                                to="/"
+                                className={({ isActive }) => isActive ? 'active' : ''}
+                                end
+                            >
+                                Enrollment
+                            </NavLink>
+                        </li>
+                        <li>
+                            <NavLink
+                                to="/faculty"
+                                className={({ isActive }) => isActive ? 'active' : ''}
+                            >
+                                Faculty
+                            </NavLink>
+                        </li>
+                        <li>
+                            <NavLink
+                                to="/schedule"
+                                className={({ isActive }) => isActive ? 'active' : ''}
+                            >
+                                Schedule
+                            </NavLink>
+                        </li>
+                        <li>
+                            <NavLink
+                                to="/course"
+                                className={({ isActive }) => isActive ? 'active' : ''}
+                            >
+                                Courses
+                            </NavLink>
+                        </li>
+                        <li>
+                            <NavLink
+                                to="/account"
+                                className={({ isActive }) => isActive ? 'active' : ''}
+                            >
+                                Profile
+                            </NavLink>
+                        </li>
+                    </>
+                )}
+            </ul>
         </nav>
     );
 };
