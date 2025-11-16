@@ -46,7 +46,7 @@ const SecondaryNavbar = ({ role }) => {
                     to="/course"
                     className={({ isActive }) => isActive ? 'active' : ''}
                 >
-                    Course
+                    Courses
                 </NavLink>
             </li>
             <li>
