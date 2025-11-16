@@ -2,10 +2,20 @@ import React from 'react';
 import { NavLink } from 'react-router-dom'; // ✨ Import NavLink
 import '../App.css';
 
-const SecondaryNavbar = () => {
+const SecondaryNavbar = ({ role }) => {
     return (
         <nav className="secondary-navbar">
         <ul>
+            {role === 'ADMIN' && (
+                <li>
+                    <NavLink
+                        to="/admin"
+                        className={({ isActive }) => isActive ? 'active' : ''}
+                    >
+                        Admin
+                    </NavLink>
+                </li>
+            )}
             {/* Replace <a> with <NavLink> and href with to */}
             <li>
                 <NavLink

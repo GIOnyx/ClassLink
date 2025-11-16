@@ -5,14 +5,14 @@ import SecondaryNavbar from './SecondaryNavbar';
 import Footer from './Footer';
 
 // The layout now only accepts the 'onLogout' prop from App.jsx
-const MainLayout = ({ onLogout }) => {
+const MainLayout = ({ onLogout, role }) => {
     return (
         <div className="app-container">
         {/* Pass the onLogout function directly to the Navbar */}
         <Navbar onLogout={onLogout} />
 
         {/* SecondaryNavbar no longer needs props because NavLink handles the active state */}
-        <SecondaryNavbar />
+        <SecondaryNavbar role={role} />
         
         <main className="main-content">
             {/*

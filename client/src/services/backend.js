@@ -24,5 +24,9 @@ export const register = (payload) => API.post('/auth/register', payload);
 // Admin - Students
 export const getStudents = () => API.get('/admin/students');
 export const createStudent = (payload) => API.post('/admin/students', payload);
+export const getStudentsByStatus = (status) => API.get('/admin/students', { params: { status } });
+export const setStudentStatus = (id, status) => API.patch(`/admin/students/${id}/status`, { status });
+export const approveStudent = (id) => API.post(`/admin/students/${id}/approve`);
+export const rejectStudent = (id) => API.post(`/admin/students/${id}/reject`);
 
 export default API;

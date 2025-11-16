@@ -1,9 +1,14 @@
 package com.classlink.server.repository;
 
-import com.classlink.server.model.Student;
+import java.util.List;
+
 import org.springframework.data.jpa.repository.JpaRepository;
+
+import com.classlink.server.model.Student;
+import com.classlink.server.model.StudentStatus;
 
 public interface StudentRepository extends JpaRepository<Student, Long> {
 	Student findByEmailAndPassword(String email, String password);
 	Student findByEmail(String email);
+	List<Student> findAllByStatus(StudentStatus status);
 }

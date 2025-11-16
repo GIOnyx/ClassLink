@@ -49,9 +49,11 @@ public class AuthController {
             if (admin == null)
                 return ResponseEntity.status(401).body(Map.of("error", "Invalid credentials"));
             session.setAttribute("userType", "admin");
+            session.setAttribute("role", "ADMIN");
             session.setAttribute("userId", admin.getAdminId());
             payload.put("userType", "admin");
             payload.put("userId", admin.getAdminId());
+            payload.put("role", "ADMIN");
             payload.put("name", admin.getName());
             return ResponseEntity.ok(payload);
         }
@@ -61,17 +63,21 @@ public class AuthController {
         if (student == null)
             return ResponseEntity.status(401).body(Map.of("error", "Invalid credentials"));
 
-        // ✅ 2. THIS IS THE CHANGE:
-        // We REMOVED the check for PENDING. We only block REJECTED or INACTIVE.
+        // Enforce approval: block PENDING, REJECTED or INACTIVE
+        if (student.getStatus() == StudentStatus.PENDING) {
+            return ResponseEntity.status(403).body(Map.of("error", "Account is pending approval"));
+        }
         if (student.getStatus() == StudentStatus.REJECTED || student.getStatus() == StudentStatus.INACTIVE) {
             return ResponseEntity.status(403).body(Map.of("error", "Account is inactive or has been rejected"));
         }
 
-        // If they pass, they are either APPROVED or PENDING, which is fine.
+        // Approved student
         session.setAttribute("userType", "student");
+        session.setAttribute("role", "STUDENT");
         session.setAttribute("userId", student.getId());
         payload.put("userType", "student");
         payload.put("userId", student.getId());
+        payload.put("role", "STUDENT");
         payload.put("firstName", student.getFirstName());
         payload.put("lastName", student.getLastName());
         return ResponseEntity.ok(payload);
@@ -83,7 +89,8 @@ public class AuthController {
         Object userId = session.getAttribute("userId");
         if (userType == null || userId == null)
             return ResponseEntity.status(401).body(Map.of("authenticated", false));
-        return ResponseEntity.ok(Map.of("authenticated", true, "userType", userType, "userId", userId));
+        Object role = session.getAttribute("role");
+        return ResponseEntity.ok(Map.of("authenticated", true, "userType", userType, "userId", userId, "role", role));
     }
 
     @PostMapping("/logout")
@@ -108,15 +115,15 @@ public class AuthController {
         s.setEmail(body.email());
         s.setPassword(body.password());
         s.setStatus(StudentStatus.PENDING); // ✅ 3. Set status to PENDING
-        Student saved = studentRepository.save(s);
+    studentRepository.save(s);
 
-        // ✅ 4. Auto-login the newly registered student (as your lead wanted)
-        session.setAttribute("userType", "student");
-        session.setAttribute("userId", saved.getId());
-        return ResponseEntity.ok(Map.of(
-                "userType", "student",
-                "userId", saved.getId(),
-                "firstName", saved.getFirstName(),
-                "lastName", saved.getLastName()));
+    // Auto-login is optional; since approval is required, we will NOT log in pending users.
+    // Return created response instead.
+    return ResponseEntity.status(201).body(Map.of(
+        "status", "PENDING",
+        "message", "Registration received and pending approval",
+        "firstName", s.getFirstName(),
+        "lastName", s.getLastName(),
+        "email", s.getEmail()));
     }
 }

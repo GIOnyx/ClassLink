@@ -5,14 +5,17 @@ import { login } from '../services/backend';
 const Login = ({ onLoginSuccess, onClose }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [role, setRole] = useState('student');
     const [errors, setErrors] = useState({});
 
     const validateForm = () => {
         const newErrors = {};
-        if (!email) newErrors.email = 'Email is required';
-        else if (!/\S+@\S+\.\S+/.test(email)) newErrors.email = 'Email address is invalid';
+        if (!email) newErrors.email = 'Email/Username is required';
+        // Only validate email format for student role
+        if (email && role === 'student' && !/\S+@\S+\.\S+/.test(email)) newErrors.email = 'Email address is invalid';
         if (!password) newErrors.password = 'Password is required';
-        else if (password.length < 6) newErrors.password = 'Password must be at least 6 characters';
+        // For admin 'admin' short password allowed per requirement
+        if (password && role === 'student' && password.length < 6) newErrors.password = 'Password must be at least 6 characters';
         return newErrors;
     };
 
@@ -24,14 +27,15 @@ const Login = ({ onLoginSuccess, onClose }) => {
             return;
         }
         try {
-            const res = await login(email, password, 'student');
+            const res = await login(email, password, role);
             console.log('Logged in:', res.data);
             setErrors({});
-            onLoginSuccess?.();
+            onLoginSuccess?.(res.data);
             onClose?.();
         } catch (err) {
             console.error('Login failed:', err);
-            setErrors({ form: 'Invalid email or password' });
+            const msg = err?.response?.data?.error || 'Login failed';
+            setErrors({ form: msg });
         }
     };
 
@@ -45,9 +49,15 @@ const Login = ({ onLoginSuccess, onClose }) => {
                 </h2>
                 
                 <h2>It is our great pleasure to have you on board!</h2>
+                <div className="form-group">
+                    <select value={role} onChange={(e) => setRole(e.target.value)}>
+                        <option value="student">Student</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
                 
                 <div className="form-group">
-                    <input type="email" placeholder="Enter email" value={email} onChange={(e) => setEmail(e.target.value)} className={errors.email ? 'error-input' : ''} />
+                    <input type={role === 'student' ? 'email' : 'text'} placeholder={role === 'admin' ? 'Enter admin username' : 'Enter email'} value={email} onChange={(e) => setEmail(e.target.value)} className={errors.email ? 'error-input' : ''} />
                     {errors.email && <p className="error-text">{errors.email}</p>}
                 </div>
                 <div className="form-group">
