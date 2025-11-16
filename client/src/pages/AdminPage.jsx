@@ -50,8 +50,16 @@ const AdminPage = () => {
   };
 
   return (
-    <div className="student-page-container" style={{ padding: 16 }}>
-      <h2 style={{ marginBottom: 12 }}>Admin • User Approvals</h2>
+    <div
+      className="student-page-container"
+      style={{
+        padding: 40,
+        marginTop: 140,
+        backgroundColor: '#ffffff', // <-- Added white background
+        color: '#333' // <-- Added dark font color
+      }}
+    >
+      <h2 style={{ marginBottom: 12 }}>User Approvals</h2>
       {error && <div style={{ color: '#b00020', marginBottom: 8 }}>{error}</div>}
 
       <div style={{ background: '#fff', border: '1px solid #eee', borderRadius: 8, padding: 16, marginBottom: 16 }}>
