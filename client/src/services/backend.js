@@ -29,4 +29,6 @@ export const setStudentStatus = (id, status) => API.patch(`/admin/students/${id}
 export const approveStudent = (id) => API.post(`/admin/students/${id}/approve`);
 export const rejectStudent = (id) => API.post(`/admin/students/${id}/reject`);
 
+export const submitStudentApplication = (payload) => API.put('/students/me', payload);
+
 export default API;

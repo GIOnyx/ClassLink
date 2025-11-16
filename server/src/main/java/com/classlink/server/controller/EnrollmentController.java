@@ -1,17 +1,22 @@
 package com.classlink.server.controller;
 
+import java.net.URI;
+import java.util.Date;
+import java.util.Optional;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.classlink.server.model.Course;
 import com.classlink.server.model.Enrollment;
 import com.classlink.server.model.Student;
 import com.classlink.server.repository.CourseRepository;
 import com.classlink.server.repository.EnrollmentRepository;
 import com.classlink.server.repository.StudentRepository;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import java.net.URI;
-import java.util.Optional;
-import java.util.Date;
 
 @RestController
 @RequestMapping("/api/enrollments")
@@ -22,8 +27,8 @@ public class EnrollmentController {
     private final CourseRepository courseRepository;
 
     public EnrollmentController(EnrollmentRepository enrollmentRepository,
-                                StudentRepository studentRepository,
-                                CourseRepository courseRepository) {
+            StudentRepository studentRepository,
+            CourseRepository courseRepository) {
         this.enrollmentRepository = enrollmentRepository;
         this.studentRepository = studentRepository;
         this.courseRepository = courseRepository;
@@ -52,8 +57,8 @@ public class EnrollmentController {
             Optional<Course> c = courseRepository.findById(req.getCourseId());
             c.ifPresent(enrollment::setCourse);
         }
-    enrollment.setStatus("enrolled");
-    enrollment.setDateEnrolled(new Date());
+        enrollment.setStatus("enrolled");
+        enrollment.setDateEnrolled(new Date());
         Enrollment saved = enrollmentRepository.save(enrollment);
         return ResponseEntity.created(URI.create("/api/enrollments/" + saved.getEnrollmentID())).body(saved);
     }
@@ -62,9 +67,20 @@ public class EnrollmentController {
         private String studentName;
         private Integer courseId;
 
-        public String getStudentName() { return studentName; }
-        public void setStudentName(String studentName) { this.studentName = studentName; }
-        public Integer getCourseId() { return courseId; }
-        public void setCourseId(Integer courseId) { this.courseId = courseId; }
+        public String getStudentName() {
+            return studentName;
+        }
+
+        public void setStudentName(String studentName) {
+            this.studentName = studentName;
+        }
+
+        public Integer getCourseId() {
+            return courseId;
+        }
+
+        public void setCourseId(Integer courseId) {
+            this.courseId = courseId;
+        }
     }
 }
