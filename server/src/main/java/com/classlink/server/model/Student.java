@@ -33,6 +33,10 @@ public class Student {
     @JoinColumn(name = "program_id")
     private Program program;
 
+    @ManyToOne
+    @JoinColumn(name = "department_id")
+    private Department department;
+
     private Integer yearLevel;
     private String semester;
     private String password;
