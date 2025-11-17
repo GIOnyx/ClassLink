@@ -1,31 +1,6 @@
 import React, { useState, useEffect } from 'react';
-// Assuming backend services are in '../services/backend'
-// import { submitStudentApplication, getMyStudent, getDepartments, getPrograms } from '../services/backend';
-
-// --- MOCKED BACKEND FUNCTIONS ---
-// Remove these and uncomment the real imports when using in your app
-const getMyStudent = () => new Promise((res, rej) => setTimeout(() => res({ data: null }), 500));
-const getDepartments = () => new Promise((res) => res({ data: [{ id: 1, name: 'School of Engineering' }, { id: 2, name: 'School of Arts & Sciences' }] }));
-const getPrograms = (deptId) => {
-  const progs = {
-    1: [{ id: 101, name: 'B.S. in Computer Engineering', durationInYears: 5 }, { id: 102, name: 'B.S. in Civil Engineering', durationInYears: 5 }],
-    2: [{ id: 201, name: 'B.S. in Biology', durationInYears: 4 }, { id: 202, name: 'B.A. in Psychology', durationInYears: 4 }],
-  };
-  return new Promise((res) => res({ data: progs[deptId] || [] }));
-};
-const submitStudentApplication = (payload) => {
-  console.log("Submitting payload:", payload);
-  return new Promise((res) => setTimeout(() => res({
-    data: {
-      ...payload,
-      id: 123,
-      status: 'Submitted',
-      email: payload.emailAddress,
-      program: { name: 'B.S. in Computer Engineering' } // Mocked
-    }
-  }), 1000));
-}
-// --- END OF MOCKED FUNCTIONS ---
+// Use real backend helpers
+import { submitStudentApplication, getMyStudent, getDepartments, getPrograms } from '../services/backend';
 
 
 // Helper styles for the form layout (Unchanged)
@@ -273,7 +248,7 @@ const EnrollmentPage = () => {
             <div><strong>Name:</strong> {existingApp.firstName} {existingApp.lastName}</div>
             <div><strong>Email:</strong> {existingApp.email}</div>
             <div><strong>Program Applying For:</strong> {existingApp.program ? existingApp.program.name : '—'}</div>
-V           <div><strong>Previous School:</strong> {existingApp.previousSchool || '—'}</div>
+            <div><strong>Previous School:</strong> {existingApp.previousSchool || '—'}</div>
             <div><strong>Parent/Guardian:</strong> {existingApp.parentGuardianName || '—'}</div>
             <div style={{ marginTop: 12 }}>
               If you need to update your application, edit your profile.
@@ -357,7 +332,7 @@ V           <div><strong>Previous School:</strong> {existingApp.previousSchool |
               </div>
               <div style={{ ...formStyles.formGroup, ...formStyles.gridFull }}>
                 <label htmlFor="parentEmailAddress" style={formStyles.label}>Email Address</label>
-    D           <input type="email" id="parentEmailAddress" name="parentEmailAddress" value={formData.parentEmailAddress} onChange={handleChange} style={formStyles.input} />
+                <input type="email" id="parentEmailAddress" name="parentEmailAddress" value={formData.parentEmailAddress} onChange={handleChange} style={formStyles.input} />
               </div>
             </div>
           </section>
@@ -408,7 +383,7 @@ V           <div><strong>Previous School:</strong> {existingApp.previousSchool |
                 </select>
               </div>
                 <div style={formStyles.formGroup}>
-    s             <label htmlFor="yearLevel" style={formStyles.label}>Year Level</label>
+                  <label htmlFor="yearLevel" style={formStyles.label}>Year Level</label>
                   <select id="yearLevel" name="yearLevel" value={formData.yearLevel || ''} onChange={(e) => setFormData(prev => ({ ...prev, yearLevel: e.target.value ? Number(e.target.value) : null }))} style={formStyles.input} disabled={yearOptions.length === 0}>
                     <option value="">Select year…</option>
                     {yearOptions.map(y => (<option key={y} value={y}>{y}</option>))}
