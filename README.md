@@ -143,3 +143,37 @@ echo VITE_API_BASE_URL=http://localhost:8081/api > .env
 - Enrollment page should show program-specific courses if you set programs on courses.
 
 That’s it—following these steps, any developer can clone, configure MySQL, run the backend and frontend, and start registering users. If you want, I can bundle these into a README “Quickstart” and add sample SQL seeds for admin/courses.
+
+## Run both backend and frontend together (Windows)
+
+To make local development easier you can start both the backend and frontend at the same time using the provided scripts at the repository root.
+
+- `run-all.bat` — Windows batch file that opens two Command Prompt windows and runs the backend (`mvnw.cmd spring-boot:run`) and frontend (`npm run dev`).
+- `run-all.ps1` — PowerShell script that opens two PowerShell windows and runs the same commands.
+
+Prerequisites:
+- Install Node.js (and run `npm install` once in `client` before first use).
+- Have Java (JDK) available; the repo includes `mvnw.cmd` which will use a suitable Maven wrapper.
+
+Usage examples:
+
+Run the batch file (double-click or from PowerShell):
+
+``powershell
+./run-all.bat
+``
+
+Or run the PowerShell script:
+
+``powershell
+.\run-all.ps1
+``
+
+What the scripts do:
+- Open two windows: one for the backend (Spring Boot) and one for the frontend (Vite).
+- Backend command: `mvnw.cmd spring-boot:run` (runs from `server` folder).
+- Frontend command: `npm run dev` (runs from `client` folder).
+
+Notes:
+- If you prefer a single terminal multiplexed approach, consider running the commands manually with a terminal multiplexer or using an npm package like `concurrently` in the `client` folder — tell me if you want that and I can add it.
+
