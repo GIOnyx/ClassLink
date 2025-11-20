@@ -1,171 +1,145 @@
-<div align="center">
-  <img src="client/src/assets/react.svg" height="70" alt="ClassLink" />
-  
-  # ClassLink
-  Unified academic portal – Spring Boot backend + React (Vite) frontend.
-</div>
+## Prerequisites
 
-## ️ Overview
-This repo contains:
-- `server/` – Spring Boot (Java 17) REST API + JPA (MySQL or H2 dev profile) + session-based auth + CORS config.
-- `client/` – React 19 + Vite + Axios + simple student management UI.
+- Java 17 (JDK)
+- Node.js LTS (includes npm)
+- MySQL Server and Workbench
+- Git
 
-You can run instantly with the in‑memory H2 dev profile, then switch to MySQL for persistence.
+Optional but helpful:
+- Postman/Thunder Client to poke APIs
+- A code editor (you’re in VS Code already)
 
-## 🔧 Prerequisites
-Mandatory: Java 17, Node.js (LTS), Git.
-Choose one DB path:
-- QUICKSTART: none (uses H2 in dev profile)
-- PERSISTENT: MySQL 8.x (server + Workbench)
+## 1) Clone the repo
 
-Helpful: Postman / Thunder Client, Docker (optional), VS Code.
-
-## 🧪 Clone
 ```powershell
+# PowerShell
 git clone https://github.com/GIOnyx/ClassLink.git
 cd ClassLink/ClassLink
 ```
 
-## 🚀 Quickstart (H2 dev profile – no MySQL needed)
-In one terminal (backend):
-```powershell
-cd server
-$env:SPRING_PROFILES_ACTIVE='dev'
-./mvnw.cmd spring-boot:run -DskipTests
-```
-Success criteria: logs show `Started ServerApplication` and `HealthController` available at `http://localhost:8080/api/health`.
+## 2) Configure the database
 
-In another terminal (frontend):
-```powershell
-cd client
-npm install
-npm run dev
-```
-Open http://localhost:5173 – student management and registration should work (data stored in-memory).
+You can reuse the defaults or change them. Defaults in `server/src/main/resources/application.properties`:
 
-## 🗄️ Switch to MySQL
-Create DB and user (optional but recommended):
+- DB: `classlink_db`
+- User: `root`
+- Pass: `gwapo123`
+
+If you prefer a dedicated MySQL user:
+
 ```sql
+-- Run these in MySQL Workbench
 CREATE DATABASE IF NOT EXISTS classlink_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- Create a non-root user (recommended)
 CREATE USER 'classlink_user'@'localhost' IDENTIFIED BY 'your_password';
 GRANT ALL PRIVILEGES ON classlink_db.* TO 'classlink_user'@'localhost';
 FLUSH PRIVILEGES;
 ```
-Update `server/src/main/resources/application.properties`:
-```properties
+
+Then update `server/src/main/resources/application.properties`:
+
+```
 spring.datasource.url=jdbc:mysql://localhost:3306/classlink_db
 spring.datasource.username=classlink_user
 spring.datasource.password=your_password
 spring.jpa.hibernate.ddl-auto=update
-app.cors.allowed-origin=http://localhost:5173
+app.cors.allowed-origin=http://localhost:5173./mvnw.cmd spring-boot:run -DskipTests
 ```
-Then run without dev profile:
+
+Notes:
+- `ddl-auto=update` will create/alter tables automatically on first run.
+- CORS is already configured for localhost dev with credentials.
+
+## 3) Run the backend (Spring Boot)
+
 ```powershell
+# From ClassLink/ClassLink/server
 cd server
-./mvnw.cmd spring-boot:run -DskipTests
+.\mvnw.cmd -DskipTests package
+.\mvnw.cmd spring-boot:run
 ```
 
-## 🔁 Profiles
-- `dev` (H2): defined in `application-dev.properties` (in‑memory DB, SQL logging, H2 console at `/h2-console`).
-- default (MySQL): reads `application.properties`.
+Success criteria:
+- Logs show Tomcat started on port 8080
+- Hikari connects to MySQL without errors
 
-Activate dev profile:
+If you use a different port, you can override quickly:
 ```powershell
-$env:SPRING_PROFILES_ACTIVE='dev'; ./mvnw.cmd spring-boot:run -DskipTests
+.\mvnw.cmd spring-boot:run -Dspring-boot.run.jvmArguments="-Dserver.port=8081"
 ```
 
-## 🌐 Frontend API base
-API requests use relative `/api/...` (Vite proxy). To override target (e.g. custom port):
+## 4) Run the frontend (Vite + React)
+
 ```powershell
-echo VITE_API_BASE=http://localhost:8081 > client/.env
+# In a new terminal
+cd ..\client
+npm install
+# Optional: if your API port isn’t 8080, create .env and set:
+# echo VITE_API_BASE_URL=http://localhost:8081/api > .env
+npm run dev
 ```
-Update proxy in `client/vite.config.js` if you change backend port.
 
-## 🤝 CORS & Sessions
-Global CORS defined in `CorsConfig.java` – allows configured origins + wildcard localhost ports. Cookies (sessions) work because `allowCredentials=true` and SameSite=Lax for dev.
+Open the URL Vite prints (usually http://localhost:5173).
 
-## 📚 Key Endpoints
-| Method | Path | Purpose |
-|--------|------|---------|
-| GET | /api/health | Simple health check |
-| GET | /api/students | List students |
-| PUT | /api/students/me | Update current logged-in student application/profile |
-| GET | /api/students/me | Fetch logged-in student info |
+Axios is already set to:
+- Base URL: `VITE_API_BASE_URL` or `http://localhost:8080/api` by default
+- `withCredentials: true` for session cookies
 
-Extend with: POST /api/students, DELETE /api/students/{id} (admin) if needed.
+CORS is configured to allow localhost with credentials and wildcard dev ports.
 
-## 👩‍🎓 Student Management
-Frontend page `StudentPage.jsx` provides create/edit/delete (H2 dev) via Axios wrapper in `studentApi.js`. Ensure backend running; if you see “Cannot reach server”, verify:
-- Server listening on 8080
-- Network tab: request to `/api/students` returns 200
-- No CORS preflight failure (OPTIONS should be 200)
+## 5) Try it: register and login
 
-## 🩺 Health Check
-`GET /api/health` returns `{ "status": "UP", "timestamp": "..." }` – use this for quick backend availability tests.
+- Click “Register” in the UI and create a new Student account.
+- On success, you’ll be auto-logged in (session cookie is stored).
+- If you see “Email already in use,” pick another email.
 
-## 🔐 Admin Seeding (Optional)
-Insert an admin row (for local testing):
+If you still see a generic “Registration failed,” check the browser DevTools Network tab for the POST /api/auth/register and tell me the HTTP status—it will help pinpoint (409 duplicate, 400 invalid, or a CORS/network error).
+
+## 6) Admin access (optional)
+
+The system includes Admin entities for admin login. To create an admin on a fresh DB, insert one row (names can vary with naming strategy; start with this simple form which works for many setups):
+
 ```sql
 INSERT INTO admin (name, email, password, role) VALUES ('Site Admin', 'admin@example.com', 'admin123', 'ADMIN');
 ```
-Password hashing NOT yet implemented – treat this as dev‑only.
 
-## 🧪 Testing & Build
-Backend unit tests placeholder under `server/src/test/...`. To run:
-```powershell
-cd server
-./mvnw.cmd test
-```
-Frontend build:
-```powershell
-cd client
-npm run build
-```
+Then log in using role “admin” at the login form. If your DB naming strategy snake-cases fields, the table/columns might be `admin`, columns like `admin_id`, `name`, `email`, `password`, `role`—use your Workbench table browser to confirm actual names if the insert fails.
 
-## 🧰 Troubleshooting
-| Symptom | Fix |
-|---------|-----|
-| ECONNREFUSED from Vite proxy | Backend not running or port mismatch – start server, confirm 8080 or update proxy. |
-| CORS error / blocked by policy | Origin not whitelisted – add port to `app.cors.allowed-origin` or ensure using dev profile. |
-| PowerShell cannot run npm (signature) | Use `cmd.exe` or run `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` temporarily. |
-| Tables not created | Check `spring.jpa.hibernate.ddl-auto=update` and DB credentials; enable dev profile for H2 quick test. |
-| Session not persisting | Ensure requests use relative `/api` so proxy keeps cookies; avoid cross-domain mismatches. |
+Tip: For production, switch to hashed passwords; right now it’s plaintext for simplicity.
 
-## 🗂️ Directory Structure (excerpt)
-```
-server/
-  src/main/java/com/classlink/server/... (controllers, models, repositories, config)
-  src/main/resources/application.properties
-  src/main/resources/application-dev.properties
-client/
-  src/pages/* / components/* / services/*
-```
+## 7) Common pitfalls and fixes
 
-## 🧭 Next Improvements (ideas)
-- Password hashing & authentication hardening
-- Role-based method security
-- DTO + validation layer (@Valid)
-- Integration tests for StudentController
-- Docker compose (MySQL + app + frontend)
+- Registration still fails:
+  - Make sure backend is running on 8080 (or set `VITE_API_BASE_URL` in `client/.env`).
+  - Hard refresh the browser after backend restarts.
+  - Check Network tab: if CORS/preflight fails, ensure you’re on `http://localhost:<port>` (not file://) and that the server logs show startup.
+- MySQL auth errors:
+  - Ensure the user exists and has privileges on `classlink_db`.
+  - Verify host is `localhost` and port `3306`.
+- Port already in use:
+  - Change backend port via `-Dserver.port=8081` and set `VITE_API_BASE_URL=http://localhost:8081/api`.
 
-## ✅ Quick Copy Commands
-```powershell
-# Dev (H2) full stack
-cd server; $env:SPRING_PROFILES_ACTIVE='dev'; ./mvnw.cmd spring-boot:run -DskipTests
-# In another terminal
-cd client; npm install; npm run dev
-```
+## 8) Ready-made environment override (optional)
+
+You can run without editing files by using system properties:
 
 ```powershell
-# Production-ish (MySQL) after setting application.properties
-cd server; ./mvnw.cmd spring-boot:run -DskipTests
-cd client; npm install; npm run build; npm run preview
+# Example: change DB creds without editing application.properties
+.\mvnw.cmd spring-boot:run `
+  -Dspring-boot.run.jvmArguments="-Dspring.datasource.url=jdbc:mysql://localhost:3306/classlink_db -Dspring.datasource.username=classlink_user -Dspring.datasource.password=your_password"
 ```
 
-## 🙋 Support
-Open an issue or ask in the project chat. Provide:
-- Exact error stacktrace (if backend)
-- Network request status + response headers (if frontend)
-- Your OS + Java + Node versions
+And in the client:
+```powershell
+# If backend isn’t 8080
+echo VITE_API_BASE_URL=http://localhost:8081/api > .env
+```
 
-Happy hacking! 🚀
+## 9) Seeding data (optional, helpful)
+
+- Add some courses via the Course page (now includes Program selection).
+- Use the Admin “Students” tab to create students with default password 123456.
+- Enrollment page should show program-specific courses if you set programs on courses.
+
+That’s it—following these steps, any developer can clone, configure MySQL, run the backend and frontend, and start registering users. If you want, I can bundle these into a README “Quickstart” and add sample SQL seeds for admin/courses.
