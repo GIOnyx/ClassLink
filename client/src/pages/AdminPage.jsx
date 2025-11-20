@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import '../App.css';
+import './AdminPage.css';
 import { getStudentsByStatus, approveStudent, rejectStudent, getStudents } from '../services/backend';
 
 const StatusPill = ({ value }) => (

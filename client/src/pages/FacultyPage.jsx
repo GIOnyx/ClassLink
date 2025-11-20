@@ -3,6 +3,7 @@ import { useOutletContext } from 'react-router-dom';
 // ✅ Import the new API functions (using absolute paths for Vite)
 import { getTeachers, addTeacher, updateTeacher, deleteTeacher } from '/src/services/backend.js';
 import '/src/App.css'; // ✅ Use absolute path
+import './FacultyPage.css';
 
 // --- New Styles ---
 

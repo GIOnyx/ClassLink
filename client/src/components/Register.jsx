@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import '../App.css';
+import './Register.css';
 import { register as apiRegister } from '../services/backend';
 
 const Register = ({ onRegisterSuccess, onClose }) => {

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import '../App.css'; 
+import './AccountPage.css';
 import { me, getMyStudent, submitStudentApplication } from '../services/backend';
 
 const AccountPage = () => {

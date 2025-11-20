@@ -1,5 +1,6 @@
 import React from 'react';
 import '../App.css';
+import './Navbar.css';
 
 const Navbar = ({ onLogout }) => {
     return (
