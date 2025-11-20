@@ -1,7 +1,58 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import '../App.css'; 
+import { me, getMyStudent, submitStudentApplication } from '../services/backend';
 
 const AccountPage = () => {
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+    const [profile, setProfile] = useState({ name: '', email: '', phone: '', status: '' });
+
+    useEffect(() => {
+        (async () => {
+            setLoading(true);
+            setError('');
+            try {
+                // Try to fetch student-specific data first
+                const studentRes = await getMyStudent();
+                if (studentRes?.data) {
+                    const s = studentRes.data;
+                    setProfile({
+                        name: s.name || `${s.firstName || ''} ${s.lastName || ''}`.trim() || '',
+                        email: s.email || s.username || '',
+                        phone: s.phone || s.mobile || '',
+                        status: s.status || s.enrollmentStatus || ''
+                    });
+                } else {
+                    // Fallback to generic 'me' endpoint
+                    const meRes = await me();
+                    const m = meRes?.data || {};
+                    setProfile({ name: m.name || m.username || '', email: m.email || '', phone: '', status: m.status || '' });
+                }
+            } catch (e) {
+                // If student endpoint fails, try 'me' and continue
+                try {
+                    const meRes = await me();
+                    const m = meRes?.data || {};
+                    setProfile({ name: m.name || m.username || '', email: m.email || '', phone: '', status: m.status || '' });
+                } catch (err) {
+                    setError('Failed to load profile');
+                }
+            } finally {
+                setLoading(false);
+            }
+        })();
+    }, []);
+
+    const handleSave = async () => {
+        setError('');
+        try {
+            // send updatable fields to student endpoint
+            await submitStudentApplication({ name: profile.name, phone: profile.phone, location: profile.location });
+            // Optionally refetch or show a success message — we'll update the UI in-place
+        } catch (e) {
+            setError('Failed to save changes');
+        }
+    };
   // Simple SVG Icon Components for clarity
     const ProfileIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>;
     const SettingsIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>;
@@ -15,8 +66,8 @@ const AccountPage = () => {
             <div className="sidebar-profile-summary">
             <div className="avatar-placeholder-sm"></div>
             <div className="user-info">
-                <span className="user-name">Your name</span>
-                <span className="user-email">yourname@gmail.com</span>
+                <span className="user-name">{loading ? 'Loading…' : profile.name || '—'}</span>
+                <span className="user-email">{loading ? '' : profile.email || '—'}</span>
             </div>
             </div>
             <nav className="sidebar-nav">
@@ -33,29 +84,34 @@ const AccountPage = () => {
             <div className="account-header">
             <div className="avatar-placeholder-md"></div>
             <div className="user-info">
-                <span className="user-name">Your name</span>
-                <span className="user-email">yourname@gmail.com</span>
+                <span className="user-name">{loading ? 'Loading…' : profile.name || '—'}</span>
+                <span className="user-email">{loading ? '' : profile.email || '—'}</span>
             </div>
             </div>
             <div className="account-details-form">
             <div className="form-row">
                 <label>Name</label>
-                <span>your name</span>
+                <input type="text" value={profile.name} onChange={(e) => setProfile((p) => ({ ...p, name: e.target.value }))} />
             </div>
             <div className="form-row">
                 <label>Email account</label>
-                <span>yourname@gmail.com</span>
+                <input type="text" value={profile.email} readOnly />
             </div>
             <div className="form-row">
                 <label>Mobile number</label>
-                <span className="placeholder-text">Add number</span>
+                <input type="text" value={profile.phone} onChange={(e) => setProfile((p) => ({ ...p, phone: e.target.value }))} />
             </div>
             <div className="form-row">
-                <label>Location</label>
-                <span className="placeholder-text">Add location</span>
+                <label>Enrollment status</label>
+                <div>
+                    <span className={`status-pill ${(profile.status||'').toLowerCase()}`}>
+                        {profile.status ? profile.status : 'Pending'}
+                    </span>
+                </div>
             </div>
             </div>
-            <button className="save-changes-button">Save Changes</button>
+            {error && <div style={{ color: '#b00020', margin: '8px 0' }}>{error}</div>}
+            <button className="save-changes-button" onClick={handleSave} disabled={loading}>Save Changes</button>
         </main>
         </div>
     );

@@ -861,6 +861,38 @@ body {
   color: #999;
 }
 
+/* Clean input styles for account fields */
+.form-row input {
+  width: 360px;
+  max-width: 40vw;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #e6e6e6;
+  background: #fff; /* white background for clarity */
+  color: #222;
+  text-align: left;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.03);
+}
+
+.form-row input:focus {
+  outline: none;
+  border-color: #c94b4b;
+  box-shadow: 0 0 0 4px rgba(201, 75, 75, 0.06);
+}
+
+/* Enrollment status pill */
+.status-pill {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: #fff;
+}
+.status-pill.pending { background: #f4a261; color: #2a1f12; } /* orange */
+.status-pill.approved { background: #2ea44f; } /* green */
+.status-pill.denied { background: #dc3545; } /* red */
+
 .save-changes-button {
   background-color: #800000;
   color: white;
