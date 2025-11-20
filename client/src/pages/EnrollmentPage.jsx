@@ -108,6 +108,7 @@ const EnrollmentPage = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [existingApp, setExistingApp] = useState(null);
+  const [editMode, setEditMode] = useState(false);
   const [departments, setDepartments] = useState([]);
   const [programs, setPrograms] = useState([]);
   const [yearOptions, setYearOptions] = useState([]);
@@ -232,27 +233,263 @@ const EnrollmentPage = () => {
     loadDeps();
   }, []);
 
+  // When an existing application is loaded, populate the form data so
+  // we can render the full form (either read-only preview or editable)
+  useEffect(() => {
+    if (!existingApp) return;
+    setFormData(prev => ({
+      firstName: existingApp.firstName || prev.firstName,
+      lastName: existingApp.lastName || prev.lastName,
+      birthDate: existingApp.birthDate || prev.birthDate,
+      gender: existingApp.gender || prev.gender,
+      studentAddress: existingApp.studentAddress || prev.studentAddress,
+      contactNumber: existingApp.contactNumber || prev.contactNumber,
+      emailAddress: existingApp.email || existingApp.emailAddress || prev.emailAddress,
+      parentGuardianName: existingApp.parentGuardianName || prev.parentGuardianName,
+      relationshipToStudent: existingApp.relationshipToStudent || prev.relationshipToStudent,
+      parentContactNumber: existingApp.parentContactNumber || prev.parentContactNumber,
+      parentEmailAddress: existingApp.parentEmailAddress || prev.parentEmailAddress,
+      departmentId: existingApp.departmentId || existingApp.department?.id || prev.departmentId,
+      programId: existingApp.programId || existingApp.program?.id || prev.programId,
+      yearLevel: existingApp.yearLevel || prev.yearLevel,
+      semester: existingApp.semester || prev.semester,
+      previousSchool: existingApp.previousSchool || prev.previousSchool,
+    }));
+
+    // pre-load programs for the department/program so selects show values
+    (async () => {
+      try {
+        if (existingApp.departmentId || existingApp.department?.id) {
+          const depId = existingApp.departmentId || existingApp.department?.id;
+          const res = await getPrograms(depId);
+          setPrograms(res.data || []);
+        }
+        if (existingApp.programId || existingApp.program?.id) {
+          const pid = existingApp.programId || existingApp.program?.id;
+          const sel = (existingApp.program && [existingApp.program]) || programs.find(p => p.id === pid);
+          if (sel && sel.durationInYears) {
+            const years = Array.from({ length: sel.durationInYears }, (_, i) => i + 1);
+            setYearOptions(years);
+          }
+        }
+      } catch (err) {
+        // ignore
+      }
+    })();
+  }, [existingApp]);
+
+  // Toggle edit mode and allow cancelling edits
+  const startEdit = () => setEditMode(true);
+  const cancelEdit = () => {
+    // reset form to existingApp values
+    if (existingApp) {
+      setFormData(prev => ({
+        ...prev,
+        firstName: existingApp.firstName || prev.firstName,
+        lastName: existingApp.lastName || prev.lastName,
+        birthDate: existingApp.birthDate || prev.birthDate,
+        gender: existingApp.gender || prev.gender,
+        studentAddress: existingApp.studentAddress || prev.studentAddress,
+        contactNumber: existingApp.contactNumber || prev.contactNumber,
+        emailAddress: existingApp.email || existingApp.emailAddress || prev.emailAddress,
+        parentGuardianName: existingApp.parentGuardianName || prev.parentGuardianName,
+        relationshipToStudent: existingApp.relationshipToStudent || prev.relationshipToStudent,
+        parentContactNumber: existingApp.parentContactNumber || prev.parentContactNumber,
+        parentEmailAddress: existingApp.parentEmailAddress || prev.parentEmailAddress,
+        departmentId: existingApp.departmentId || existingApp.department?.id || prev.departmentId,
+        programId: existingApp.programId || existingApp.program?.id || prev.programId,
+        yearLevel: existingApp.yearLevel || prev.yearLevel,
+        semester: existingApp.semester || prev.semester,
+        previousSchool: existingApp.previousSchool || prev.previousSchool,
+      }));
+    }
+    setEditMode(false);
+    setError('');
+  };
+
+  const handleSave = async (e) => {
+    e && e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      // Reuse submitStudentApplication for saving/updating
+      const payload = { ...formData, id: existingApp?.id };
+      const res = await submitStudentApplication(payload);
+      setExistingApp(res.data || existingApp);
+      setEditMode(false);
+    } catch (err) {
+      console.error('Save failed', err);
+      setError('Save failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // --- RENDER ---
 
-  // 1. Show existing application status if it exists
+  // 1. Show existing application preview if it exists
   if (existingApp) {
-    // Show status and submitted information instead of the form
+    const status = (existingApp.status || 'Pending').toLowerCase();
+    const statusColor = status === 'approved' ? '#087f23' : status === 'pending' ? '#b36b00' : '#6c757d';
+
     return (
-      <div className="page-content" style={{ paddingTop: '40px' }}>
-        <div style={{ ...formStyles.container, color: '#111' }}>
-          <h2 style={formStyles.header}>Your Application</h2>
-          <div style={{ marginBottom: 12, color: '#111' }}>
-            <strong>Status:</strong> {existingApp.status || 'Submitted'}
-          </div>
-          <div style={{ lineHeight: 1.6 }}>
-            <div><strong>Name:</strong> {existingApp.firstName} {existingApp.lastName}</div>
-            <div><strong>Email:</strong> {existingApp.email}</div>
-            <div><strong>Program Applying For:</strong> {existingApp.program ? existingApp.program.name : '—'}</div>
-            <div><strong>Previous School:</strong> {existingApp.previousSchool || '—'}</div>
-            <div><strong>Parent/Guardian:</strong> {existingApp.parentGuardianName || '—'}</div>
-            <div style={{ marginTop: 12 }}>
-              If you need to update your application, edit your profile.
+      <div className="page-content">
+        {/* Status container aligned with form width (card) */}
+        <div style={{ maxWidth: 900, margin: '24px auto 0', padding: '0 16px' }}>
+          <div style={{ ...formStyles.container, padding: '16px 20px', marginTop: 0 }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', gap: 12 }}>
+              <div>
+                <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#333' }}>Application Status</div>
+                <div style={{ marginTop: 6 }}>
+                  <span style={{
+                    display: 'inline-block',
+                    padding: '6px 12px',
+                    borderRadius: 999,
+                    backgroundColor: statusColor,
+                    color: '#fff',
+                    fontWeight: 700,
+                    letterSpacing: 0.6,
+                    textTransform: 'uppercase',
+                    fontSize: '0.8rem'
+                  }}>{(existingApp.status || 'Pending')}</span>
+                </div>
+              </div>
             </div>
+          </div>
+        </div>
+
+        <div style={{ maxWidth: 900, margin: '0 auto', padding: '0 16px' }}>
+          {/* Full form preview (single page) */}
+          <form style={{ ...formStyles.container, marginTop: 18 }} onSubmit={handleSave}>
+
+            <section>
+              <h3 style={formStyles.sectionTitle}>Student Information</h3>
+              <div style={formStyles.grid}>
+                <div style={formStyles.formGroup}>
+                  <label style={formStyles.label}>First Name</label>
+                  <input style={{ ...formStyles.input, backgroundColor: '#fff', color: '#111' }} name="firstName" value={formData.firstName} onChange={handleChange} disabled={!editMode} />
+                </div>
+                <div style={formStyles.formGroup}>
+                  <label style={formStyles.label}>Last Name</label>
+                  <input style={{ ...formStyles.input, backgroundColor: '#fff', color: '#111' }} name="lastName" value={formData.lastName} onChange={handleChange} disabled={!editMode} />
+                </div>
+                <div style={formStyles.formGroup}>
+                  <label style={formStyles.label}>Birth Date</label>
+                  <input type="date" style={{ ...formStyles.input, backgroundColor: '#fff', color: '#111' }} name="birthDate" value={formData.birthDate} onChange={handleChange} disabled={!editMode} />
+                </div>
+                <div style={formStyles.formGroup}>
+                  <label style={formStyles.label}>Gender</label>
+                  <div style={formStyles.radioGroup}>
+                    <label style={formStyles.radioLabel}><input type="radio" name="gender" value="Male" checked={formData.gender === 'Male'} onChange={handleChange} disabled={!editMode} /> Male</label>
+                    <label style={formStyles.radioLabel}><input type="radio" name="gender" value="Female" checked={formData.gender === 'Female'} onChange={handleChange} disabled={!editMode} /> Female</label>
+                  </div>
+                </div>
+                <div style={{ ...formStyles.formGroup, ...formStyles.gridFull }}>
+                  <label style={formStyles.label}>Student Address</label>
+                  <input style={{ ...formStyles.input, backgroundColor: '#fff', color: '#111' }} name="studentAddress" value={formData.studentAddress} onChange={handleChange} disabled={!editMode} />
+                </div>
+                <div style={formStyles.formGroup}>
+                  <label style={formStyles.label}>Contact Number</label>
+                  <input style={{ ...formStyles.input, backgroundColor: '#fff', color: '#111' }} name="contactNumber" value={formData.contactNumber} onChange={handleChange} disabled={!editMode} />
+                </div>
+                <div style={formStyles.formGroup}>
+                  <label style={formStyles.label}>Email Address</label>
+                  <input style={{ ...formStyles.input, backgroundColor: '#fff', color: '#111' }} name="emailAddress" value={formData.emailAddress} onChange={handleChange} disabled={!editMode} />
+                </div>
+              </div>
+            </section>
+
+            <section>
+              <h3 style={formStyles.sectionTitle}>Parent / Guardian</h3>
+              <div style={formStyles.grid}>
+                <div style={{ ...formStyles.formGroup, ...formStyles.gridFull }}>
+                  <label style={formStyles.label}>Parent / Guardian Name</label>
+                  <input style={{ ...formStyles.input, backgroundColor: '#fff', color: '#111' }} name="parentGuardianName" value={formData.parentGuardianName} onChange={handleChange} disabled={!editMode} />
+                </div>
+                <div style={formStyles.formGroup}>
+                  <label style={formStyles.label}>Relationship</label>
+                  <input style={{ ...formStyles.input, backgroundColor: '#fff', color: '#111' }} name="relationshipToStudent" value={formData.relationshipToStudent} onChange={handleChange} disabled={!editMode} />
+                </div>
+                <div style={formStyles.formGroup}>
+                  <label style={formStyles.label}>Contact Number</label>
+                  <input style={{ ...formStyles.input, backgroundColor: '#fff', color: '#111' }} name="parentContactNumber" value={formData.parentContactNumber} onChange={handleChange} disabled={!editMode} />
+                </div>
+                <div style={{ ...formStyles.formGroup, ...formStyles.gridFull }}>
+                  <label style={formStyles.label}>Parent Email</label>
+                  <input style={{ ...formStyles.input, backgroundColor: '#fff', color: '#111' }} name="parentEmailAddress" value={formData.parentEmailAddress} onChange={handleChange} disabled={!editMode} />
+                </div>
+              </div>
+            </section>
+
+            <section>
+              <h3 style={formStyles.sectionTitle}>Academic Information</h3>
+              <div style={formStyles.grid}>
+                <div style={formStyles.formGroup}>
+                  <label style={formStyles.label}>Department</label>
+                  <select style={{ ...formStyles.input, backgroundColor: '#fff', color: '#111' }} name="departmentId" value={formData.departmentId || ''} onChange={async (e) => {
+                    const deptId = e.target.value ? Number(e.target.value) : null;
+                    setFormData(prev => ({ ...prev, departmentId: deptId, programId: null, yearLevel: null }));
+                    setPrograms([]);
+                    setYearOptions([]);
+                    if (deptId) {
+                      try { const res = await getPrograms(deptId); setPrograms(res.data || []); } catch (err) { setPrograms([]); }
+                    }
+                  }} disabled={!editMode}>
+                    <option value="">Select department…</option>
+                    {departments.map(d => (<option key={d.id} value={d.id}>{d.name}</option>))}
+                  </select>
+                </div>
+                <div style={formStyles.formGroup}>
+                  <label style={formStyles.label}>Program</label>
+                  <select style={{ ...formStyles.input, backgroundColor: '#fff', color: '#111' }} name="programId" value={formData.programId || ''} onChange={(e) => {
+                    const pid = e.target.value ? Number(e.target.value) : null;
+                    setFormData(prev => ({ ...prev, programId: pid, yearLevel: null }));
+                    const sel = programs.find(p => p.id === pid);
+                    if (sel && sel.durationInYears) setYearOptions(Array.from({ length: sel.durationInYears }, (_, i) => i + 1));
+                  }} disabled={!editMode || programs.length === 0}>
+                    <option value="">Select program…</option>
+                    {programs.map(p => (<option key={p.id} value={p.id}>{p.name}</option>))}
+                  </select>
+                </div>
+                <div style={formStyles.formGroup}>
+                  <label style={formStyles.label}>Year Level</label>
+                  <select style={{ ...formStyles.input, backgroundColor: '#fff', color: '#111' }} name="yearLevel" value={formData.yearLevel || ''} onChange={(e) => setFormData(prev => ({ ...prev, yearLevel: e.target.value ? Number(e.target.value) : null }))} disabled={!editMode || yearOptions.length === 0}>
+                    <option value="">Select year…</option>
+                    {yearOptions.map(y => (<option key={y} value={y}>{y}</option>))}
+                  </select>
+                </div>
+                <div style={formStyles.formGroup}>
+                  <label style={formStyles.label}>Semester</label>
+                  <select style={{ ...formStyles.input, backgroundColor: '#fff', color: '#111' }} name="semester" value={formData.semester || ''} onChange={(e) => setFormData(prev => ({ ...prev, semester: e.target.value }))} disabled={!editMode}>
+                    <option value="">Select semester…</option>
+                    <option value="1st">1st</option>
+                    <option value="2nd">2nd</option>
+                    <option value="summer">Summer</option>
+                  </select>
+                </div>
+                <div style={{ ...formStyles.formGroup, ...formStyles.gridFull }}>
+                  <label style={formStyles.label}>Previous School</label>
+                  <input style={{ ...formStyles.input, backgroundColor: '#fff', color: '#111' }} name="previousSchool" value={formData.previousSchool} onChange={handleChange} disabled={!editMode} />
+                </div>
+              </div>
+            </section>
+
+            {error && <p style={formStyles.error}>{error}</p>}
+
+            {/* explanatory line removed per request */}
+
+          </form>
+
+          {/* Buttons below the form (outside) */}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 12 }}>
+            {!editMode ? (
+              <button type="button" onClick={startEdit} style={formStyles.submitButton}>Edit Enrollment Form</button>
+            ) : (
+              <>
+                <button type="button" onClick={handleSave} style={formStyles.submitButton} disabled={loading}>{loading ? 'Saving...' : 'Save Changes'}</button>
+                <button type="button" onClick={cancelEdit} style={{ ...formStyles.submitButton, backgroundColor: '#6c757d' }}>Cancel</button>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -262,7 +499,7 @@ const EnrollmentPage = () => {
   // 2. Show the multi-step form
   return (
     // Use page-content for correct padding from the navbar
-    <div className="page-content" style={{ paddingTop: '40px' }}>
+    <div className="page-content">
       <form style={formStyles.container} onSubmit={handleSubmit}>
         {/* Header shows current step */}
         <h2 style={formStyles.header}>Student Enrollment Form (Step {currentStep} of 3)</h2>
