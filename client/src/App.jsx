@@ -9,7 +9,7 @@ import FacultyPage from './pages/FacultyPage.jsx';
 import StudentPage from './pages/StudentPage.jsx';
 import AdminPage from './pages/AdminPage.jsx';
 import CoursePage from './pages/CoursePage.jsx';
-import AccountPage from './pages/AccountPage.jsx';
+import ProfilePage from './pages/ProfilePage.jsx';
 
 import './App.css';
 import { me, logout as apiLogout } from './services/backend';
@@ -64,7 +64,7 @@ function App() {
             <Route path="faculty" element={<FacultyPage />} />
             <Route path="student" element={<StudentPage />} />
             <Route path="course" element={<CoursePage />} />
-            <Route path="account" element={<AccountPage />} />
+            <Route path="profile" element={<ProfilePage />} />
             <Route path="*" element={<Navigate to="/" />} />
           </Route>
         ) : (

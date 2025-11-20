@@ -1,0 +1,191 @@
+/* Styles for ProfilePage (refactored from AccountPage.css) */
+
+.profile-page-container {
+  padding: 180px 40px 80px; /* Top, Left/Right, Bottom */
+  background-color: #f0f2f5;
+  display: flex;
+  gap: 30px;
+  align-items: flex-start;
+  max-width: 1440px;
+  margin: 0 auto;
+}
+
+.profile-sidebar {
+  flex: 0 0 320px; /* Do not grow, do not shrink, base width 320px */
+  background-color: #fff;
+  border-radius: 12px;
+  padding: 25px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.sidebar-profile-summary {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding-bottom: 25px;
+  border-bottom: 1px solid #eee;
+}
+
+.avatar-placeholder-sm {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background-color: #e0e0e0;
+  flex-shrink: 0;
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.user-name {
+  font-weight: 600;
+  color: #333;
+}
+
+.user-email {
+  font-size: 0.9rem;
+  color: #777;
+}
+
+.sidebar-nav ul {
+  list-style: none;
+  margin-top: 20px;
+}
+
+.sidebar-nav li a {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 15px;
+  border-radius: 8px;
+  text-decoration: none;
+  color: #555;
+  font-weight: 600;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.sidebar-nav li a:hover {
+  background-color: #f4f4f4;
+}
+
+.sidebar-nav li a.active {
+  background-color: #800000;
+  color: #fff;
+}
+
+.sidebar-nav li a svg {
+  stroke-width: 2.5;
+}
+
+.sidebar-nav li a :last-child {
+  margin-left: auto; /* Pushes the chevron or text to the end */
+  color: #999;
+}
+
+.sidebar-nav li a.active :last-child {
+  color: #fff;
+}
+
+.profile-main-content {
+  flex-grow: 1;
+  background-color: #fff;
+  border-radius: 12px;
+  padding: 30px 40px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.profile-header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding-bottom: 30px;
+  border-bottom: 1px solid #eee;
+}
+
+.avatar-placeholder-md {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  background-color: #e0e0e0;
+}
+
+.profile-details-form {
+  margin: 40px 0;
+}
+
+.form-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 25px 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.form-row:last-child {
+  border-bottom: none;
+}
+
+.form-row label {
+  font-weight: 600;
+  color: #333;
+}
+
+.form-row span {
+  color: #555;
+}
+
+.form-row .placeholder-text {
+  color: #999;
+}
+
+/* Clean input styles for profile fields */
+.form-row input {
+  width: 360px;
+  max-width: 40vw;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #e6e6e6;
+  background: #fff; /* white background for clarity */
+  color: #222;
+  text-align: left;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.03);
+}
+
+.form-row input:focus {
+  outline: none;
+  border-color: #c94b4b;
+  box-shadow: 0 0 0 4px rgba(201, 75, 75, 0.06);
+}
+
+/* Enrollment status pill */
+.status-pill {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: #fff;
+}
+.status-pill.pending { background: #f4a261; color: #2a1f12; } /* orange */
+.status-pill.approved { background: #2ea44f; } /* green */
+.status-pill.denied { background: #dc3545; } /* red */
+
+.save-changes-button {
+  background-color: #800000;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 25px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  display: block; /* Makes it a block element */
+  margin-left: auto; /* Pushes button to the right */
+}
+
+.save-changes-button:hover {
+  background-color: #9b3434;
+}
