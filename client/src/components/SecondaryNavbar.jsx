@@ -46,7 +46,7 @@ const SecondaryNavbar = ({ role }) => {
                         </li>
                         <li>
                             <NavLink
-                                to="/account"
+                                to="/profile"
                                 className={({ isActive }) => isActive ? 'active' : ''}
                             >
                                 Profile
@@ -92,7 +92,7 @@ const SecondaryNavbar = ({ role }) => {
                         </li>
                         <li>
                             <NavLink
-                                to="/account"
+                                to="/profile"
                                 className={({ isActive }) => isActive ? 'active' : ''}
                             >
                                 Profile
