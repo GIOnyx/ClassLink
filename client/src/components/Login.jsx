@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import '../App.css';
 import { login } from '../services/backend';
 
@@ -6,6 +6,8 @@ const Login = ({ onLoginSuccess, onClose }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [role, setRole] = useState('student');
+    const [dropdownOpen, setDropdownOpen] = useState(false);
+    const roleRef = useRef(null);
     const [errors, setErrors] = useState({});
 
     const validateForm = () => {
@@ -49,11 +51,27 @@ const Login = ({ onLoginSuccess, onClose }) => {
                 </h2>
                 
                 <h2>It is our great pleasure to have you on board!</h2>
-                <div className="form-group">
-                    <select value={role} onChange={(e) => setRole(e.target.value)}>
-                        <option value="student">Student</option>
-                        <option value="admin">Admin</option>
-                    </select>
+                <div className="form-group role-group" ref={roleRef}>
+                    <div className="role-select-wrapper">
+                        <button
+                            type="button"
+                            className="role-button"
+                            aria-haspopup="listbox"
+                            aria-expanded={dropdownOpen}
+                            onClick={() => setDropdownOpen((s) => !s)}
+                            onKeyDown={(e) => { if (e.key === 'Escape') setDropdownOpen(false); }}
+                        >
+                            <span className="role-button-label">{role === 'student' ? 'Student' : 'Admin'}</span>
+                            <span className="role-button-arrow">▾</span>
+                        </button>
+
+                        {dropdownOpen && (
+                            <ul className="role-dropdown" role="listbox" tabIndex={-1}>
+                                <li role="option" onClick={() => { setRole('student'); setDropdownOpen(false); }}>Student</li>
+                                <li role="option" onClick={() => { setRole('admin'); setDropdownOpen(false); }}>Admin</li>
+                            </ul>
+                        )}
+                    </div>
                 </div>
                 
                 <div className="form-group">
