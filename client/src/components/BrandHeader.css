@@ -1,0 +1,5 @@
+/* Styles for BrandHeader component */
+/* Branding colors (moved from App.css) */
+.class-text { color: #800000; }
+.link-text { color: #D89925; }
+.link-text .class-text { letter-spacing: 6px; }

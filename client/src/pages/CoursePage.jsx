@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import '../App.css';
+import './CoursePage.css';
 import { getCourses, addCourse, getTeachers } from '/src/services/backend.js'; // ✅ Import getTeachers
 
 const programs = [

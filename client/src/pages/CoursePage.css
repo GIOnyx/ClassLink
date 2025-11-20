@@ -1,0 +1,9 @@
+/* Styles for CoursePage */
+.course-page-container { padding: 180px 40px 80px; background-color:#f0f2f5; }
+.course-content-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:30px; max-width:1400px; margin:0 auto; }
+.course-column { display:flex; flex-direction:column; gap:15px; }
+.course-card { display:flex; align-items:center; gap:15px; background:#fff; padding:20px; border-radius:12px; border:1px solid #e0e0e0; box-shadow:0 2px 8px rgba(0,0,0,0.07); }
+.course-checkbox { width:20px; height:20px; border:2px solid #ccc; border-radius:4px; flex-shrink:0; }
+.course-line { height:10px; width:100%; background:#e0e0e0; border-radius:5px; }
+.manage-course-button { width:100%; margin-top:15px; background-color:#800000; color:white; border:none; border-radius:8px; padding:12px; font-size:16px; font-weight:600; cursor:pointer; transition:background-color 0.2s; }
+.manage-course-button:hover { background-color:#9b3434; }

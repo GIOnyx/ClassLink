@@ -1,6 +1,7 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom'; // ✨ Import NavLink
 import '../App.css';
+import './SecondaryNavbar.css';
 
 const SecondaryNavbar = ({ role }) => {
     return (

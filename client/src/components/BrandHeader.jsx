@@ -1,5 +1,6 @@
 import React from 'react';
 import '../App.css';
+import './BrandHeader.css';
 
 // The header now accepts an 'onLoginClick' function as a prop
 const BrandHeader = ({ onLoginClick, onRegisterClick }) => {

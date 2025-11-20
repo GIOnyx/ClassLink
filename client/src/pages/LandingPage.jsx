@@ -4,6 +4,7 @@ import Login from '../components/Login.jsx';
 import Register from '../components/Register.jsx';
 import Footer from '../components/Footer.jsx';
 import '../App.css';
+import './LandingPage.css';
 
 const LandingPage = ({ onLoginSuccess }) => {
     // State to control the visibility of the login pop-up

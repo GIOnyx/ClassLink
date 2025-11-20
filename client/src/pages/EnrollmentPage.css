@@ -1,0 +1,24 @@
+/* Styles for EnrollmentPage (if any) */
+/* Enrollment grid and filters (moved from App.css) */
+.enrollment-grid {
+	display: grid;
+	grid-template-columns: 450px 1fr;
+	gap: 30px;
+	align-items: flex-start;
+	max-width: 1840px;
+	margin: 0 auto;
+}
+
+.enrollment-filters { display: flex; flex-direction: column; gap: 30px; }
+
+.filter-card { background-color: #2A2A2A; border-radius: 12px; color: #fff; overflow: hidden; }
+.filter-card ul { list-style: none; margin: 0; padding: 0; }
+.filter-card li { padding: 15px 20px; font-weight: 600; cursor: pointer; border-bottom: 1px solid #444; transition: background-color 0.2s; }
+.filter-card li:last-child { border-bottom: none; }
+.filter-card li.active { background-color: #F4C522; color: #2A2A2A; }
+
+.enrollment-student-list { max-height: 705px; overflow-y: auto; padding-right: 5px; }
+.enrollment-student-list::-webkit-scrollbar { display: none; }
+
+.student-enrollment-card { background-color: #e0e0e0; border-radius: 12px; height: 120px; flex-shrink: 0; margin-bottom: 20px; }
+.student-enrollment-card:last-child { margin-bottom: 0; }

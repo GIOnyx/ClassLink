@@ -1,0 +1,52 @@
+/* Styles for Register component */
+
+/* Shared form styles used by register modal (moved from App.css) */
+.form-group {
+	font-family: 'Inter', sans-serif;
+	margin-bottom: 10px;
+}
+
+.form-group input {
+	width: 100%;
+	padding: 22px 20px;
+	border: 2px solid #949494;
+	border-radius: 18px;
+	font-size: 1rem;
+	color: #000;
+	background-color: #fff;
+	transition: border-color 0.3s;
+}
+
+.form-group input:focus {
+	outline: none;
+	border-color: #800000;
+}
+
+.signin-button {
+	width: 100%;
+	padding: 22px;
+	border: none;
+	border-radius: 18px;
+	background-color: #800000;
+	color: white;
+	font-size: 1.1rem;
+	font-weight: 600;
+	cursor: pointer;
+	transition: background-color 0.3s;
+	margin-top: 10px;
+}
+
+.signin-button:hover {
+	background-color: #9b3434;
+}
+
+/* Validation Errors */
+.error-input {
+	border-color: #dc3545 !important;
+}
+
+.error-text {
+	color: #dc3545;
+	font-size: 0.9rem;
+	margin-top: 5px;
+}
