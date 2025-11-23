@@ -42,10 +42,10 @@ body {
 /* 2. The Standard Page Container */
 /* Apply this class to the root <div> of every page */
 .standard-page-layout {
-  padding-top: 40px;
-  padding-right: 40px;
-  padding-bottom: 40px;
-  padding-left: 40px;
+  padding-top: 20px;
+  padding-right: 20px;
+  padding-bottom: 20px;
+  padding-left: 20px;
   max-width: 100%;
   margin: 0; /* Horizontal centering */
   width: 100%;
@@ -58,10 +58,10 @@ body {
 .profile-page-container,
 .page-content {
   /* Reset these to behave like standard layout if used */
-  padding-top: 40px !important;
-  padding-right: 40px !important;
-  padding-bottom: 40px !important;
-  padding-left: 40px !important;
+  padding-top: 20px !important;
+  padding-right: 20px !important;
+  padding-bottom: 20px !important;
+  padding-left: 20px !important;
   max-width: 100% !important;
   margin: 0 !important;
   margin-top: 0 !important; /* Force remove top margins */

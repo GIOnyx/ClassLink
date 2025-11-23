@@ -32,7 +32,7 @@ public class Course {
 
     @ManyToOne
     @JoinColumn(name = "schedule_id")
-    private Schedule schedule;
+    private Calendar schedule;
 
     // Relationship to Enrollment
     @OneToMany(mappedBy = "course")

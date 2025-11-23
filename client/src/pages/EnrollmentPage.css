@@ -86,6 +86,13 @@
   color: #333;
 }
 
+.enrollment-radio-label input[type="radio"] {
+  accent-color: #800000; /* Replace with your desired color (e.g., #0000FF for blue) */
+  width: 18px;           /* Optional: Makes the button slightly larger */
+  height: 18px;          /* Optional: Makes the button slightly larger */
+  cursor: pointer;
+}
+
 /* Buttons and Navigation */
 .enrollment-nav-container {
   display: flex;

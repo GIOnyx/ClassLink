@@ -8,6 +8,7 @@ import EnrollmentPage from './pages/EnrollmentPage.jsx';
 import StudentPage from './pages/StudentPage.jsx';
 import AdminPage from './pages/AdminPage.jsx';
 import ProfilePage from './pages/ProfilePage.jsx';
+import CalendarPage from './pages/CalendarPage.jsx';
 
 import './App.css';
 import { me, logout as apiLogout } from './services/backend';
@@ -61,6 +62,7 @@ function App() {
             <Route path="admin" element={role === 'ADMIN' ? <AdminPage /> : <Navigate to="/" />} />
             <Route path="student" element={<StudentPage />} />
             <Route path="profile" element={<ProfilePage />} />
+            <Route path="calendar" element={<CalendarPage />} />
             <Route path="*" element={<Navigate to="/" />} />
           </Route>
         ) : (
