@@ -11,8 +11,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.classlink.server.model.Course;
 import com.classlink.server.model.Enrollment;
 import com.classlink.server.model.Student;
+import com.classlink.server.repository.CourseRepository;
 import com.classlink.server.repository.EnrollmentRepository;
 import com.classlink.server.repository.StudentRepository;
 
@@ -22,11 +24,14 @@ public class EnrollmentController {
 
     private final EnrollmentRepository enrollmentRepository;
     private final StudentRepository studentRepository;
+    private final CourseRepository courseRepository;
 
     public EnrollmentController(EnrollmentRepository enrollmentRepository,
-            StudentRepository studentRepository) {
+            StudentRepository studentRepository,
+            CourseRepository courseRepository) {
         this.enrollmentRepository = enrollmentRepository;
         this.studentRepository = studentRepository;
+        this.courseRepository = courseRepository;
     }
 
     @GetMapping
@@ -48,6 +53,10 @@ public class EnrollmentController {
 
         Enrollment enrollment = new Enrollment();
         enrollment.setStudent(student);
+        if (req.getCourseId() != null) {
+            Optional<Course> c = courseRepository.findById(req.getCourseId());
+            c.ifPresent(enrollment::setCourse);
+        }
         enrollment.setStatus("enrolled");
         enrollment.setDateEnrolled(new Date());
         Enrollment saved = enrollmentRepository.save(enrollment);
