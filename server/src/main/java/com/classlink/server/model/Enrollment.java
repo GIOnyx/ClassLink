@@ -3,6 +3,7 @@ package com.classlink.server.model;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.util.Date;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @Entity
 @Data
@@ -11,10 +12,15 @@ public class Enrollment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer enrollmentID;
 
-    // Establishes the Many-to-One relationship with Student
     @ManyToOne
-    @JoinColumn(name = "student_id") // This creates the foreign key column
+    @JoinColumn(name = "student_id")
+    @JsonIgnoreProperties("enrollments")
     private Student student;
+
+    // ✅ ADD THIS BACK
+    @ManyToOne
+    @JoinColumn(name = "course_id")
+    private Course course;
 
     private Date dateEnrolled;
     private String status;
