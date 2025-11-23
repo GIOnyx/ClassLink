@@ -3,19 +3,23 @@ package com.classlink.server.controller;
 import java.net.URI;
 import java.util.Date;
 import java.util.Optional;
+import java.util.List; // ADDED: Required import for List
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.classlink.server.model.Course;
 import com.classlink.server.model.Enrollment;
+import com.classlink.server.model.EnrollmentForm;
 import com.classlink.server.model.Student;
 import com.classlink.server.repository.CourseRepository;
 import com.classlink.server.repository.EnrollmentRepository;
+import com.classlink.server.repository.EnrollmentFormRepository; // Added this import
 import com.classlink.server.repository.StudentRepository;
 
 @RestController
@@ -25,13 +29,36 @@ public class EnrollmentController {
     private final EnrollmentRepository enrollmentRepository;
     private final StudentRepository studentRepository;
     private final CourseRepository courseRepository;
+    // ASSUMPTION: You use EnrollmentFormRepository for EnrollmentForm entities
+    private final EnrollmentFormRepository enrollmentFormRepository;
 
     public EnrollmentController(EnrollmentRepository enrollmentRepository,
             StudentRepository studentRepository,
-            CourseRepository courseRepository) {
+            CourseRepository courseRepository,
+            // You might need to inject the EnrollmentFormRepository here if it's not done
+            // already
+            EnrollmentFormRepository enrollmentFormRepository) {
         this.enrollmentRepository = enrollmentRepository;
         this.studentRepository = studentRepository;
         this.courseRepository = courseRepository;
+        this.enrollmentFormRepository = enrollmentFormRepository; // Initialize it
+    }
+
+    @GetMapping("/forms")
+    public ResponseEntity<List<EnrollmentForm>> getFilteredEnrollmentForms(
+            @RequestParam(required = false) String department,
+            @RequestParam(required = false) String program,
+            @RequestParam(required = false) Integer yearLevel,
+            @RequestParam(required = false) String semester) {
+
+        // Delegate the filtering logic to the custom repository method.
+        List<EnrollmentForm> filteredForms = enrollmentFormRepository.findFormsByFilters(
+                department,
+                program,
+                yearLevel,
+                semester);
+
+        return ResponseEntity.ok(filteredForms);
     }
 
     @GetMapping

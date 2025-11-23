@@ -1,24 +1,52 @@
 import React, { useEffect, useState } from 'react';
 import '../App.css';
 import './AdminPage.css';
-import { getStudentsByStatus, approveStudent, rejectStudent } from '../services/backend';
+import { getStudentsByStatus, approveStudent, rejectStudent, getDepartments, getPrograms } from '../services/backend';
+
+const SEMESTER_OPTIONS = ['1st', '2nd', 'Summer'];
+const MAX_YEARS = 5; // Assuming max 5 years based on Program data loader
 
 const AdminPage = () => {
-  const [pending, setPending] = useState([]);
+  const [allPending, setAllPending] = useState([]); // Holds all pending students
+  const [departments, setDepartments] = useState([]); //
+  const [programs, setPrograms] = useState([]); //
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   
-  // Modal states
+  // New state for filters
+  const [filters, setFilters] = useState({
+    departmentId: '',
+    programId: '',
+    yearLevel: '',
+    semester: '',
+  });
+
+  // Modal states (kept original)
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [rejectingId, setRejectingId] = useState(null);
   const [rejectReason, setRejectReason] = useState('');
 
-  const load = async () => {
+  const loadFilterData = async () => { //
+    try {
+      const [depsRes, progsRes] = await Promise.all([
+        getDepartments(),
+        getPrograms(), // Fetch all programs initially
+      ]);
+      setDepartments(depsRes.data || []);
+      // Programs need to be all programs to handle filtering down or can fetch based on selected department
+      setPrograms(progsRes.data || []); 
+    } catch (e) {
+      console.error("Failed to load filter options:", e);
+    }
+  }
+
+  const loadPendingStudents = async () => {
     setLoading(true);
     setError('');
     try {
-      const [p] = await Promise.all([getStudentsByStatus('PENDING')]);
-      setPending(p.data || []);
+      // Load all pending students
+      const res = await getStudentsByStatus('PENDING');
+      setAllPending(res.data || []);
     } catch (e) {
       setError('Failed to load students');
     } finally {
@@ -26,27 +54,88 @@ const AdminPage = () => {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { 
+    loadPendingStudents(); 
+    loadFilterData();
+  }, []); //
 
+  // Filter change handler
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    setFilters(prev => ({ 
+      ...prev, 
+      [name]: value,
+      // If department changes, clear program filter
+      ...(name === 'departmentId' && { programId: '' })
+    }));
+  };
+
+  // Memoized filtered list
+  const filteredStudents = allPending.filter(s => {
+    // Filter by Department
+    if (filters.departmentId) {
+        // Need to check if the student has a department and if it matches
+        const studentDepId = s.department?.id || '';
+        if (studentDepId.toString() !== filters.departmentId) {
+            return false;
+        }
+    }
+
+    // Filter by Program
+    if (filters.programId) {
+        // Need to check if the student has a program and if it matches
+        const studentProgramId = s.program?.id || '';
+        if (studentProgramId.toString() !== filters.programId) {
+            return false;
+        }
+    }
+    
+    // Filter by Year Level
+    if (filters.yearLevel) {
+        const studentYear = s.yearLevel?.toString() || '';
+        if (studentYear !== filters.yearLevel) {
+            return false;
+        }
+    }
+
+    // Filter by Semester
+    if (filters.semester) {
+        const studentSemester = s.semester || '';
+        if (studentSemester !== filters.semester) {
+            return false;
+        }
+    }
+
+    return true;
+  });
+
+  // Calculate year options
+  const availableYears = Array.from({ length: MAX_YEARS }, (_, i) => (i + 1).toString());
+
+  // Filtered Programs based on selected Department
+  const filteredPrograms = programs.filter(p => 
+      !filters.departmentId || p.department.id.toString() === filters.departmentId
+  );
+
+
+  // Event handlers (kept original logic, only calling loadPendingStudents to reload)
   const onApprove = async (id) => { 
       if(window.confirm('Approve this student?')) {
           try {
             await approveStudent(id); 
             setSelectedStudent(null);
-            await load();
+            await loadPendingStudents(); // Reload all pending students to update the list
           } catch (err) {
             alert("Failed to approve student.");
           }
       }
   };
   
-  // Open the rejection reason modal
   const initiateReject = (id) => {
       setRejectingId(id);
-      setRejectReason(''); // Reset reason
+      setRejectReason(''); 
   };
 
-  // Confirm rejection with reason
   const confirmReject = async () => {
       if (!rejectReason.trim()) {
           alert("Please provide a reason for rejection.");
@@ -57,20 +146,99 @@ const AdminPage = () => {
           setRejectingId(null);
           setSelectedStudent(null);
           setRejectReason('');
-          await load();
+          await loadPendingStudents(); // Reload all pending students to update the list
       } catch (e) {
           console.error(e);
           alert("Failed to reject student.");
       }
   };
 
+  
   return (
     <div className="standard-page-layout">
-      <h2 className="admin-header">Student Approvals</h2>
       {error && <div className="admin-error">{error}</div>}
 
       <div className="admin-panel">
-        <h3 className="admin-sub-header">Pending Registrations</h3>
+        <h3 className="admin-sub-header">Filter Applications</h3>
+        {/* New Filter UI */}
+        <div className="filter-controls-grid">
+            {/* Department Filter */}
+            <div className="filter-group">
+                <label className="filter-label" htmlFor="departmentId">Department</label>
+                <select
+                    id="departmentId"
+                    name="departmentId"
+                    value={filters.departmentId}
+                    onChange={handleFilterChange}
+                    className="filter-select"
+                >
+                    <option value="">All Departments</option>
+                    {departments.map(d => (
+                        <option key={d.id} value={d.id}>{d.name}</option>
+                    ))}
+                </select>
+            </div>
+
+            {/* Program Filter */}
+            <div className="filter-group">
+                <label className="filter-label" htmlFor="programId">Program</label>
+                <select
+                    id="programId"
+                    name="programId"
+                    value={filters.programId}
+                    onChange={handleFilterChange}
+                    className="filter-select"
+                    disabled={!filters.departmentId && filteredPrograms.length === 0}
+                >
+                    <option value="">All Programs</option>
+                    {filteredPrograms.map(p => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                </select>
+            </div>
+
+            {/* Year Level Filter */}
+            <div className="filter-group">
+                <label className="filter-label" htmlFor="yearLevel">Year Level</label>
+                <select
+                    id="yearLevel"
+                    name="yearLevel"
+                    value={filters.yearLevel}
+                    onChange={handleFilterChange}
+                    className="filter-select"
+                >
+                    <option value="">All Years</option>
+                    {availableYears.map(y => (
+                        <option key={y} value={y}>{y}</option>
+                    ))}
+                </select>
+            </div>
+
+            {/* Semester Filter */}
+            <div className="filter-group">
+                <label className="filter-label" htmlFor="semester">Semester</label>
+                <select
+                    id="semester"
+                    name="semester"
+                    value={filters.semester}
+                    onChange={handleFilterChange}
+                    className="filter-select"
+                >
+                    <option value="">All Semesters</option>
+                    {SEMESTER_OPTIONS.map(s => (
+                        <option key={s} value={s}>{s}</option>
+                    ))}
+                </select>
+            </div>
+            <button className="btn-clear-filters" onClick={() => setFilters({ departmentId: '', programId: '', yearLevel: '', semester: '' })}>
+                Clear Filters
+            </button>
+        </div>
+      </div>
+
+
+      <div className="admin-panel">
+        <h3 className="admin-sub-header">Pending Registrations ({filteredStudents.length} / {allPending.length})</h3>
         {loading ? (
           <div className="admin-loading">Loading…</div>
         ) : (
@@ -86,7 +254,7 @@ const AdminPage = () => {
                 </tr>
               </thead>
               <tbody>
-                {pending.map((s) => (
+                {filteredStudents.map((s) => (
                   <tr key={s.id}>
                     <td>{s.firstName} {s.lastName}</td>
                     <td>{s.email}</td>
@@ -99,9 +267,9 @@ const AdminPage = () => {
                     </td>
                   </tr>
                 ))}
-                {pending.length === 0 && (
+                {filteredStudents.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="admin-empty-row">No pending registrations</td>
+                    <td colSpan={5} className="admin-empty-row">No matching pending registrations</td>
                   </tr>
                 )}
               </tbody>
@@ -235,7 +403,11 @@ const AdminPage = () => {
                 <section className="modal-section">
                     <h4 className="section-heading">Academic Information</h4>
                     <div className="modal-form-grid">
-                        <div className="modal-field-group modal-grid-full">
+                        <div className="modal-field-group">
+                            <label className="modal-label">Department</label>
+                            <div className="modal-value highlight">{selectedStudent.department ? selectedStudent.department.name : 'Not Assigned'}</div>
+                        </div>
+                        <div className="modal-field-group">
                             <label className="modal-label">Program</label>
                             <div className="modal-value highlight">{selectedStudent.program ? selectedStudent.program.name : 'Not Assigned'}</div>
                         </div>

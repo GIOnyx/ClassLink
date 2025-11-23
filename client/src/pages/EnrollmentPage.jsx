@@ -4,7 +4,6 @@ import '../App.css';
 import './EnrollmentPage.css';
 
 const EnrollmentPage = () => {
-  // ... (State variables remain the same) ...
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [error, setError] = useState('');
@@ -21,10 +20,29 @@ const EnrollmentPage = () => {
     departmentId: null, programId: null, yearLevel: null, semester: '', previousSchool: '',
   });
 
-  // ... (Handlers remain the same) ...
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  // --- REUSABLE HANDLERS (Used in both Wizard and Edit Mode) ---
+  const handleDepartmentChange = async (e) => {
+    const deptId = e.target.value ? Number(e.target.value) : null;
+    setFormData(prev => ({ ...prev, departmentId: deptId, programId: null, yearLevel: null }));
+    setPrograms([]); 
+    setYearOptions([]);
+    if (deptId) {
+      try { const res = await getPrograms(deptId); setPrograms(res.data || []); } catch (err) {}
+    }
+  };
+
+  const handleProgramChange = (e) => {
+    const pid = e.target.value ? Number(e.target.value) : null;
+    setFormData(prev => ({ ...prev, programId: pid, yearLevel: null }));
+    const sel = programs.find(p => p.id === pid);
+    if (sel && sel.durationInYears) {
+      setYearOptions(Array.from({ length: sel.durationInYears }, (_, i) => i + 1));
+    } else { setYearOptions([]); }
   };
 
   const nextStep = () => {
@@ -84,7 +102,6 @@ const EnrollmentPage = () => {
         const hasApplication = student && (student.program || student.parentGuardianName || student.previousSchool);
         if (hasApplication) {
             setExistingApp(student);
-            // ✅ Auto-enable edit mode if status is REJECTED so they can fix it immediately
             if (student.status === 'REJECTED') {
                 setEditMode(true);
                 setError('Your application was rejected. Please review your details and resubmit.');
@@ -131,10 +148,19 @@ const EnrollmentPage = () => {
         }
         if (existingApp.programId || existingApp.program?.id) {
           const pid = existingApp.programId || existingApp.program?.id;
-          const sel = (existingApp.program && [existingApp.program]) || programs.find(p => p.id === pid);
-          if (sel && sel.durationInYears) {
-            setYearOptions(Array.from({ length: sel.durationInYears }, (_, i) => i + 1));
-          }
+          // Wait for programs to set, or find directly from response if needed
+          // For simplicity, relies on useEffect race or existing data. 
+          // Ideally we fetch program specific details if 'programs' state isn't ready.
+          // For now, let's assume programs load fast or are consistent.
+          // Trigger year options update manually if needed or rely on user interaction for edit.
+          // To ensure Year Options appear on load:
+           const res = await getPrograms(existingApp.departmentId || existingApp.department?.id);
+           const progList = res.data || [];
+           setPrograms(progList);
+           const sel = progList.find(p => p.id === pid);
+           if (sel && sel.durationInYears) {
+             setYearOptions(Array.from({ length: sel.durationInYears }, (_, i) => i + 1));
+           }
         }
       } catch (err) {}
     })();
@@ -155,7 +181,6 @@ const EnrollmentPage = () => {
       const res = await submitStudentApplication(payload);
       setExistingApp(res.data || existingApp);
       setEditMode(false);
-      // Clear error if submission succeeded
       setError('');
     } catch (err) {
       setError('Save failed. Please try again.');
@@ -177,8 +202,6 @@ const EnrollmentPage = () => {
                 Application Status: <span className={`status-label ${statusClass}`}>{status}</span>
               </h3>
           </div>
-
-            {/* Modern Rejection Message UI */}
             {status === 'REJECTED' && (
               <div className="rejection-alert">
                   <div className="rejection-icon">
@@ -196,7 +219,6 @@ const EnrollmentPage = () => {
         </div>
         
         <form className="enrollment-form-container" onSubmit={handleSave}>
-            {/* ... (Keep existing form fields - First Name, Last Name, etc.) ... */}
             <section>
               <h3 className="enrollment-section-title">Student Information</h3>
               <div className="enrollment-grid">
@@ -227,19 +249,51 @@ const EnrollmentPage = () => {
 
             <section>
               <h3 className="enrollment-section-title">Academic</h3>
+              {/* ✨ FIXED: Replaced static text inputs with Dropdowns & Logic same as Wizard */}
               <div className="enrollment-grid">
-                 <div className="enrollment-form-group enrollment-grid-full">
-                    <label className="enrollment-label">Program</label>
-                    <input className="enrollment-input" value={existingApp.program ? existingApp.program.name : 'N/A'} disabled />
+                 <div className="enrollment-form-group">
+                    <label className="enrollment-label">Department</label>
+                    <select name="departmentId" value={formData.departmentId || ''} onChange={handleDepartmentChange} className="enrollment-input" disabled={!editMode}>
+                      <option value="">Select department…</option>
+                      {departments.map(d => (<option key={d.id} value={d.id}>{d.name}</option>))}
+                    </select>
                  </div>
-                 <div className="enrollment-form-group"><label className="enrollment-label">Year Level</label><input className="enrollment-input" value={formData.yearLevel} disabled /></div>
-                 <div className="enrollment-form-group"><label className="enrollment-label">Semester</label><input className="enrollment-input" value={formData.semester} disabled /></div>
+                 
+                 <div className="enrollment-form-group">
+                    <label className="enrollment-label">Program</label>
+                    <select name="programId" value={formData.programId || ''} onChange={handleProgramChange} className="enrollment-input" disabled={!editMode || programs.length === 0}>
+                      <option value="">Select program…</option>
+                      {programs.map(p => (<option key={p.id} value={p.id}>{p.name}</option>))}
+                    </select>
+                 </div>
+                 
+                 <div className="enrollment-form-group">
+                    <label className="enrollment-label">Year Level</label>
+                    <select name="yearLevel" value={formData.yearLevel || ''} onChange={(e) => setFormData(prev => ({ ...prev, yearLevel: e.target.value ? Number(e.target.value) : null }))} className="enrollment-input" disabled={!editMode || yearOptions.length === 0}>
+                      <option value="">Select year…</option>
+                      {yearOptions.map(y => (<option key={y} value={y}>{y}</option>))}
+                    </select>
+                 </div>
+
+                 <div className="enrollment-form-group">
+                    <label className="enrollment-label">Semester</label>
+                    <select name="semester" value={formData.semester || ''} onChange={(e) => setFormData(prev => ({ ...prev, semester: e.target.value }))} className="enrollment-input" disabled={!editMode}>
+                      <option value="">Select semester…</option>
+                      <option value="1st">1st</option>
+                      <option value="2nd">2nd</option>
+                      <option value="summer">Summer</option>
+                    </select>
+                 </div>
+                 
+                 <div className="enrollment-form-group enrollment-grid-full">
+                    <label className="enrollment-label">Previous School</label>
+                    <input className="enrollment-input" name="previousSchool" value={formData.previousSchool} onChange={handleChange} disabled={!editMode} />
+                 </div>
               </div>
             </section>
 
             <div className="enrollment-edit-actions">
               {!editMode ? (
-                /* Hide Edit button if Pending/Approved, but allow editing if Rejected */
                 (status === 'REJECTED' || status === 'PENDING') && <button type="button" onClick={startEdit} className="enrollment-submit-btn">Edit Information</button>
               ) : (
                 <>
@@ -255,30 +309,19 @@ const EnrollmentPage = () => {
     );
   }
 
-  // ... (Render Wizard Form for New Applications) ...
-  // Keep existing return block here...
+  // --- NEW APPLICATION WIZARD RENDER ---
   return (
     <div className="standard-page-layout">
       <form className="enrollment-form-container" onSubmit={handleSubmit}>
         <h2 className="enrollment-header">Student Enrollment Form (Step {currentStep} of 3)</h2>
         
-        {/* STEP 1 */}
         {currentStep === 1 && (
           <section>
             <h3 className="enrollment-section-title">Student Information</h3>
             <div className="enrollment-grid">
-              <div className="enrollment-form-group">
-                <label htmlFor="firstName" className="enrollment-label">First Name</label>
-                <input id="firstName" name="firstName" value={formData.firstName} onChange={handleChange} className="enrollment-input" />
-              </div>
-              <div className="enrollment-form-group">
-                <label htmlFor="lastName" className="enrollment-label">Last Name</label>
-                <input id="lastName" name="lastName" value={formData.lastName} onChange={handleChange} className="enrollment-input" />
-              </div>
-              <div className="enrollment-form-group">
-                <label htmlFor="birthDate" className="enrollment-label">Birth Date</label>
-                <input type="date" id="birthDate" name="birthDate" value={formData.birthDate} onChange={handleChange} className="enrollment-input" />
-              </div>
+              <div className="enrollment-form-group"><label htmlFor="firstName" className="enrollment-label">First Name</label><input id="firstName" name="firstName" value={formData.firstName} onChange={handleChange} className="enrollment-input" /></div>
+              <div className="enrollment-form-group"><label htmlFor="lastName" className="enrollment-label">Last Name</label><input id="lastName" name="lastName" value={formData.lastName} onChange={handleChange} className="enrollment-input" /></div>
+              <div className="enrollment-form-group"><label htmlFor="birthDate" className="enrollment-label">Birth Date</label><input type="date" id="birthDate" name="birthDate" value={formData.birthDate} onChange={handleChange} className="enrollment-input" /></div>
               <div className="enrollment-form-group">
                 <label className="enrollment-label">Gender</label>
                 <div className="enrollment-radio-group">
@@ -286,76 +329,39 @@ const EnrollmentPage = () => {
                   <label className="enrollment-radio-label"><input type="radio" name="gender" value="Female" checked={formData.gender === 'Female'} onChange={handleChange} /> Female</label>
                 </div>
               </div>
-              <div className="enrollment-form-group enrollment-grid-full">
-                <label htmlFor="studentAddress" className="enrollment-label">Address</label>
-                <input id="studentAddress" name="studentAddress" value={formData.studentAddress} onChange={handleChange} className="enrollment-input" />
-              </div>
-              <div className="enrollment-form-group">
-                <label htmlFor="contactNumber" className="enrollment-label">Contact Number</label>
-                <input type="tel" id="contactNumber" name="contactNumber" value={formData.contactNumber} onChange={handleChange} className="enrollment-input" />
-              </div>
-              <div className="enrollment-form-group">
-                <label htmlFor="emailAddress" className="enrollment-label">Email Address</label>
-                <input type="email" id="emailAddress" name="emailAddress" value={formData.emailAddress} onChange={handleChange} className="enrollment-input" />
-              </div>
+              <div className="enrollment-form-group enrollment-grid-full"><label htmlFor="studentAddress" className="enrollment-label">Address</label><input id="studentAddress" name="studentAddress" value={formData.studentAddress} onChange={handleChange} className="enrollment-input" /></div>
+              <div className="enrollment-form-group"><label htmlFor="contactNumber" className="enrollment-label">Contact Number</label><input type="tel" id="contactNumber" name="contactNumber" value={formData.contactNumber} onChange={handleChange} className="enrollment-input" /></div>
+              <div className="enrollment-form-group"><label htmlFor="emailAddress" className="enrollment-label">Email Address</label><input type="email" id="emailAddress" name="emailAddress" value={formData.emailAddress} onChange={handleChange} className="enrollment-input" /></div>
             </div>
           </section>
         )}
 
-        {/* STEP 2 */}
         {currentStep === 2 && (
           <section>
             <h3 className="enrollment-section-title">Parent / Guardian Information</h3>
             <div className="enrollment-grid">
-              <div className="enrollment-form-group enrollment-grid-full">
-                <label htmlFor="parentGuardianName" className="enrollment-label">Parent/Guardian Name</label>
-                <input id="parentGuardianName" name="parentGuardianName" value={formData.parentGuardianName} onChange={handleChange} className="enrollment-input" />
-              </div>
-              <div className="enrollment-form-group">
-                <label htmlFor="relationshipToStudent" className="enrollment-label">Relationship</label>
-                <input id="relationshipToStudent" name="relationshipToStudent" value={formData.relationshipToStudent} onChange={handleChange} className="enrollment-input" />
-              </div>
-              <div className="enrollment-form-group">
-                <label htmlFor="parentContactNumber" className="enrollment-label">Contact Number</label>
-                <input type="tel" id="parentContactNumber" name="parentContactNumber" value={formData.parentContactNumber} onChange={handleChange} className="enrollment-input" />
-              </div>
-              <div className="enrollment-form-group enrollment-grid-full">
-                <label htmlFor="parentEmailAddress" className="enrollment-label">Email Address</label>
-                <input type="email" id="parentEmailAddress" name="parentEmailAddress" value={formData.parentEmailAddress} onChange={handleChange} className="enrollment-input" />
-              </div>
+              <div className="enrollment-form-group enrollment-grid-full"><label htmlFor="parentGuardianName" className="enrollment-label">Parent/Guardian Name</label><input id="parentGuardianName" name="parentGuardianName" value={formData.parentGuardianName} onChange={handleChange} className="enrollment-input" /></div>
+              <div className="enrollment-form-group"><label htmlFor="relationshipToStudent" className="enrollment-label">Relationship</label><input id="relationshipToStudent" name="relationshipToStudent" value={formData.relationshipToStudent} onChange={handleChange} className="enrollment-input" /></div>
+              <div className="enrollment-form-group"><label htmlFor="parentContactNumber" className="enrollment-label">Contact Number</label><input type="tel" id="parentContactNumber" name="parentContactNumber" value={formData.parentContactNumber} onChange={handleChange} className="enrollment-input" /></div>
+              <div className="enrollment-form-group enrollment-grid-full"><label htmlFor="parentEmailAddress" className="enrollment-label">Email Address</label><input type="email" id="parentEmailAddress" name="parentEmailAddress" value={formData.parentEmailAddress} onChange={handleChange} className="enrollment-input" /></div>
             </div>
           </section>
         )}
 
-        {/* STEP 3 */}
         {currentStep === 3 && (
           <section>
             <h3 className="enrollment-section-title">Academic Information</h3>
             <div className="enrollment-grid">
               <div className="enrollment-form-group">
                 <label htmlFor="departmentId" className="enrollment-label">Department</label>
-                <select id="departmentId" name="departmentId" value={formData.departmentId || ''} onChange={async (e) => {
-                  const deptId = e.target.value ? Number(e.target.value) : null;
-                  setFormData(prev => ({ ...prev, departmentId: deptId, programId: null, yearLevel: null }));
-                  setPrograms([]); setYearOptions([]);
-                  if (deptId) {
-                    try { const res = await getPrograms(deptId); setPrograms(res.data || []); } catch (err) {}
-                  }
-                }} className="enrollment-input">
+                <select id="departmentId" name="departmentId" value={formData.departmentId || ''} onChange={handleDepartmentChange} className="enrollment-input">
                   <option value="">Select department…</option>
                   {departments.map(d => (<option key={d.id} value={d.id}>{d.name}</option>))}
                 </select>
               </div>
               <div className="enrollment-form-group">
                 <label htmlFor="programId" className="enrollment-label">Program</label>
-                <select id="programId" name="programId" value={formData.programId || ''} onChange={(e) => {
-                  const pid = e.target.value ? Number(e.target.value) : null;
-                  setFormData(prev => ({ ...prev, programId: pid, yearLevel: null }));
-                  const sel = programs.find(p => p.id === pid);
-                  if (sel && sel.durationInYears) {
-                    setYearOptions(Array.from({ length: sel.durationInYears }, (_, i) => i + 1));
-                  } else { setYearOptions([]); }
-                }} className="enrollment-input" disabled={programs.length === 0}>
+                <select id="programId" name="programId" value={formData.programId || ''} onChange={handleProgramChange} className="enrollment-input" disabled={programs.length === 0}>
                   <option value="">Select program…</option>
                   {programs.map(p => (<option key={p.id} value={p.id}>{p.name}</option>))}
                 </select>
@@ -387,15 +393,8 @@ const EnrollmentPage = () => {
         {error && <p className="enrollment-error">{error}</p>}
 
         <div className="enrollment-nav-container">
-          {currentStep > 1 ? (
-            <button type="button" onClick={prevStep} className="enrollment-submit-btn enrollment-back-btn">Back</button>
-          ) : <div />}
-          
-          {currentStep < 3 ? (
-            <button type="button" onClick={nextStep} className="enrollment-submit-btn">Next</button>
-          ) : (
-            <button type="submit" className="enrollment-submit-btn" disabled={loading}>{loading ? 'Submitting...' : 'Submit Application'}</button>
-          )}
+          {currentStep > 1 ? <button type="button" onClick={prevStep} className="enrollment-submit-btn enrollment-back-btn">Back</button> : <div />}
+          {currentStep < 3 ? <button type="button" onClick={nextStep} className="enrollment-submit-btn">Next</button> : <button type="submit" className="enrollment-submit-btn" disabled={loading}>{loading ? 'Submitting...' : 'Submit Application'}</button>}
         </div>
       </form>
     </div>

@@ -31,4 +31,18 @@ export const getMyStudent = () => API.get('/students/me');
 export const getDepartments = () => API.get('/departments');
 export const getPrograms = (departmentId) => API.get('/programs', { params: { departmentId } });
 
+export const getCalendarEvents = () => API.get('/calendar');
+export const createCalendarEvent = (payload) => API.post('/calendar', payload);
+export const deleteCalendarEvent = (id) => API.delete(`/calendar/${id}`);
+export const getTeachers = () => API.get('/teachers'); // Adding missing export from previous context if needed
+export const getCourses = () => API.get('/courses');
+export const addCourse = (payload) => API.post('/courses', payload);
+
+export const getFilteredEnrollmentForms = (filters) => {
+    // Note: Axios automatically serializes the 'filters' object into URL query parameters (?department=X&yearLevel=Y)
+    return axios.get('/api/enrollments/forms', {
+        params: filters
+    });
+};
+
 export default API;
