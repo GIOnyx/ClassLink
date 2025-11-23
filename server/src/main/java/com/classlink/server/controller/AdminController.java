@@ -1,6 +1,7 @@
 package com.classlink.server.controller;
 
 import java.net.URI;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.http.HttpStatus;
@@ -29,11 +30,14 @@ public class AdminController {
 		this.studentRepository = studentRepository;
 	}
 
-	// List students, optionally filtered by status e.g., /api/admin/students?status=PENDING
+	// List students, optionally filtered by status e.g.,
+	// /api/admin/students?status=PENDING
 	@GetMapping("/students")
-	public ResponseEntity<?> listStudents(@RequestParam(name = "status", required = false) String status, HttpSession session) {
+	public ResponseEntity<?> listStudents(@RequestParam(name = "status", required = false) String status,
+			HttpSession session) {
 		// Require ADMIN role
-		if (!isAdmin(session)) return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Admin role required");
+		if (!isAdmin(session))
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Admin role required");
 		if (status == null || status.isBlank()) {
 			return ResponseEntity.ok(studentRepository.findAll());
 		}
@@ -47,7 +51,8 @@ public class AdminController {
 
 	@PostMapping("/students")
 	public ResponseEntity<?> createStudent(@RequestBody Student input, HttpSession session) {
-		if (!isAdmin(session)) return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Admin role required");
+		if (!isAdmin(session))
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Admin role required");
 		if (input.getEmail() == null || input.getEmail().isBlank()) {
 			return ResponseEntity.badRequest().body("Email is required");
 		}
@@ -67,17 +72,29 @@ public class AdminController {
 		return ResponseEntity.created(URI.create("/api/admin/students/" + saved.getId())).body(saved);
 	}
 
-	// Change status: PATCH /api/admin/students/{id}/status  { "status": "APPROVED" }
+	// Change status: PATCH /api/admin/students/{id}/status { "status": "APPROVED" }
 	@PatchMapping("/students/{id}/status")
-	public ResponseEntity<?> setStatus(@PathVariable Long id, @RequestBody Map<String, String> body, HttpSession session) {
-		if (!isAdmin(session)) return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Admin role required");
+	public ResponseEntity<?> setStatus(@PathVariable Long id, @RequestBody Map<String, String> body,
+			HttpSession session) {
+		if (!isAdmin(session))
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Admin role required");
 		Student student = studentRepository.findById(id).orElse(null);
-		if (student == null) return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Student not found");
+		if (student == null)
+			return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Student not found");
+
 		String statusStr = body.get("status");
-		if (statusStr == null || statusStr.isBlank()) return ResponseEntity.badRequest().body("status is required");
+		if (statusStr == null || statusStr.isBlank())
+			return ResponseEntity.badRequest().body("status is required");
+
 		try {
 			StudentStatus newStatus = StudentStatus.valueOf(statusStr.toUpperCase());
 			student.setStatus(newStatus);
+
+			// ✅ Save rejection reason if present
+			if (body.containsKey("reason")) {
+				student.setRejectionReason(body.get("reason"));
+			}
+
 			return ResponseEntity.ok(studentRepository.save(student));
 		} catch (IllegalArgumentException ex) {
 			return ResponseEntity.badRequest().body("Invalid status value");
@@ -91,8 +108,10 @@ public class AdminController {
 	}
 
 	@PostMapping("/students/{id}/reject")
-	public ResponseEntity<?> reject(@PathVariable Long id, HttpSession session) {
-		return setStatus(id, Map.of("status", "REJECTED"), session);
+	public ResponseEntity<?> reject(@PathVariable Long id, @RequestBody Map<String, String> body, HttpSession session) {
+		Map<String, String> payload = new HashMap<>(body);
+		payload.put("status", "REJECTED");
+		return setStatus(id, payload, session);
 	}
 
 	private boolean isAdmin(HttpSession session) {

@@ -16,11 +16,6 @@ public class Enrollment {
     @JoinColumn(name = "student_id") // This creates the foreign key column
     private Student student;
 
-    // Establishes the Many-to-One relationship with Course
-    @ManyToOne
-    @JoinColumn(name = "course_id") // This creates the foreign key column
-    private Course course;
-
     private Date dateEnrolled;
     private String status;
 }

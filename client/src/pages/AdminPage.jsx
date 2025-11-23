@@ -1,13 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import '../App.css';
 import './AdminPage.css';
-import { getStudentsByStatus, approveStudent, rejectStudent, getStudents } from '../services/backend';
+import { getStudentsByStatus, approveStudent, rejectStudent } from '../services/backend';
 
 const AdminPage = () => {
   const [pending, setPending] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  
+  // Modal states
   const [selectedStudent, setSelectedStudent] = useState(null);
+  const [rejectingId, setRejectingId] = useState(null);
+  const [rejectReason, setRejectReason] = useState('');
 
   const load = async () => {
     setLoading(true);
@@ -26,23 +30,43 @@ const AdminPage = () => {
 
   const onApprove = async (id) => { 
       if(window.confirm('Approve this student?')) {
-          await approveStudent(id); 
-          setSelectedStudent(null);
-          await load(); 
+          try {
+            await approveStudent(id); 
+            setSelectedStudent(null);
+            await load();
+          } catch (err) {
+            alert("Failed to approve student.");
+          }
       }
   };
   
-  const onReject = async (id) => { 
-      if(window.confirm('Reject this application?')) {
-          await rejectStudent(id); 
+  // Open the rejection reason modal
+  const initiateReject = (id) => {
+      setRejectingId(id);
+      setRejectReason(''); // Reset reason
+  };
+
+  // Confirm rejection with reason
+  const confirmReject = async () => {
+      if (!rejectReason.trim()) {
+          alert("Please provide a reason for rejection.");
+          return;
+      }
+      try {
+          await rejectStudent(rejectingId, rejectReason);
+          setRejectingId(null);
           setSelectedStudent(null);
-          await load(); 
+          setRejectReason('');
+          await load();
+      } catch (e) {
+          console.error(e);
+          alert("Failed to reject student.");
       }
   };
 
   return (
     <div className="standard-page-layout">
-      <h2 className="admin-header">User Approvals</h2>
+      <h2 className="admin-header">Student Approvals</h2>
       {error && <div className="admin-error">{error}</div>}
 
       <div className="admin-panel">
@@ -71,7 +95,7 @@ const AdminPage = () => {
                     <td>
                       <button className="btn-view" onClick={() => setSelectedStudent(s)}>View</button>
                       <button className="btn-approve" onClick={() => onApprove(s.id)}>Approve</button>
-                      <button className="btn-reject" onClick={() => onReject(s.id)}>Reject</button>
+                      <button className="btn-reject" onClick={() => initiateReject(s.id)}>Reject</button>
                     </td>
                   </tr>
                 ))}
@@ -86,13 +110,67 @@ const AdminPage = () => {
         )}
       </div>
       
+      {/* Rejection Reason Input Modal */}
+      {rejectingId && (
+        <div className="modal-overlay" onClick={() => setRejectingId(null)}>
+          <div
+            className="modal-content application-modal"
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: "600px" }}
+          >
+            {/* HEADER */}
+            <div className="modal-header-row" style={{ borderBottom: "none" }}>
+              <div>
+                <h2 className="rejection-modal-title">Reject Application</h2>
+                <p className="rejection-modal-subtitle">
+                  This message will be visible to the student.
+                </p>
+              </div>
+              <button
+                className="modal-close-btn"
+                onClick={() => setRejectingId(null)}
+              >
+                ×
+              </button>
+            </div>
+
+            {/* BODY */}
+            <div className="modal-scroll-body">
+              <textarea
+                className="rejection-textarea"
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+                placeholder="e.g., Invalid ID document submitted, Incorrect Year Level selected..."
+              />
+            </div>
+
+            {/* FOOTER */}
+            <div className="modal-footer rejection-footer">
+              <button
+                className="modal-btn"
+                style={{ background: "#eee", color: "#333" }}
+                onClick={() => setRejectingId(null)}
+              >
+                Cancel
+              </button>
+
+              <button className="modal-btn btn-reject" onClick={confirmReject}>
+                Confirm Rejection
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      
+      {/* Student Details Modal */}
       {selectedStudent && (
         <div className="modal-overlay" onClick={() => setSelectedStudent(null)}>
           <div className="modal-content application-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header-row">
                 <div>
                     <h2 className="modal-title">Application Review</h2>
-                    <p className="modal-subtitle">ID: {selectedStudent.id} • Submitted on: {new Date().toLocaleDateString()}</p>
+                    <p className="modal-subtitle">ID: {selectedStudent.id}</p>
                 </div>
                 <button className="modal-close-btn" onClick={() => setSelectedStudent(null)}>×</button>
             </div>
@@ -178,7 +256,8 @@ const AdminPage = () => {
             </div>
 
             <div className="modal-footer">
-                <button className="modal-btn btn-reject" onClick={() => onReject(selectedStudent.id)}>Reject Application</button>
+                {/* Trigger the rejection modal instead of immediate API call */}
+                <button className="modal-btn btn-reject" onClick={() => { setSelectedStudent(null); initiateReject(selectedStudent.id); }}>Reject Application</button>
                 <button className="modal-btn btn-approve" onClick={() => onApprove(selectedStudent.id)}>Approve Application</button>
             </div>
           </div>

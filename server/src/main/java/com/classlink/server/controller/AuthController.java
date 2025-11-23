@@ -63,10 +63,8 @@ public class AuthController {
         if (student == null)
             return ResponseEntity.status(401).body(Map.of("error", "Invalid credentials"));
 
-        // Allow login for REGISTERED, PENDING, and APPROVED.
-        // Only block REJECTED or INACTIVE.
-        if (student.getStatus() == StudentStatus.REJECTED || student.getStatus() == StudentStatus.INACTIVE) {
-            return ResponseEntity.status(403).body(Map.of("error", "Account is inactive or has been rejected"));
+        if (student.getStatus() == StudentStatus.INACTIVE) {
+            return ResponseEntity.status(403).body(Map.of("error", "Account is inactive"));
         }
 
         session.setAttribute("userType", "student");

@@ -3,6 +3,8 @@ package com.classlink.server.model;
 import java.time.LocalDate; // ✅ ADD THIS IMPORT
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -10,10 +12,9 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 
 @Entity
@@ -59,4 +60,6 @@ public class Student {
     private String parentEmailAddress;
     // removed gradeProgramApplyingFor string in favor of Program relation
     private String previousSchool;
+
+    private String rejectionReason;
 }

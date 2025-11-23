@@ -64,6 +64,12 @@
   font-size: 1rem;
   background-color: #fff;
   color: #333;
+  transition: border-color 0.2s;
+}
+
+.enrollment-input:focus {
+  outline: none;
+  border-color: #800000;
 }
 
 .enrollment-radio-group {
@@ -101,8 +107,15 @@
   transition: background-color 0.2s;
 }
 
+.enrollment-submit-btn:hover {
+  background-color: #9b3434;
+}
+
 .enrollment-back-btn {
   background-color: #6c757d;
+}
+.enrollment-back-btn:hover {
+  background-color: #5a6268;
 }
 
 /* Status & Errors */
@@ -132,4 +145,64 @@
   justify-content: flex-end;
   gap: 12px;
   margin-top: 20px;
+}
+
+/* --- MODERN REJECTION MESSAGE UI --- */
+.rejection-alert {
+  margin-top: 24px;
+  background-color: #ffffff; /* Clean White Background */
+  border: 1px solid #e0e0e0; /* Subtle border */
+  border-left: 5px solid #b00020; /* Strong accent to indicate attention */
+  border-radius: 8px;
+  padding: 24px;
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); /* Container shadow */
+  animation: slideDown 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.rejection-icon {
+  color: #b00020;
+  background-color: #fff0f0; /* Very soft red background for the icon */
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.rejection-content {
+  flex: 1;
+}
+
+.rejection-title {
+  margin: 0 0 8px 0;
+  color: #111827;
+  font-size: 1.1rem;
+  font-weight: 700;
+  font-family: 'Kumbh Sans', sans-serif;
+}
+
+.rejection-message {
+  margin: 0 0 12px 0;
+  color: #4b5563; /* Dark grey for easier reading */
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.rejection-subtext {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #b00020;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
 }

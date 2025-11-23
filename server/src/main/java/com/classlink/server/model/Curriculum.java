@@ -14,6 +14,4 @@ public class Curriculum {
     private String program;
     private int year;
 
-    @ManyToMany
-    private List<Course> requiredCourses;
 }
