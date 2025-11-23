@@ -50,3 +50,20 @@
 	font-size: 0.9rem;
 	margin-top: 5px;
 }
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+    /* 1. Cover the gray with white */
+    -webkit-box-shadow: 0 0 0 100px white inset !important;
+    
+    /* 2. Ensure the text remains black (otherwise it might turn transparent) */
+    -webkit-text-fill-color: #000 !important;
+    
+    /* 3. Maintain your border radius */
+    border-radius: 18px !important;
+    
+    /* 4. Force the transition to never finish, keeping the style locked */
+    transition: background-color 5000s ease-in-out 0s;
+}

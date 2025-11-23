@@ -46,7 +46,6 @@ const Login = ({ onLoginSuccess, onClose }) => {
         <div className="login-modal-overlay" onClick={onClose}>
             <form onSubmit={handleSubmit} className="login-form" onClick={(e) => e.stopPropagation()}>
                 
-                {/* ✅ The className here is now corrected to just "login-title" */}
                 <h2 className="login-title">
                     Welcome to <span className="class-text">Class</span><span className="link-text">Link</span>
                 </h2>
@@ -76,11 +75,31 @@ const Login = ({ onLoginSuccess, onClose }) => {
                 </div>
                 
                 <div className="form-group">
-                    <input type={role === 'student' ? 'email' : 'text'} placeholder={role === 'admin' ? 'Enter admin username' : 'Enter email'} value={email} onChange={(e) => setEmail(e.target.value)} className={errors.email ? 'error-input' : ''} />
+                    {/* ✅ Added name, id, and autoComplete attributes here */}
+                    <input 
+                        type={role === 'student' ? 'email' : 'text'} 
+                        name="email"
+                        id="email"
+                        autoComplete="username email"
+                        placeholder={role === 'admin' ? 'Enter admin username' : 'Enter email'} 
+                        value={email} 
+                        onChange={(e) => setEmail(e.target.value)} 
+                        className={errors.email ? 'error-input' : ''} 
+                    />
                     {errors.email && <p className="error-text">{errors.email}</p>}
                 </div>
                 <div className="form-group">
-                    <input type="password" placeholder="Enter Password" value={password} onChange={(e) => setPassword(e.target.value)} className={errors.password ? 'error-input' : ''} />
+                    {/* ✅ Added name, id, and autoComplete attributes here */}
+                    <input 
+                        type="password" 
+                        name="password"
+                        id="password"
+                        autoComplete="current-password"
+                        placeholder="Enter Password" 
+                        value={password} 
+                        onChange={(e) => setPassword(e.target.value)} 
+                        className={errors.password ? 'error-input' : ''} 
+                    />
                     {errors.password && <p className="error-text">{errors.password}</p>}
                 </div>
                 {errors.form && <p className="error-text">{errors.form}</p>}

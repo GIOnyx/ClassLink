@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import '../App.css';
 import './CoursePage.css';
-import { getCourses, addCourse, getTeachers } from '/src/services/backend.js'; // ✅ Import getTeachers
+import { getCourses, addCourse, getTeachers } from '/src/services/backend.js';
 
 const programs = [
     'College of Computer Studies',
@@ -14,12 +14,12 @@ const programs = [
 
 const CoursePage = () => {
     const [courses, setCourses] = useState([]);
-    const [teachers, setTeachers] = useState([]); // ✅ Add state for teachers
+    const [teachers, setTeachers] = useState([]);
     const [newCourse, setNewCourse] = useState({
         title: '',
         courseCode: '',
         program: programs[0],
-        teacherId: '' // ✅ Add teacherId to form state
+        teacherId: ''
     });
 
     useEffect(() => {
@@ -30,13 +30,12 @@ const CoursePage = () => {
         try {
             const [coursesRes, teachersRes] = await Promise.all([
                 getCourses(),
-                getTeachers() // ✅ Fetch teachers on load
+                getTeachers()
             ]);
             setCourses(coursesRes.data);
             setTeachers(teachersRes.data);
         } catch (error) {
             console.error('Failed to fetch data:', error);
-            // Handle error (e.g., if user is not admin and can't get teachers)
         }
     };
 
@@ -48,7 +47,6 @@ const CoursePage = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            // ✅ Prepare payload, formatting teacherId as an object
             const payload = {
                 title: newCourse.title,
                 courseCode: newCourse.courseCode,
@@ -58,24 +56,24 @@ const CoursePage = () => {
             
             await addCourse(payload);
             setNewCourse({ title: '', courseCode: '', program: programs[0], teacherId: '' });
-            loadData(); // Reload courses
+            loadData();
         } catch (err) {
             console.error('Failed to add course:', err);
         }
     };
 
     return (
-        <div className="course-page-container">
-            <div style={{ marginBottom: '30px', padding: '20px', background: '#fff', borderRadius: '12px' }}>
-                <h3>Add a New Course</h3>
-                {/* ✅ Update form to be 2x2 grid */}
-                <form onSubmit={handleSubmit} style={{ display: 'grid', gap: '10px', gridTemplateColumns: '1fr 1fr' }}>
+        <div className="standard-page-layout">
+            <div className="add-course-panel">
+                <h3 className="add-course-header">Add a New Course</h3>
+                <form onSubmit={handleSubmit} className="add-course-form">
                     <input
                         type="text"
                         name="title"
                         placeholder="Course Title"
                         value={newCourse.title}
                         onChange={handleInputChange}
+                        className="course-form-input"
                     />
                     <input
                         type="text"
@@ -83,47 +81,42 @@ const CoursePage = () => {
                         placeholder="Course Code (e.g., CS101)"
                         value={newCourse.courseCode}
                         onChange={handleInputChange}
+                        className="course-form-input"
                     />
-                    <select name="program" value={newCourse.program} onChange={handleInputChange}>
+                    <select name="program" value={newCourse.program} onChange={handleInputChange} className="course-form-select">
                         {programs.map(p => <option key={p} value={p}>{p}</option>)}
                     </select>
                     
-                    {/* ✅ Add Teacher Dropdown */}
-                    <select name="teacherId" value={newCourse.teacherId} onChange={handleInputChange}>
+                    <select name="teacherId" value={newCourse.teacherId} onChange={handleInputChange} className="course-form-select">
                         <option value="">-- Assign Teacher (Optional) --</option>
                         {teachers.map(t => (
                             <option key={t.teacherId} value={t.teacherId}>{t.name}</option>
                         ))}
                     </select>
                     
-                    {/* ✅ Make button span full width */}
-                    <button type="submit" style={{ gridColumn: '1 / -1' }}>Add Course</button>
+                    <button type="submit" className="btn-add-course">Add Course</button>
                 </form>
             </div>
 
-            <div className="course-content-grid">
-                <div className="course-column">
-                    <div className="course-header">Available Courses</div>
-                    {courses.map((course) => (
-                        <div key={course.courseID} className="course-card">
-                            <div className="course-line" style={{ background: 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div>
-                                    <strong style={{ display: 'block' }}>{course.title}</strong>
-                                    <span style={{ fontSize: 13 }}>{course.courseCode}</span>
-                                </div>
-                                <div style={{ textAlign: 'right' }}>
-                                    {/* ✅ Display assigned teacher */}
-                                    <span style={{ fontSize: 12, color: '#000', fontWeight: '500' }}>
-                                        {course.assignedTeacher ? course.assignedTeacher.name : 'N/A'}
-                                    </span>
-                                    <span style={{ fontSize: 12, color: '#666', display: 'block' }}>
-                                        {course.program || '—'}
-                                    </span>
-                                </div>
+            <div className="course-list-grid">
+                {courses.map((course) => (
+                    <div key={course.courseID} className="course-card">
+                        <div className="course-card-header">
+                            <div>
+                                <span className="course-title">{course.title}</span>
+                                <span className="course-code">{course.courseCode}</span>
+                            </div>
+                            <div className="course-info-right">
+                                <span className="course-teacher">
+                                    {course.assignedTeacher ? course.assignedTeacher.name : 'N/A'}
+                                </span>
+                                <span className="course-program">
+                                    {course.program || '—'}
+                                </span>
                             </div>
                         </div>
-                    ))}
-                </div>
+                    </div>
+                ))}
             </div>
         </div>
     );
