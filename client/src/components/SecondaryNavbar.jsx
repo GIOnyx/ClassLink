@@ -20,14 +20,7 @@ const SecondaryNavbar = ({ role }) => {
                                 Enrollment
                             </NavLink>
                         </li>
-                        <li>
-                            <NavLink
-                                to="/faculty"
-                                className={({ isActive }) => isActive ? 'active' : ''}
-                            >
-                                Faculty
-                            </NavLink>
-                        </li>
+                        
                         <li>
                             <NavLink
                                 to="/student"
@@ -36,14 +29,7 @@ const SecondaryNavbar = ({ role }) => {
                                 Students
                             </NavLink>
                         </li>
-                        <li>
-                            <NavLink
-                                to="/course"
-                                className={({ isActive }) => isActive ? 'active' : ''}
-                            >
-                                Courses
-                            </NavLink>
-                        </li>
+                        
                         <li>
                             <NavLink
                                 to="/profile"
@@ -66,14 +52,7 @@ const SecondaryNavbar = ({ role }) => {
                                 Enrollment
                             </NavLink>
                         </li>
-                        <li>
-                            <NavLink
-                                to="/faculty"
-                                className={({ isActive }) => isActive ? 'active' : ''}
-                            >
-                                Faculty
-                            </NavLink>
-                        </li>
+                        
                         <li>
                             <NavLink
                                 to="/schedule"
@@ -82,14 +61,7 @@ const SecondaryNavbar = ({ role }) => {
                                 Schedule
                             </NavLink>
                         </li>
-                        <li>
-                            <NavLink
-                                to="/course"
-                                className={({ isActive }) => isActive ? 'active' : ''}
-                            >
-                                Courses
-                            </NavLink>
-                        </li>
+                    
                         <li>
                             <NavLink
                                 to="/profile"

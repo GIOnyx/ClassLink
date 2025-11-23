@@ -5,10 +5,8 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import MainLayout from './components/MainLayout.jsx';
 import LandingPage from './pages/LandingPage.jsx'; // This will be our main public page
 import EnrollmentPage from './pages/EnrollmentPage.jsx';
-import FacultyPage from './pages/FacultyPage.jsx';
 import StudentPage from './pages/StudentPage.jsx';
 import AdminPage from './pages/AdminPage.jsx';
-import CoursePage from './pages/CoursePage.jsx';
 import ProfilePage from './pages/ProfilePage.jsx';
 
 import './App.css';
@@ -61,9 +59,7 @@ function App() {
             {/* Default landing after login per role */}
             <Route index element={role === 'ADMIN' ? <AdminPage /> : <EnrollmentPage />} />
             <Route path="admin" element={role === 'ADMIN' ? <AdminPage /> : <Navigate to="/" />} />
-            <Route path="faculty" element={<FacultyPage />} />
             <Route path="student" element={<StudentPage />} />
-            <Route path="course" element={<CoursePage />} />
             <Route path="profile" element={<ProfilePage />} />
             <Route path="*" element={<Navigate to="/" />} />
           </Route>

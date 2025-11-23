@@ -17,7 +17,4 @@ public class Schedule {
     private LocalTime startTime;
     private LocalTime endTime;
 
-    @OneToMany
-    @JsonIgnore
-    private List<Course> courses;
 }
