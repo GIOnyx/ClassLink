@@ -3,20 +3,8 @@ import '../App.css';
 import './AdminPage.css';
 import { getStudentsByStatus, approveStudent, rejectStudent, getStudents } from '../services/backend';
 
-const StatusPill = ({ value }) => (
-  <span style={{
-    padding: '2px 8px',
-    borderRadius: 999,
-    background: value === 'APPROVED' ? '#e6ffed' : value === 'REJECTED' ? '#ffe6e6' : '#fff8e1',
-    color: value === 'APPROVED' ? '#087f23' : value === 'REJECTED' ? '#b00020' : '#8a6d3b',
-    border: '1px solid #eee',
-    fontSize: 12
-  }}>{value}</span>
-);
-
 const AdminPage = () => {
   const [pending, setPending] = useState([]);
-  const [all, setAll] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedStudent, setSelectedStudent] = useState(null);
@@ -25,12 +13,8 @@ const AdminPage = () => {
     setLoading(true);
     setError('');
     try {
-      const [p, a] = await Promise.all([
-        getStudentsByStatus('PENDING'),
-        getStudents(),
-      ]);
+      const [p] = await Promise.all([getStudentsByStatus('PENDING')]);
       setPending(p.data || []);
-      setAll(a.data || []);
     } catch (e) {
       setError('Failed to load students');
     } finally {
@@ -40,62 +24,60 @@ const AdminPage = () => {
 
   useEffect(() => { load(); }, []);
 
-  const onApprove = async (id) => {
-    await approveStudent(id);
-    await load();
+  const onApprove = async (id) => { 
+      if(window.confirm('Approve this student?')) {
+          await approveStudent(id); 
+          setSelectedStudent(null);
+          await load(); 
+      }
   };
-
-  const onReject = async (id) => {
-    await rejectStudent(id);
-    await load();
+  
+  const onReject = async (id) => { 
+      if(window.confirm('Reject this application?')) {
+          await rejectStudent(id); 
+          setSelectedStudent(null);
+          await load(); 
+      }
   };
 
   return (
-    <div
-      className="student-page-container"
-      style={{
-        padding: 40,
-        marginTop: 140,
-        backgroundColor: '#ffffff', // <-- Added white background
-        color: '#333' // <-- Added dark font color
-      }}
-    >
-      <h2 style={{ marginBottom: 12 }}>User Approvals</h2>
-      {error && <div style={{ color: '#b00020', marginBottom: 8 }}>{error}</div>}
+    <div className="standard-page-layout">
+      <h2 className="admin-header">User Approvals</h2>
+      {error && <div className="admin-error">{error}</div>}
 
-      <div style={{ background: '#fff', border: '1px solid #eee', borderRadius: 8, padding: 16, marginBottom: 16 }}>
-        <h3 style={{ marginTop: 0 }}>Pending Registrations</h3>
+      <div className="admin-panel">
+        <h3 className="admin-sub-header">Pending Registrations</h3>
         {loading ? (
-          <div>Loading…</div>
+          <div className="admin-loading">Loading…</div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <div className="admin-table-wrapper">
+            <table className="admin-table">
               <thead>
                 <tr>
-                  <th style={{ textAlign: 'left', borderBottom: '1px solid #eee', padding: 8 }}>Name</th>
-                  <th style={{ textAlign: 'left', borderBottom: '1px solid #eee', padding: 8 }}>Email</th>
-                  <th style={{ textAlign: 'left', borderBottom: '1px solid #eee', padding: 8 }}>Program</th>
-                  <th style={{ textAlign: 'left', borderBottom: '1px solid #eee', padding: 8 }}>Year</th>
-                  <th style={{ textAlign: 'left', borderBottom: '1px solid #eee', padding: 8 }}>Actions</th>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Program</th>
+                  <th>Year</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {pending.map((s) => (
                   <tr key={s.id}>
-                    <td style={{ padding: 8 }}>{s.firstName} {s.lastName}</td>
-                    <td style={{ padding: 8 }}>{s.email}</td>
-                    <td style={{ padding: 8 }}>{s.program ? s.program.name : '—'}</td>
-                    <td style={{ padding: 8 }}>{s.yearLevel || '—'}</td>
-                    <td style={{ padding: 8 }}>
-                      <button onClick={() => setSelectedStudent(s)} style={{ marginRight: 8 }}>View Application</button>
-                      <button onClick={() => onApprove(s.id)} style={{ marginRight: 8 }}>Approve</button>
-                      <button onClick={() => onReject(s.id)} className="danger">Reject</button>
+                    <td>{s.firstName} {s.lastName}</td>
+                    <td>{s.email}</td>
+                    <td>{s.program ? s.program.name : '—'}</td>
+                    <td>{s.yearLevel || '—'}</td>
+                    <td>
+                      <button className="btn-view" onClick={() => setSelectedStudent(s)}>View</button>
+                      <button className="btn-approve" onClick={() => onApprove(s.id)}>Approve</button>
+                      <button className="btn-reject" onClick={() => onReject(s.id)}>Reject</button>
                     </td>
                   </tr>
                 ))}
                 {pending.length === 0 && (
                   <tr>
-                    <td colSpan={5} style={{ padding: 8, color: '#666' }}>No pending registrations</td>
+                    <td colSpan={5} className="admin-empty-row">No pending registrations</td>
                   </tr>
                 )}
               </tbody>
@@ -103,82 +85,101 @@ const AdminPage = () => {
           </div>
         )}
       </div>
-
-      {/* All Students panel removed per request; pending registrations remain and include approve/reject actions */}
+      
       {selectedStudent && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }} onClick={() => setSelectedStudent(null)}>
-          <div style={{ background: '#fff', padding: 20, borderRadius: 8, width: '95%', maxWidth: 900, maxHeight: '85vh', overflowY: 'auto', color: '#111', boxShadow: '0 10px 30px rgba(0,0,0,0.2)' }} onClick={(e) => e.stopPropagation()}>
-            <h3 style={{ marginTop: 0 }}>Application • {selectedStudent.firstName} {selectedStudent.lastName}</h3>
+        <div className="modal-overlay" onClick={() => setSelectedStudent(null)}>
+          <div className="modal-content application-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header-row">
+                <div>
+                    <h2 className="modal-title">Application Review</h2>
+                    <p className="modal-subtitle">ID: {selectedStudent.id} • Submitted on: {new Date().toLocaleDateString()}</p>
+                </div>
+                <button className="modal-close-btn" onClick={() => setSelectedStudent(null)}>×</button>
+            </div>
 
-            <form style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <label style={{ fontWeight: 600 }}>First Name</label>
-                <input value={selectedStudent.firstName || ''} readOnly style={{ padding: 8, borderRadius: 6, border: '1px solid #ddd' }} />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <label style={{ fontWeight: 600 }}>Last Name</label>
-                <input value={selectedStudent.lastName || ''} readOnly style={{ padding: 8, borderRadius: 6, border: '1px solid #ddd' }} />
-              </div>
+            <div className="modal-scroll-body">
+                <section className="modal-section">
+                    <h4 className="section-heading">Personal Information</h4>
+                    <div className="modal-form-grid">
+                        <div className="modal-field-group">
+                            <label className="modal-label">First Name</label>
+                            <div className="modal-value">{selectedStudent.firstName || 'N/A'}</div>
+                        </div>
+                        <div className="modal-field-group">
+                            <label className="modal-label">Last Name</label>
+                            <div className="modal-value">{selectedStudent.lastName || 'N/A'}</div>
+                        </div>
+                        <div className="modal-field-group">
+                            <label className="modal-label">Email</label>
+                            <div className="modal-value">{selectedStudent.email || 'N/A'}</div>
+                        </div>
+                        <div className="modal-field-group">
+                            <label className="modal-label">Contact Number</label>
+                            <div className="modal-value">{selectedStudent.contactNumber || 'N/A'}</div>
+                        </div>
+                        <div className="modal-field-group">
+                            <label className="modal-label">Birth Date</label>
+                            <div className="modal-value">{selectedStudent.birthDate || 'N/A'}</div>
+                        </div>
+                        <div className="modal-field-group">
+                            <label className="modal-label">Gender</label>
+                            <div className="modal-value">{selectedStudent.gender || 'N/A'}</div>
+                        </div>
+                        <div className="modal-field-group modal-grid-full">
+                            <label className="modal-label">Address</label>
+                            <div className="modal-value">{selectedStudent.studentAddress || 'N/A'}</div>
+                        </div>
+                    </div>
+                </section>
 
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <label style={{ fontWeight: 600 }}>Email</label>
-                <input value={selectedStudent.email || ''} readOnly style={{ padding: 8, borderRadius: 6, border: '1px solid #ddd' }} />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <label style={{ fontWeight: 600 }}>Program</label>
-                <input value={selectedStudent.program ? selectedStudent.program.name : ''} readOnly style={{ padding: 8, borderRadius: 6, border: '1px solid #ddd' }} />
-              </div>
+                <section className="modal-section">
+                    <h4 className="section-heading">Family Information</h4>
+                    <div className="modal-form-grid">
+                        <div className="modal-field-group">
+                            <label className="modal-label">Guardian Name</label>
+                            <div className="modal-value">{selectedStudent.parentGuardianName || 'N/A'}</div>
+                        </div>
+                        <div className="modal-field-group">
+                            <label className="modal-label">Relationship</label>
+                            <div className="modal-value">{selectedStudent.relationshipToStudent || 'N/A'}</div>
+                        </div>
+                        <div className="modal-field-group">
+                            <label className="modal-label">Guardian Contact</label>
+                            <div className="modal-value">{selectedStudent.parentContactNumber || 'N/A'}</div>
+                        </div>
+                        <div className="modal-field-group">
+                            <label className="modal-label">Guardian Email</label>
+                            <div className="modal-value">{selectedStudent.parentEmailAddress || 'N/A'}</div>
+                        </div>
+                    </div>
+                </section>
 
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <label style={{ fontWeight: 600 }}>Year Level</label>
-                <input value={selectedStudent.yearLevel || ''} readOnly style={{ padding: 8, borderRadius: 6, border: '1px solid #ddd' }} />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <label style={{ fontWeight: 600 }}>Status</label>
-                <input value={selectedStudent.status || ''} readOnly style={{ padding: 8, borderRadius: 6, border: '1px solid #ddd' }} />
-              </div>
+                <section className="modal-section">
+                    <h4 className="section-heading">Academic Information</h4>
+                    <div className="modal-form-grid">
+                        <div className="modal-field-group modal-grid-full">
+                            <label className="modal-label">Program</label>
+                            <div className="modal-value highlight">{selectedStudent.program ? selectedStudent.program.name : 'Not Assigned'}</div>
+                        </div>
+                        <div className="modal-field-group">
+                            <label className="modal-label">Year Level</label>
+                            <div className="modal-value">{selectedStudent.yearLevel || 'N/A'}</div>
+                        </div>
+                        <div className="modal-field-group">
+                            <label className="modal-label">Semester</label>
+                            <div className="modal-value">{selectedStudent.semester || 'N/A'}</div>
+                        </div>
+                        <div className="modal-field-group modal-grid-full">
+                            <label className="modal-label">Previous School</label>
+                            <div className="modal-value">{selectedStudent.previousSchool || 'N/A'}</div>
+                        </div>
+                    </div>
+                </section>
+            </div>
 
-              <div style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column' }}>
-                <label style={{ fontWeight: 600 }}>Birth Date</label>
-                <input value={selectedStudent.birthDate || ''} readOnly style={{ padding: 8, borderRadius: 6, border: '1px solid #ddd' }} />
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <label style={{ fontWeight: 600 }}>Gender</label>
-                <input value={selectedStudent.gender || ''} readOnly style={{ padding: 8, borderRadius: 6, border: '1px solid #ddd' }} />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <label style={{ fontWeight: 600 }}>Contact</label>
-                <input value={selectedStudent.contactNumber || ''} readOnly style={{ padding: 8, borderRadius: 6, border: '1px solid #ddd' }} />
-              </div>
-
-              <div style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column' }}>
-                <label style={{ fontWeight: 600 }}>Address</label>
-                <input value={selectedStudent.studentAddress || ''} readOnly style={{ padding: 8, borderRadius: 6, border: '1px solid #ddd' }} />
-              </div>
-
-              <div style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column' }}>
-                <label style={{ fontWeight: 600 }}>Parent/Guardian</label>
-                <input value={selectedStudent.parentGuardianName || ''} readOnly style={{ padding: 8, borderRadius: 6, border: '1px solid #ddd' }} />
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <label style={{ fontWeight: 600 }}>Parent Contact</label>
-                <input value={selectedStudent.parentContactNumber || ''} readOnly style={{ padding: 8, borderRadius: 6, border: '1px solid #ddd' }} />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <label style={{ fontWeight: 600 }}>Parent Email</label>
-                <input value={selectedStudent.parentEmailAddress || ''} readOnly style={{ padding: 8, borderRadius: 6, border: '1px solid #ddd' }} />
-              </div>
-
-              <div style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column' }}>
-                <label style={{ fontWeight: 600 }}>Previous School</label>
-                <input value={selectedStudent.previousSchool || ''} readOnly style={{ padding: 8, borderRadius: 6, border: '1px solid #ddd' }} />
-              </div>
-
-            </form>
-            <div style={{ marginTop: 12, textAlign: 'right' }}>
-              <button onClick={() => setSelectedStudent(null)}>Close</button>
+            <div className="modal-footer">
+                <button className="modal-btn btn-reject" onClick={() => onReject(selectedStudent.id)}>Reject Application</button>
+                <button className="modal-btn btn-approve" onClick={() => onApprove(selectedStudent.id)}>Approve Application</button>
             </div>
           </div>
         </div>

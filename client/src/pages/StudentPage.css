@@ -1,10 +1,24 @@
 /* Styles for StudentPage */
-/* Student page styles moved from App.css */
-.student-page-container { padding: 180px 40px 80px; background-color: #f0f2f5; }
-.student-content-grid { display: grid; grid-template-columns: repeat(3,1fr); gap:30px; max-width:1400px; margin:0 auto; }
-.student-column { display:flex; flex-direction:column; gap:15px; }
-.student-card { display:flex; align-items:center; gap:15px; background:#fff; padding:20px; border-radius:12px; border:1px solid #e0e0e0; box-shadow:0 2px 8px rgba(0,0,0,0.07); }
-.student-checkbox { width:20px; height:20px; border:2px solid #ccc; border-radius:4px; flex-shrink:0; }
-.student-line { height:10px; width:100%; background-color:#e0e0e0; border-radius:5px; }
-.manage-student-button { width:100%; margin-top:15px; background-color:#800000; color:white; border:none; border-radius:8px; padding:12px; font-size:16px; font-weight:600; cursor:pointer; transition:background-color 0.2s; }
-.manage-student-button:hover { background-color:#9b3434; }
+
+.student-dashboard-header {
+  margin-bottom: 12px;
+  color: #333;
+}
+
+.student-info-panel {
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  padding: 16px;
+  color: #333;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+}
+
+.student-welcome {
+  margin-top: 0;
+}
+
+.student-description {
+  color: #666;
+  margin-top: 12px;
+}

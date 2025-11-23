@@ -1,18 +1,25 @@
 package com.classlink.server.controller;
 
-import com.classlink.server.model.Student;
-import com.classlink.server.repository.StudentRepository;
-import com.classlink.server.repository.ProgramRepository;
-import jakarta.servlet.http.HttpSession;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
 import java.time.LocalDate;
+import java.util.Map;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.classlink.server.model.Student;
 import com.classlink.server.model.StudentStatus;
-import com.classlink.server.model.Department;
+import com.classlink.server.repository.DepartmentRepository;
+import com.classlink.server.repository.ProgramRepository;
+import com.classlink.server.repository.StudentRepository;
+
+import jakarta.servlet.http.HttpSession;
 
 @RestController
 @RequestMapping("/api/students")
@@ -20,121 +27,88 @@ public class StudentController {
 
     private final StudentRepository studentRepository;
     private final ProgramRepository programRepository;
-    private final com.classlink.server.repository.DepartmentRepository departmentRepository;
+    private final DepartmentRepository departmentRepository;
     private final Logger log = LoggerFactory.getLogger(StudentController.class);
 
-    public StudentController(StudentRepository studentRepository, ProgramRepository programRepository, com.classlink.server.repository.DepartmentRepository departmentRepository) {
+    public StudentController(StudentRepository studentRepository, ProgramRepository programRepository,
+            DepartmentRepository departmentRepository) {
         this.studentRepository = studentRepository;
         this.programRepository = programRepository;
         this.departmentRepository = departmentRepository;
     }
 
-    // DTO for receiving the application form data
-        public record StudentApplicationRequest(
-            String firstName,
-            String lastName,
-            LocalDate birthDate,
-            String gender,
-            String studentAddress,
-            String contactNumber,
-            String emailAddress,
-            String parentGuardianName,
-            String relationshipToStudent,
-            String parentContactNumber,
-            String parentEmailAddress,
-            Long programId,
-            java.util.Map<String, Object> program,
-            Long departmentId,
-            String previousSchool,
-            Integer yearLevel,
-            String semester) {
-        }
-
+    // Use a Map<String, Object> for flexibility or a dedicated DTO class
+    // Using a Map here to avoid strict record parsing issues if fields are
+    // missing/null
     @PutMapping("/me")
-    public ResponseEntity<?> updateStudentApplication(@RequestBody StudentApplicationRequest body,
-            HttpSession session) {
-        // 1. Get the logged-in student's ID from the session
+    public ResponseEntity<?> updateStudentApplication(@RequestBody Map<String, Object> body, HttpSession session) {
         Object userIdObj = session.getAttribute("userId");
         if (userIdObj == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("You are not logged in.");
         }
 
-        // Ensure the ID is treated as Long, which matches the Student model
-        Long userId;
-        if (userIdObj instanceof Integer) {
-            userId = ((Integer) userIdObj).longValue();
-        } else if (userIdObj instanceof Long) {
-            userId = (Long) userIdObj;
-        } else {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Invalid session user ID format.");
-        }
+        Long userId = ((Number) userIdObj).longValue();
+        log.info("Received application update for student {}", userId);
 
-        log.info("Received student application update: programId={}, email={}", body.programId(), body.emailAddress());
-
-        // 2. Find the student in the database
         Student student = studentRepository.findById(userId).orElse(null);
         if (student == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Student record not found.");
         }
 
-        // 3. Update the student record with data from the form
-        student.setFirstName(body.firstName());
-        student.setLastName(body.lastName());
-        student.setBirthDate(body.birthDate());
-        student.setGender(body.gender());
-        student.setStudentAddress(body.studentAddress());
-        student.setContactNumber(body.contactNumber());
-        student.setEmail(body.emailAddress()); // Update email if it changed
-        student.setParentGuardianName(body.parentGuardianName());
-        student.setRelationshipToStudent(body.relationshipToStudent());
-        student.setParentContactNumber(body.parentContactNumber());
-        student.setParentEmailAddress(body.parentEmailAddress());
-        student.setPreviousSchool(body.previousSchool());
-        // year level and semester
-        if (body.yearLevel() != null) student.setYearLevel(body.yearLevel());
-        if (body.semester() != null) student.setSemester(body.semester());
-        // set program relation if provided (accept either programId or nested program object)
-        Long resolvedProgramId = body.programId();
-        if (resolvedProgramId == null && body.program() != null) {
-            Object maybeId = body.program().get("id");
-            if (maybeId instanceof Number) {
-                resolvedProgramId = ((Number) maybeId).longValue();
-            } else if (maybeId instanceof String) {
-                try { resolvedProgramId = Long.valueOf((String) maybeId); } catch (NumberFormatException ex) { /* ignore */ }
-            }
+        // Update simple fields
+        if (body.containsKey("firstName"))
+            student.setFirstName((String) body.get("firstName"));
+        if (body.containsKey("lastName"))
+            student.setLastName((String) body.get("lastName"));
+
+        if (body.get("birthDate") != null && !String.valueOf(body.get("birthDate")).isEmpty()) {
+            student.setBirthDate(LocalDate.parse((String) body.get("birthDate")));
         }
 
-        if (resolvedProgramId != null) {
-            Long finalProgId = resolvedProgramId;
-            programRepository.findById(finalProgId).ifPresentOrElse(p -> {
-                student.setProgram(p);
-                // also set department based on program's department
-                if (p.getDepartment() != null) {
-                    student.setDepartment(p.getDepartment());
-                }
-                log.info("Linked student {} to program id={} name={}", userId, p.getId(), p.getName());
-            }, () -> {
-                log.warn("Program id {} not found; leaving program null for student {}", finalProgId, userId);
-                student.setProgram(null);
-            });
-        } else {
-            student.setProgram(null);
+        if (body.containsKey("gender"))
+            student.setGender((String) body.get("gender"));
+        if (body.containsKey("studentAddress"))
+            student.setStudentAddress((String) body.get("studentAddress"));
+        if (body.containsKey("contactNumber"))
+            student.setContactNumber((String) body.get("contactNumber"));
+        if (body.containsKey("emailAddress"))
+            student.setEmail((String) body.get("emailAddress")); // Update email
+
+        if (body.containsKey("parentGuardianName"))
+            student.setParentGuardianName((String) body.get("parentGuardianName"));
+        if (body.containsKey("relationshipToStudent"))
+            student.setRelationshipToStudent((String) body.get("relationshipToStudent"));
+        if (body.containsKey("parentContactNumber"))
+            student.setParentContactNumber((String) body.get("parentContactNumber"));
+        if (body.containsKey("parentEmailAddress"))
+            student.setParentEmailAddress((String) body.get("parentEmailAddress"));
+        if (body.containsKey("previousSchool"))
+            student.setPreviousSchool((String) body.get("previousSchool"));
+
+        if (body.containsKey("yearLevel") && body.get("yearLevel") != null) {
+            student.setYearLevel(((Number) body.get("yearLevel")).intValue());
+        }
+        if (body.containsKey("semester"))
+            student.setSemester((String) body.get("semester"));
+
+        // Handle Program and Department
+        // Frontend sends 'programId' and 'departmentId'
+        if (body.get("programId") != null) {
+            Long pId = ((Number) body.get("programId")).longValue();
+            programRepository.findById(pId).ifPresent(student::setProgram);
         }
 
-        // if frontend explicitly provided departmentId, prefer that
-        if (body.departmentId() != null) {
-            departmentRepository.findById(body.departmentId()).ifPresent(student::setDepartment);
+        if (body.get("departmentId") != null) {
+            Long dId = ((Number) body.get("departmentId")).longValue();
+            departmentRepository.findById(dId).ifPresent(student::setDepartment);
         }
 
-        // 4. Save the updated record
-        // Mark as PENDING so admins can review submitted applications
+        // Set status to PENDING for admin review
         student.setStatus(StudentStatus.PENDING);
+
         Student savedStudent = studentRepository.save(student);
-        if (savedStudent.getProgram() != null) {
-            log.info("After save: student {} program persisted id={} name={}", savedStudent.getId(), savedStudent.getProgram().getId(), savedStudent.getProgram().getName());
-        } else {
-            log.info("After save: student {} program is still null", savedStudent.getId());
-        }
+        log.info("Student {} application updated successfully.", userId);
+
         return ResponseEntity.ok(savedStudent);
     }
 
@@ -144,18 +118,10 @@ public class StudentController {
         if (userIdObj == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("You are not logged in.");
         }
-
-        Long userId;
-        if (userIdObj instanceof Integer) {
-            userId = ((Integer) userIdObj).longValue();
-        } else if (userIdObj instanceof Long) {
-            userId = (Long) userIdObj;
-        } else {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Invalid session user ID format.");
-        }
-
+        Long userId = ((Number) userIdObj).longValue();
         Student student = studentRepository.findById(userId).orElse(null);
-        if (student == null) return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Student record not found.");
+        if (student == null)
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Student record not found.");
         return ResponseEntity.ok(student);
     }
 }

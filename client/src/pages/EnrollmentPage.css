@@ -1,24 +1,135 @@
-/* Styles for EnrollmentPage (if any) */
-/* Enrollment grid and filters (moved from App.css) */
-.enrollment-grid {
-	display: grid;
-	grid-template-columns: 450px 1fr;
-	gap: 30px;
-	align-items: flex-start;
-	max-width: 1840px;
-	margin: 0 auto;
+/* Styles for EnrollmentPage */
+
+/* Main Form Container */
+.enrollment-form-container {
+  padding: 40px;
+  width: 100%;
+  background-color: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  border: 1px solid #eee;
 }
 
-.enrollment-filters { display: flex; flex-direction: column; gap: 30px; }
+.enrollment-form-container.with-margin {
+  margin-bottom: 20px;
+  padding: 20px;
+}
 
-.filter-card { background-color: #2A2A2A; border-radius: 12px; color: #fff; overflow: hidden; }
-.filter-card ul { list-style: none; margin: 0; padding: 0; }
-.filter-card li { padding: 15px 20px; font-weight: 600; cursor: pointer; border-bottom: 1px solid #444; transition: background-color 0.2s; }
-.filter-card li:last-child { border-bottom: none; }
-.filter-card li.active { background-color: #F4C522; color: #2A2A2A; }
+/* Headers */
+.enrollment-header {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #333;
+  border-bottom: 2px solid #eee;
+  padding-bottom: 20px;
+  margin-bottom: 30px;
+}
 
-.enrollment-student-list { max-height: 705px; overflow-y: auto; padding-right: 5px; }
-.enrollment-student-list::-webkit-scrollbar { display: none; }
+.enrollment-section-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #800000; /* Maroon */
+  margin-top: 30px;
+  margin-bottom: 20px;
+}
 
-.student-enrollment-card { background-color: #e0e0e0; border-radius: 12px; height: 120px; flex-shrink: 0; margin-bottom: 20px; }
-.student-enrollment-card:last-child { margin-bottom: 0; }
+/* Form Grid System */
+.enrollment-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.enrollment-grid-full {
+  grid-column: 1 / -1;
+}
+
+.enrollment-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Inputs and Labels */
+.enrollment-label {
+  font-weight: 600;
+  color: #333;
+}
+
+.enrollment-input {
+  width: 100%;
+  padding: 12px 15px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 1rem;
+  background-color: #fff;
+  color: #333;
+}
+
+.enrollment-radio-group {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+.enrollment-radio-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 1rem;
+  color: #333;
+}
+
+/* Buttons and Navigation */
+.enrollment-nav-container {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 30px;
+  border-top: 1px solid #eee;
+  padding-top: 30px;
+}
+
+.enrollment-submit-btn {
+  padding: 15px 30px;
+  border: none;
+  border-radius: 8px;
+  background-color: #800000;
+  color: white;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.enrollment-back-btn {
+  background-color: #6c757d;
+}
+
+/* Status & Errors */
+.enrollment-error {
+  color: #b00020;
+  margin-top: 10px;
+  text-align: center;
+  font-size: 1.1rem;
+}
+
+.status-header {
+  margin: 0;
+  color: #333;
+}
+
+.status-label {
+  margin-left: 10px;
+}
+
+.status-approved { color: #087f23; }
+.status-pending { color: #b36b00; }
+.status-rejected { color: #b00020; }
+
+/* Edit Actions */
+.enrollment-edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 20px;
+}

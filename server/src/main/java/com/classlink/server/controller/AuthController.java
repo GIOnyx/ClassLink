@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.classlink.server.model.Admin;
 import com.classlink.server.model.Student;
-import com.classlink.server.model.StudentStatus; // Make sure this is imported
+import com.classlink.server.model.StudentStatus;
 import com.classlink.server.repository.AdminRepository;
 import com.classlink.server.repository.StudentRepository;
 
@@ -63,13 +63,12 @@ public class AuthController {
         if (student == null)
             return ResponseEntity.status(401).body(Map.of("error", "Invalid credentials"));
 
-        // ✅ CHANGE 1: We REMOVED the check for PENDING.
-        // We only block rejected or inactive users.
+        // Allow login for REGISTERED, PENDING, and APPROVED.
+        // Only block REJECTED or INACTIVE.
         if (student.getStatus() == StudentStatus.REJECTED || student.getStatus() == StudentStatus.INACTIVE) {
             return ResponseEntity.status(403).body(Map.of("error", "Account is inactive or has been rejected"));
         }
 
-        // Approved (or Pending) student can log in
         session.setAttribute("userType", "student");
         session.setAttribute("role", "STUDENT");
         session.setAttribute("userId", student.getId());
@@ -112,18 +111,16 @@ public class AuthController {
         s.setLastName(body.lastName());
         s.setEmail(body.email());
         s.setPassword(body.password());
-        s.setStatus(StudentStatus.PENDING); // Set status to PENDING
 
-        // Save the student to get their new ID
+        // ✅ CHANGED: Set status to REGISTERED (invisible to admin) initially
+        s.setStatus(StudentStatus.REGISTERED);
+
         Student saved = studentRepository.save(s);
 
-        // ✅ CHANGE 2: We are ADDING the auto-login logic back.
-        // This creates their session immediately.
         session.setAttribute("userType", "student");
         session.setAttribute("role", "STUDENT");
         session.setAttribute("userId", saved.getId());
 
-        // Return the user data so the frontend can log them in
         return ResponseEntity.status(201).body(Map.of(
                 "userType", "student",
                 "userId", saved.getId(),
