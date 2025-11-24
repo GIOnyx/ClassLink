@@ -12,6 +12,14 @@ const ProfilePage = () => {
     const [isEditing, setIsEditing] = useState(false);
     const [saving, setSaving] = useState(false);
 
+    // Helper to resolve image URL (handles relative vs absolute)
+    const resolveImageSrc = (url) => {
+        if (!url) return null;
+        if (url.startsWith('http')) return url;
+        const base = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api').replace(/\/api$/, '');
+        return base + url;
+    };
+
     // Icons (kept inline as components for simplicity, or move to separate file)
     const ProfileIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>;
     const SettingsIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>;
@@ -102,11 +110,18 @@ const ProfilePage = () => {
             <div className="profile-page-wrapper">
                 <aside className="profile-sidebar">
                     <div className="sidebar-profile-summary">
-                    <div className="avatar-placeholder-sm"></div>
-                    <div className="user-info">
-                        <span className="user-name">{loading ? 'Loading…' : profile.name || '—'}</span>
-                        <span className="user-email">{loading ? '' : profile.email || '—'}</span>
-                    </div>
+                        {(() => {
+                            const src = resolveImageSrc(profile.profileImageUrl);
+                            return src ? (
+                                <img src={src} alt="Profile" style={{ width: 50, height: 50, borderRadius: '50%', objectFit: 'cover', background: '#e0e0e0' }} />
+                            ) : (
+                                <div className="avatar-placeholder-sm"></div>
+                            );
+                        })()}
+                        <div className="user-info">
+                            <span className="user-name">{loading ? 'Loading…' : profile.name || '—'}</span>
+                            <span className="user-email">{loading ? '' : profile.email || '—'}</span>
+                        </div>
                     </div>
                     <nav className="sidebar-nav">
                     <ul>
