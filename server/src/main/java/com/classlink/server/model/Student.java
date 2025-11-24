@@ -62,4 +62,7 @@ public class Student {
     private String previousSchool;
 
     private String rejectionReason;
+    
+    // Profile image URL (stored as a relative or absolute path rather than a BLOB for simplicity/performance)
+    private String profileImageUrl;
 }

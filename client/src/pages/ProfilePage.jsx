@@ -1,12 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import '../App.css';
 import './ProfilePage.css';
-import { me, getMyStudent, submitStudentApplication } from '../services/backend';
+import { me, getMyStudent, submitStudentApplication, uploadMyProfileImage } from '../services/backend';
 
 const ProfilePage = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const [profile, setProfile] = useState({ name: '', email: '', phone: '', status: '' });
+    const [profile, setProfile] = useState({ name: '', email: '', phone: '', status: '', profileImageUrl: '' });
+    const [originalProfile, setOriginalProfile] = useState({ name: '', email: '', phone: '', status: '', profileImageUrl: '' });
+    const [uploading, setUploading] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
+    const [saving, setSaving] = useState(false);
 
     // Icons (kept inline as components for simplicity, or move to separate file)
     const ProfileIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>;
@@ -23,32 +27,74 @@ const ProfilePage = () => {
                 const studentRes = await getMyStudent();
                 if (studentRes?.data) {
                     const s = studentRes.data;
-                    setProfile({
+                    const loaded = {
                         name: s.name || `${s.firstName || ''} ${s.lastName || ''}`.trim() || '',
                         email: s.email || s.username || '',
                         phone: s.phone || s.mobile || '',
-                        status: s.status || s.enrollmentStatus || ''
-                    });
+                        status: s.status || s.enrollmentStatus || '',
+                        profileImageUrl: s.profileImageUrl || ''
+                    };
+                    setProfile(loaded);
+                    setOriginalProfile(loaded);
                 } else {
                     const meRes = await me();
                     const m = meRes?.data || {};
-                    setProfile({ name: m.name || m.username || '', email: m.email || '', phone: '', status: m.status || '' });
+                    const loaded = { name: m.name || m.username || '', email: m.email || '', phone: '', status: m.status || '', profileImageUrl: '' };
+                    setProfile(loaded);
+                    setOriginalProfile(loaded);
                 }
             } catch (e) {
                 try {
                     const meRes = await me();
                     const m = meRes?.data || {};
-                    setProfile({ name: m.name || m.username || '', email: m.email || '', phone: '', status: m.status || '' });
+                    const fallback = { name: m.name || m.username || '', email: m.email || '', phone: '', status: m.status || '', profileImageUrl: '' };
+                    setProfile(fallback);
+                    setOriginalProfile(fallback);
                 } catch (err) { setError('Failed to load profile'); }
             } finally { setLoading(false); }
         })();
     }, []);
 
+    // Handle profile image file selection & upload
+    const handleImageChange = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const previewUrl = URL.createObjectURL(file);
+        setProfile(p => ({ ...p, profileImageUrl: previewUrl })); // optimistic preview
+        setUploading(true);
+        try {
+            const res = await uploadMyProfileImage(file);
+            const url = res?.data?.profileImageUrl;
+            if (url) {
+                setProfile(p => ({ ...p, profileImageUrl: url }));
+                setOriginalProfile(p => ({ ...p, profileImageUrl: url }));
+            }
+        } catch (err) {
+            console.error('Upload failed', err);
+            setError('Failed to upload image');
+            setProfile(p => ({ ...p, profileImageUrl: originalProfile.profileImageUrl })); // revert to previous
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    const handleEdit = () => {
+        setIsEditing(true);
+        setError('');
+    };
+
     const handleSave = async () => {
         setError('');
+        setSaving(true);
         try {
             await submitStudentApplication({ name: profile.name, phone: profile.phone });
-        } catch (e) { setError('Failed to save changes'); }
+            setOriginalProfile(profile); // persist new baseline
+            setIsEditing(false);
+        } catch (e) {
+            setError('Failed to save changes');
+        } finally {
+            setSaving(false);
+        }
     };
 
     return (
@@ -74,7 +120,17 @@ const ProfilePage = () => {
                 
                 <main className="profile-main-content">
                     <div className="profile-header">
-                        <div className="avatar-placeholder-md"></div>
+                        {(() => {
+                            const base = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api').replace(/\/api$/, '');
+                            const src = profile.profileImageUrl
+                                ? (profile.profileImageUrl.startsWith('http') ? profile.profileImageUrl : base + profile.profileImageUrl)
+                                : null;
+                            return src ? (
+                                <img src={src} alt="Profile" style={{ width: 70, height: 70, borderRadius: '50%', objectFit: 'cover', background: '#e0e0e0' }} />
+                            ) : (
+                                <div className="avatar-placeholder-md"></div>
+                            );
+                        })()}
                         <div className="user-info">
                             <span className="user-name">{loading ? 'Loading…' : profile.name || '—'}</span>
                             <span className="user-email">{loading ? '' : profile.email || '—'}</span>
@@ -83,15 +139,30 @@ const ProfilePage = () => {
                     <div className="profile-details-form">
                         <div className="form-row">
                             <label>Name</label>
-                            <input type="text" value={profile.name} onChange={(e) => setProfile((p) => ({ ...p, name: e.target.value }))} />
+                            <input
+                                type="text"
+                                value={profile.name}
+                                disabled={!isEditing}
+                                onChange={(e) => setProfile((p) => ({ ...p, name: e.target.value }))}
+                            />
                         </div>
                         <div className="form-row">
                             <label>Email account</label>
-                            <input type="text" value={profile.email} readOnly />
+                            <input
+                                type="text"
+                                value={profile.email}
+                                readOnly
+                                disabled
+                            />
                         </div>
                         <div className="form-row">
                             <label>Mobile number</label>
-                            <input type="text" value={profile.phone} onChange={(e) => setProfile((p) => ({ ...p, phone: e.target.value }))} />
+                            <input
+                                type="text"
+                                value={profile.phone}
+                                disabled={!isEditing}
+                                onChange={(e) => setProfile((p) => ({ ...p, phone: e.target.value }))}
+                            />
                         </div>
                         <div className="form-row">
                             <label>Enrollment status</label>
@@ -103,7 +174,22 @@ const ProfilePage = () => {
                         </div>
                     </div>
                     {error && <div style={{ color: '#b00020', margin: '8px 0' }}>{error}</div>}
-                    <button className="save-changes-button" onClick={handleSave} disabled={loading}>Save Changes</button>
+                    <div className="actions-row">
+                        {!isEditing && (
+                            <button className="save-changes-button" onClick={handleEdit} disabled={loading}>Edit Profile</button>
+                        )}
+                        {isEditing && (
+                            <button className="save-changes-button editing" onClick={handleSave} disabled={loading || saving}>
+                                {saving ? 'Saving…' : 'Save Changes'}
+                            </button>
+                        )}
+                    </div>
+                    {isEditing && (
+                        <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'flex-end' }}>
+                            <input type="file" accept="image/*" onChange={handleImageChange} disabled={uploading} />
+                            {uploading && <span style={{ fontSize: '.85rem', color: '#555' }}>Uploading…</span>}
+                        </div>
+                    )}
                 </main>
             </div>
         </div>
