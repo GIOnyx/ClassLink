@@ -35,17 +35,42 @@ If you just want to run the project locally right now:
 
 Done. For more detail, see the full sections below.
 
+## Admin file-based provisioning
+
+Admins can also be provisioned without SQL by editing `server/src/main/resources/admin-accounts.csv`.
+
+How it works:
+- At startup `AdminAccountsLoader` reads the CSV.
+- Each non-comment, non-blank line is parsed as: `email,password,name`.
+- If an admin with that email does not exist, it is created (plaintext password for now).
+- Existing admins are left untouched (no overwrite).
+
+Example lines (already present):
+```
+admin,admin,System Administrator
+andreyv.reyes3@gmail.com,gwapo123,Christian Andrey Reyes
+```
+
+Add a new admin:
+1. Open `server/src/main/resources/admin-accounts.csv`.
+2. Append: `new.admin@example.com,changeme,New Admin`.
+3. Save and restart backend (`mvnw.cmd spring-boot:run`).
+4. Log in with role `admin` using the new credentials.
+
+Guidelines & future improvements:
+- Don’t commit real production passwords; switch to hashing before deployment.
+- Keep formatting tight (avoid stray spaces around commas).
+- Optionally extend format later: `email,password,name,role`.
+- Consider password hashing + audit logging for security.
+
 ---
+
 ## Prerequisites
 
 - Java 17 (JDK)
 - Node.js LTS (includes npm)
 - MySQL Server and Workbench
 - Git
-
-Optional but helpful:
-- Postman/Thunder Client to poke APIs
-- A code editor (you’re in VS Code already)
 
 ## 1) Clone the repo
 
@@ -214,32 +239,4 @@ What the scripts do:
 
 Notes:
 - If you prefer a single terminal multiplexed approach, consider running the commands manually with a terminal multiplexer or using an npm package like `concurrently` in the `client` folder — tell me if you want that and I can add it.
-
-## Admin file-based provisioning
-
-Admins can also be provisioned without SQL by editing `server/src/main/resources/admin-accounts.csv`.
-
-How it works:
-- At startup `AdminAccountsLoader` reads the CSV.
-- Each non-comment, non-blank line is parsed as: `email,password,name`.
-- If an admin with that email does not exist, it is created (plaintext password for now).
-- Existing admins are left untouched (no overwrite).
-
-Example lines (already present):
-```
-admin,admin,System Administrator
-andreyv.reyes3@gmail.com,gwapo123,Christian Andrey Reyes
-```
-
-Add a new admin:
-1. Open `server/src/main/resources/admin-accounts.csv`.
-2. Append: `new.admin@example.com,changeme,New Admin`.
-3. Save and restart backend (`mvnw.cmd spring-boot:run`).
-4. Log in with role `admin` using the new credentials.
-
-Guidelines & future improvements:
-- Don’t commit real production passwords; switch to hashing before deployment.
-- Keep formatting tight (avoid stray spaces around commas).
-- Optionally extend format later: `email,password,name,role`.
-- Consider password hashing + audit logging for security.
 
