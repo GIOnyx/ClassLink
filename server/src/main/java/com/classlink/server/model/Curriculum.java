@@ -11,7 +11,13 @@ public class Curriculum {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long curriculumId;
 
-    private String program;
-    private int year;
+    /** Program code or short id (e.g. BSIT) */
+    private String programCode;
+
+    // Optional human readable program name
+    private String programName;
+
+    @OneToMany(mappedBy = "curriculum", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<CurriculumItem> items;
 
 }

@@ -22,6 +22,19 @@
   color: #333;
 }
 
+/* nicer dropdown styling */
+.dept-select {
+  background: #fff;
+  color: #111;
+  border: 1px solid #cfcfcf;
+  padding: 6px 8px;
+  border-radius: 4px;
+}
+.dept-select:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(137,52,59,0.12);
+}
+
 .curriculum-title h2 {
   margin: 0;
   font-size: 1.1rem;
@@ -55,6 +68,11 @@
   font-size: 0.95rem;
 }
 
+/* ensure semester/term text is readable (dark) */
+.term-title, .term-title * {
+  color: #111 !important;
+}
+
 .table-wrap {
   overflow-x: auto;
 }
@@ -80,14 +98,9 @@
 }
 
 .curriculum-table .mono {
-.curriculum-table .mono {
   font-family: monospace;
 }
 
-.no-subjects {
-  text-align: center;
-  color: #666;
-  padding: 12px 0;
 .no-subjects {
   text-align: center;
   color: #666;
