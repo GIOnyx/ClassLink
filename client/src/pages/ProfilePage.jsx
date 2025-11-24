@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import '../App.css';
 import './ProfilePage.css';
-import { me, getMyStudent, submitStudentApplication, uploadMyProfileImage } from '../services/backend';
+import { me, getMyStudent, submitStudentApplication, uploadMyProfileImage, logout as apiLogout } from '../services/backend';
 
 const ProfilePage = () => {
     const [loading, setLoading] = useState(true);
@@ -128,7 +128,7 @@ const ProfilePage = () => {
                         <li><a href="#" className="active"><ProfileIcon /> My Profile <ChevronRightIcon /></a></li>
                         <li><a href="#"><SettingsIcon /> Settings <ChevronRightIcon /></a></li>
                         <li><a href="#"><NotificationIcon /> Notification <span>Allow</span></a></li>
-                        <li><a href="#"><LogoutIcon /> Log Out</a></li>
+                        <li><a href="#" onClick={async (e) => { e.preventDefault(); try { await apiLogout(); } catch {} window.location.href = '/'; }}><LogoutIcon /> Log Out</a></li>
                     </ul>
                     </nav>
                 </aside>
