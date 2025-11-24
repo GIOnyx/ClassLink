@@ -25,6 +25,16 @@ export const getStudentsByStatus = (status) => API.get('/admin/students', { para
 export const setStudentStatus = (id, status) => API.patch(`/admin/students/${id}/status`, { status });
 export const approveStudent = (id) => API.post(`/admin/students/${id}/approve`);
 export const rejectStudent = (id, reason) => API.post(`/admin/students/${id}/reject`, { reason });
+// Admin self profile
+export const getMyAdmin = () => API.get('/admin/me');
+export const uploadMyAdminProfileImage = (file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  return API.post('/admin/me/profile-image', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  });
+};
+export const updateMyAdmin = (payload) => API.put('/admin/me', payload);
 
 export const submitStudentApplication = (payload) => API.put('/students/me', payload);
 export const getMyStudent = () => API.get('/students/me');

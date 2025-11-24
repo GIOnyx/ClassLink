@@ -16,6 +16,7 @@ public class Admin {
     private String email;
     private String password;
     private String role;
+    private String profileImageUrl; // URL for avatar served via /static/profile/**
 
     @OneToMany
     @JsonIgnore

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import '../App.css';
 import './ProfilePage.css';
-import { me, getMyStudent, submitStudentApplication, uploadMyProfileImage, logout as apiLogout } from '../services/backend';
+import { me, getMyStudent, getMyAdmin, submitStudentApplication, uploadMyProfileImage, uploadMyAdminProfileImage, updateMyAdmin, logout as apiLogout } from '../services/backend';
 
 const ProfilePage = () => {
     const [loading, setLoading] = useState(true);
@@ -11,6 +11,7 @@ const ProfilePage = () => {
     const [uploading, setUploading] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [role, setRole] = useState('');
 
     // Helper to resolve image URL (handles relative vs absolute)
     const resolveImageSrc = (url) => {
@@ -32,34 +33,42 @@ const ProfilePage = () => {
             setLoading(true);
             setError('');
             try {
-                const studentRes = await getMyStudent();
-                if (studentRes?.data) {
-                    const s = studentRes.data;
+                const sessionRes = await me();
+                const sessionData = sessionRes?.data || {};
+                const currentRole = sessionData.role || '';
+                setRole(currentRole);
+                if (currentRole === 'ADMIN') {
+                    // Fetch admin profile
+                    const adminRes = await getMyAdmin();
+                    const a = adminRes?.data || {};
+                    const loaded = {
+                        name: a.name || '',
+                        email: a.email || '',
+                        phone: '',
+                        status: 'ADMIN',
+                        profileImageUrl: ''
+                    };
+                    setProfile(loaded);
+                    setOriginalProfile(loaded);
+                } else {
+                    // Student path
+                    const studentRes = await getMyStudent();
+                    const s = studentRes?.data || {};
                     const loaded = {
                         name: s.name || `${s.firstName || ''} ${s.lastName || ''}`.trim() || '',
                         email: s.email || s.username || '',
-                        phone: s.phone || s.mobile || '',
+                        phone: s.phone || s.mobile || s.contactNumber || '',
                         status: s.status || s.enrollmentStatus || '',
                         profileImageUrl: s.profileImageUrl || ''
                     };
                     setProfile(loaded);
                     setOriginalProfile(loaded);
-                } else {
-                    const meRes = await me();
-                    const m = meRes?.data || {};
-                    const loaded = { name: m.name || m.username || '', email: m.email || '', phone: '', status: m.status || '', profileImageUrl: '' };
-                    setProfile(loaded);
-                    setOriginalProfile(loaded);
                 }
             } catch (e) {
-                try {
-                    const meRes = await me();
-                    const m = meRes?.data || {};
-                    const fallback = { name: m.name || m.username || '', email: m.email || '', phone: '', status: m.status || '', profileImageUrl: '' };
-                    setProfile(fallback);
-                    setOriginalProfile(fallback);
-                } catch (err) { setError('Failed to load profile'); }
-            } finally { setLoading(false); }
+                setError('Failed to load profile');
+            } finally {
+                setLoading(false);
+            }
         })();
     }, []);
 
@@ -71,7 +80,7 @@ const ProfilePage = () => {
         setProfile(p => ({ ...p, profileImageUrl: previewUrl })); // optimistic preview
         setUploading(true);
         try {
-            const res = await uploadMyProfileImage(file);
+            const res = role === 'ADMIN' ? await uploadMyAdminProfileImage(file) : await uploadMyProfileImage(file);
             const url = res?.data?.profileImageUrl;
             if (url) {
                 setProfile(p => ({ ...p, profileImageUrl: url }));
@@ -95,8 +104,15 @@ const ProfilePage = () => {
         setError('');
         setSaving(true);
         try {
-            await submitStudentApplication({ name: profile.name, phone: profile.phone });
-            setOriginalProfile(profile); // persist new baseline
+            if (role === 'ADMIN') {
+                const res = await updateMyAdmin({ name: profile.name });
+                const data = res?.data || {};
+                setProfile(p => ({ ...p, name: data.name || p.name }));
+                setOriginalProfile(p => ({ ...p, name: data.name || p.name }));
+            } else {
+                await submitStudentApplication({ name: profile.name, phone: profile.phone });
+                setOriginalProfile(profile); // persist new baseline
+            }
             setIsEditing(false);
         } catch (e) {
             setError('Failed to save changes');
@@ -170,23 +186,27 @@ const ProfilePage = () => {
                                 disabled
                             />
                         </div>
-                        <div className="form-row">
-                            <label>Mobile number</label>
-                            <input
-                                type="text"
-                                value={profile.phone}
-                                disabled={!isEditing}
-                                onChange={(e) => setProfile((p) => ({ ...p, phone: e.target.value }))}
-                            />
-                        </div>
-                        <div className="form-row">
-                            <label>Enrollment status</label>
-                            <div>
-                                <span className={`status-pill ${(profile.status||'').toLowerCase()}`}>
-                                    {profile.status ? profile.status : 'Pending'}
-                                </span>
-                            </div>
-                        </div>
+                        {role !== 'ADMIN' && (
+                            <>
+                                <div className="form-row">
+                                    <label>Mobile number</label>
+                                    <input
+                                        type="text"
+                                        value={profile.phone}
+                                        disabled={!isEditing}
+                                        onChange={(e) => setProfile((p) => ({ ...p, phone: e.target.value }))}
+                                    />
+                                </div>
+                                <div className="form-row">
+                                    <label>Enrollment status</label>
+                                    <div>
+                                        <span className={`status-pill ${(profile.status||'').toLowerCase()}`}>
+                                            {profile.status ? profile.status : 'Pending'}
+                                        </span>
+                                    </div>
+                                </div>
+                            </>
+                        )}
                     </div>
                     {error && <div style={{ color: '#b00020', margin: '8px 0' }}>{error}</div>}
                     <div className="actions-row">
