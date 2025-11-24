@@ -43,4 +43,17 @@
 .form-row:last-child { border-bottom: none; }
 .form-row label { font-weight: 600; color: #333; }
 .form-row input { width: 360px; max-width: 40vw; padding: 10px 12px; border-radius: 8px; border: 1px solid #e6e6e6; background: #fff; color: #222; }
-.save-changes-button { background-color: #800000; color: white; border: none; border-radius: 8px; padding: 12px 25px; font-size: 1rem; font-weight: 600; cursor: pointer; display: block; margin-left: auto; }
+.save-changes-button { background-color: #800000; color: white; border: none; border-radius: 8px; padding: 12px 25px; font-size: 1rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
+.save-changes-button:disabled { opacity: .55; cursor: not-allowed; }
+.save-changes-button.editing { background: #800000; box-shadow: 0 4px 12px -3px rgba(128,0,0,.35); }
+
+/* Removed explicit editing border & badge for simpler UI */
+
+.actions-row { display: flex; justify-content: flex-end; margin-top: 8px; }
+.form-row input:disabled {
+  background: #e9ecef;
+  color: #555;
+  border-color: #d0d0d0;
+  cursor: not-allowed;
+  opacity: 1; /* keep text readable */
+}

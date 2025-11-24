@@ -2,6 +2,12 @@ package com.classlink.server.controller;
 
 import java.time.LocalDate;
 import java.util.Map;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.util.UUID;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,9 +15,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.classlink.server.model.Student;
 import com.classlink.server.model.StudentStatus;
@@ -123,5 +132,48 @@ public class StudentController {
         if (student == null)
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Student record not found.");
         return ResponseEntity.ok(student);
+    }
+
+    @PostMapping("/me/profile-image")
+    public ResponseEntity<?> uploadProfileImage(@RequestParam("file") MultipartFile file, HttpSession session) {
+        Object userIdObj = session.getAttribute("userId");
+        if (userIdObj == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("You are not logged in.");
+        }
+        Long userId = ((Number) userIdObj).longValue();
+        Student student = studentRepository.findById(userId).orElse(null);
+        if (student == null) return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Student record not found.");
+
+        if (file == null || file.isEmpty()) {
+            return ResponseEntity.badRequest().body("Empty file");
+        }
+        if (file.getContentType() == null || !file.getContentType().startsWith("image/")) {
+            return ResponseEntity.badRequest().body("File must be an image");
+        }
+
+        try {
+            Path uploadRoot = Path.of("uploads", "profile");
+            Files.createDirectories(uploadRoot);
+            String extension = "";
+            String original = file.getOriginalFilename();
+            if (original != null && original.contains(".")) {
+                extension = original.substring(original.lastIndexOf('.'));
+            }
+            String filename = UUID.randomUUID() + extension;
+            Path target = uploadRoot.resolve(filename);
+            Files.copy(file.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
+
+            // Expose via /static/profile/{filename}
+        String relative = "/static/profile/" + filename;
+        String url = ServletUriComponentsBuilder.fromCurrentContextPath()
+            .path(relative)
+            .toUriString();
+            student.setProfileImageUrl(url);
+            studentRepository.save(student);
+            return ResponseEntity.ok(Map.of("profileImageUrl", url));
+        } catch (IOException e) {
+            log.error("Failed to store profile image", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Could not store image");
+        }
     }
 }

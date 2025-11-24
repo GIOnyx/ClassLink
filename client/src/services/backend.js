@@ -28,6 +28,13 @@ export const rejectStudent = (id, reason) => API.post(`/admin/students/${id}/rej
 
 export const submitStudentApplication = (payload) => API.put('/students/me', payload);
 export const getMyStudent = () => API.get('/students/me');
+export const uploadMyProfileImage = (file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  return API.post('/students/me/profile-image', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  });
+};
 export const getDepartments = () => API.get('/departments');
 export const getPrograms = (departmentId) => API.get('/programs', { params: { departmentId } });
 
