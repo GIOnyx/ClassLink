@@ -55,6 +55,8 @@ export const getTeachers = () => API.get('/teachers'); // Adding missing export 
 export const getCourses = () => API.get('/courses');
 export const addCourse = (payload) => API.post('/courses', payload);
 
+export const getCurriculum = (programCode) => API.get(`/curricula/${encodeURIComponent(programCode)}`);
+
 export const getFilteredEnrollmentForms = (filters) => {
     // Note: Axios automatically serializes the 'filters' object into URL query parameters (?department=X&yearLevel=Y)
     return axios.get('/api/enrollments/forms', {
