@@ -1,0 +1,111 @@
+.curriculum-root {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.curriculum-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.curriculum-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.curriculum-controls .small-label {
+  font-size: 0.9rem;
+  color: #333;
+}
+
+.curriculum-title h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.curriculum-content {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.curriculum-year {
+  background: #fff;
+  border: 1px solid #e6e6e6;
+  padding: 12px;
+  border-radius: 6px;
+}
+
+.year-title {
+  margin: 0 0 8px 0;
+  background: linear-gradient(#8b3a3a, #6f2b2b);
+  color: white;
+  padding: 6px 10px;
+  border-radius: 4px;
+  display: inline-block;
+  font-size: 0.95rem;
+}
+
+.term-title {
+  margin: 10px 0 8px 0;
+  font-size: 0.95rem;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.curriculum-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.curriculum-table th,
+.curriculum-table td {
+  border: 1px solid #ddd;
+  padding: 6px 8px;
+  text-align: left;
+  vertical-align: top;
+  color: #111; /* ensure text is dark and readable */
+}
+
+.curriculum-table thead th {
+  background: #d9cfcf;
+  color: #111;
+  font-weight: 600;
+}
+
+.curriculum-table .mono {
+.curriculum-table .mono {
+  font-family: monospace;
+}
+
+.no-subjects {
+  text-align: center;
+  color: #666;
+  padding: 12px 0;
+.no-subjects {
+  text-align: center;
+  color: #666;
+  padding: 12px 0;
+}
+
+/* make year/title text darker to avoid white-on-white issues */
+.year-title {
+  color: #111; /* dark text */
+  background: #b97d7d; /* slightly lighter than before for contrast */
+}
+
+.curriculum-title h2 {
+  color: #111;
+}
+
+/* Small responsive tweaks */
+@media (max-width: 700px) {
+  .curriculum-header { flex-direction: column; align-items: stretch; }
+  .curriculum-controls { justify-content: space-between; }
+}

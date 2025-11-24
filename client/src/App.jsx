@@ -9,6 +9,7 @@ import StudentPage from './pages/StudentPage.jsx';
 import AdminPage from './pages/AdminPage.jsx';
 import ProfilePage from './pages/ProfilePage.jsx';
 import CalendarPage from './pages/CalendarPage.jsx';
+import CurriculumPage from './pages/CurriculumPage.jsx';
 
 import './App.css';
 import { me, logout as apiLogout } from './services/backend';
@@ -63,6 +64,7 @@ function App() {
             <Route path="student" element={<StudentPage />} />
             <Route path="profile" element={<ProfilePage />} />
             <Route path="calendar" element={<CalendarPage />} />
+            <Route path="curriculum" element={<CurriculumPage />} />
             <Route path="*" element={<Navigate to="/" />} />
           </Route>
         ) : (
