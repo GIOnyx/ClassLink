@@ -4,11 +4,20 @@ If you just want to run the project locally right now:
 
 1. Create the file `server/src/main/resources/application.properties` (if it doesn't exist) with:
   ```properties
+  # --- Core database connection (adjust password/user) ---
   spring.datasource.url=jdbc:mysql://localhost:3306/classlink_db
   spring.datasource.username=root
   spring.datasource.password=your_mysql_password
-  spring.jpa.hibernate.ddl-auto=update
-  # Allow Vite dev origin
+  # Explicit driver is optional (Spring Boot auto-detects), but included for clarity
+  spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+
+  # --- JPA / schema management ---
+  spring.jpa.hibernate.ddl-auto=update   # create/alter tables
+  # The following two lines are OPTIONAL (show SQL in console & pretty format)
+  spring.jpa.show-sql=true
+  spring.jpa.properties.hibernate.format_sql=true
+
+  # --- CORS: frontend dev origin ---
   app.cors.allowed-origin=http://localhost:5173
   ```
   (Adjust username/password if your MySQL differs.)
@@ -27,7 +36,6 @@ If you just want to run the project locally right now:
 Done. For more detail, see the full sections below.
 
 ---
-
 ## Prerequisites
 
 - Java 17 (JDK)
