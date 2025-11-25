@@ -331,6 +331,9 @@ const EnrollmentPage = () => {
                 Application Status: <span className={`status-label ${statusClass}`}>{status}</span>
               </h3>
           </div>
+            {status === 'PENDING' && (
+              <p className="status-note">Your application has been submitted and is awaiting admin review. Edits will be available only if the application is rejected.</p>
+            )}
             {status === 'REJECTED' && (
               <div className="rejection-alert">
                   <div className="rejection-icon">
@@ -491,7 +494,7 @@ const EnrollmentPage = () => {
 
             <div className="enrollment-edit-actions">
               {!editMode ? (
-                (status === 'REJECTED' || status === 'PENDING') && <button type="button" onClick={startEdit} className="enrollment-submit-btn">Edit Information</button>
+                status === 'REJECTED' && <button type="button" onClick={startEdit} className="enrollment-submit-btn">Edit Information</button>
               ) : (
                 <>
                   <button type="button" onClick={handleSave} className="enrollment-submit-btn" disabled={loading}>

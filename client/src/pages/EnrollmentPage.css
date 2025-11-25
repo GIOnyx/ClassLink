@@ -286,6 +286,12 @@
   color: #333;
 }
 
+.status-note {
+  margin-top: 8px;
+  color: #475569;
+  font-size: 0.95rem;
+}
+
 .status-label {
   margin-left: 10px;
 }
