@@ -1,7 +1,10 @@
 package com.classlink.server.controller;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.http.HttpStatus;
@@ -16,13 +19,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.classlink.server.dto.AdminAccountDto;
+import com.classlink.server.model.Admin;
 import com.classlink.server.model.ApplicationHistory;
 import com.classlink.server.model.Student;
 import com.classlink.server.model.StudentStatus;
-import com.classlink.server.model.Admin;
 import com.classlink.server.repository.ApplicationHistoryRepository;
-import com.classlink.server.repository.StudentRepository;
 import com.classlink.server.repository.AdminRepository;
+import com.classlink.server.repository.StudentRepository;
+import com.classlink.server.service.AdminAccountsFileService;
 import jakarta.servlet.http.HttpSession;
 
 @RestController
@@ -32,12 +37,15 @@ public class AdminController {
 	private final StudentRepository studentRepository;
 	private final AdminRepository adminRepository;
 	private final ApplicationHistoryRepository applicationHistoryRepository;
+	private final AdminAccountsFileService adminAccountsFileService;
 
 	public AdminController(StudentRepository studentRepository, AdminRepository adminRepository,
-			ApplicationHistoryRepository applicationHistoryRepository) {
+			ApplicationHistoryRepository applicationHistoryRepository,
+			AdminAccountsFileService adminAccountsFileService) {
 		this.studentRepository = studentRepository;
 		this.adminRepository = adminRepository;
 		this.applicationHistoryRepository = applicationHistoryRepository;
+		this.adminAccountsFileService = adminAccountsFileService;
 	}
 
 	// List students, optionally filtered by status e.g.,
@@ -258,5 +266,74 @@ public class AdminController {
 			"email", saved.getEmail(),
 			"profileImageUrl", saved.getProfileImageUrl()
 		));
+	}
+
+	@GetMapping("/accounts")
+	public ResponseEntity<?> listAdminAccounts(HttpSession session) {
+		if (!isAdmin(session)) {
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Admin role required");
+		}
+		List<AdminAccountDto> fromFile = adminAccountsFileService.readAccounts();
+		LinkedHashMap<String, AdminAccountDto> merged = new LinkedHashMap<>();
+		for (AdminAccountDto dto : fromFile) {
+			if (dto.getEmail() == null || dto.getEmail().isBlank()) {
+				continue;
+			}
+			if (dto.getName() == null || dto.getName().isBlank()) {
+				dto.setName(dto.getEmail());
+			}
+			merged.put(dto.getEmail(), dto);
+		}
+		List<Admin> admins = adminRepository.findAll();
+		for (Admin admin : admins) {
+			if (admin.getEmail() == null) {
+				continue;
+			}
+			AdminAccountDto dto = merged.get(admin.getEmail());
+			if (dto == null) {
+				dto = new AdminAccountDto();
+				dto.setEmail(admin.getEmail());
+				dto.setPassword(admin.getPassword());
+				dto.setName(admin.getName() != null ? admin.getName() : admin.getEmail());
+				merged.put(admin.getEmail(), dto);
+			} else {
+				if (dto.getPassword() == null || dto.getPassword().isBlank()) {
+					dto.setPassword(admin.getPassword());
+				}
+				if (dto.getName() == null || dto.getName().isBlank()) {
+					dto.setName(admin.getName() != null ? admin.getName() : admin.getEmail());
+				}
+			}
+			dto.setId(admin.getAdminId());
+		}
+		return ResponseEntity.ok(new ArrayList<>(merged.values()));
+	}
+
+	@PostMapping("/accounts")
+	public ResponseEntity<?> createAdminAccount(@RequestBody AdminAccountDto body, HttpSession session) {
+		if (!isAdmin(session)) {
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Admin role required");
+		}
+		if (body == null) {
+			return ResponseEntity.badRequest().body("Request body is required");
+		}
+		String email = body.getEmail() != null ? body.getEmail().trim() : "";
+		String password = body.getPassword() != null ? body.getPassword().trim() : "";
+		String name = body.getName() != null ? body.getName().trim() : "";
+		if (email.isEmpty() || password.isEmpty()) {
+			return ResponseEntity.badRequest().body("Email and password are required");
+		}
+		if (adminRepository.findByEmail(email) != null) {
+			return ResponseEntity.status(HttpStatus.CONFLICT).body("Email already exists");
+		}
+		Admin admin = new Admin();
+		admin.setEmail(email);
+		admin.setPassword(password);
+		admin.setName(name.isEmpty() ? email : name);
+		admin.setRole("ADMIN");
+		Admin saved = adminRepository.save(admin);
+		AdminAccountDto response = new AdminAccountDto(saved.getAdminId(), saved.getEmail(), saved.getPassword(), saved.getName());
+		adminAccountsFileService.appendAccount(response);
+		return ResponseEntity.status(HttpStatus.CREATED).body(response);
 	}
 }

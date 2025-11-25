@@ -31,10 +31,10 @@ const SecondaryNavbar = ({ role }) => {
                         </li>
                         <li>
                             <NavLink
-                                to="/student"
+                                to="/admins"
                                 className={({ isActive }) => isActive ? 'active' : ''}
                             >
-                                Students
+                                Admins
                             </NavLink>
                         </li>
                         

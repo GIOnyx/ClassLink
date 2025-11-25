@@ -1,24 +1,249 @@
-/* Styles for StudentPage */
+/* Admin dashboard styles reused on StudentPage for administrators */
 
 .student-dashboard-header {
   margin-bottom: 12px;
-  color: #333;
+  color: #111827;
 }
 
-.student-info-panel {
+.admin-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.admin-summary-card {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
   background: #fff;
-  border: 1px solid #eee;
-  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px 20px;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+}
+
+.admin-summary-label {
+  margin: 0;
+  color: #6b7280;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.admin-summary-value {
+  margin: 4px 0 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.admin-grid {
+  display: grid;
+  gap: 24px;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  align-items: start;
+}
+
+.admin-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 20px 22px;
+  box-shadow: 0 15px 35px rgba(15, 23, 42, 0.08);
+}
+
+.admin-card.full {
+  grid-column: 1 / -1;
+}
+
+.admin-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.admin-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-card-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.admin-card-subtitle {
+  margin: 6px 0 18px;
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+.admin-count-chip {
+  background: #f3f4f6;
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-weight: 600;
+  color: #111827;
+  font-size: 0.85rem;
+}
+
+.admin-add-button {
+  min-width: 42px;
+  height: 36px;
+  border-radius: 10px;
+  border: none;
+  background: #800000;
+  color: #fff;
+  font-size: 1.6rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 14px rgba(128, 0, 0, 0.35);
+  padding: 0 12px;
+}
+
+.admin-add-button:hover {
+  opacity: 0.9;
+}
+
+.admin-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  margin-top: 18px;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.admin-table th,
+.admin-table td {
+  padding: 12px 10px;
+  border-bottom: 1px solid #e5e7eb;
+  text-align: left;
+}
+
+.admin-table th {
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  color: #6b7280;
+}
+
+.admin-password-cell {
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+  font-size: 0.9rem;
+}
+
+.admin-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.admin-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.9rem;
+  color: #374151;
+}
+
+.admin-form input {
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 0.95rem;
+}
+
+.admin-submit {
+  margin-top: 4px;
+  background: #800000;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 11px 20px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.admin-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.admin-error {
+  color: #b00020;
+  margin: 8px 0 0;
+}
+
+.admin-success {
+  color: #15803d;
+  margin: 8px 0 0;
+}
+
+.admin-warning {
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #7f1d1d;
   padding: 16px;
-  color: #333;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+  border-radius: 12px;
 }
 
-.student-welcome {
-  margin-top: 0;
+.admin-empty {
+  margin-top: 16px;
+  color: #6b7280;
 }
 
-.student-description {
-  color: #666;
-  margin-top: 12px;
+.admin-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.admin-modal {
+  width: min(520px, 100%);
+  background: #fff;
+  border-radius: 18px;
+  padding: 22px 26px;
+  box-shadow: 0 25px 60px rgba(15, 23, 42, 0.35);
+}
+
+.admin-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.admin-close-button {
+  border: none;
+  background: transparent;
+  font-size: 1.6rem;
+  cursor: pointer;
+  color: #6b7280;
+  line-height: 1;
+}
+
+@media (max-width: 900px) {
+  .admin-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-card.full {
+    grid-column: auto;
+  }
 }
