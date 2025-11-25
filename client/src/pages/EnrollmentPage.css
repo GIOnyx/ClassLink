@@ -25,6 +25,103 @@
   margin-bottom: 30px;
 }
 
+.enrollment-intro {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.enrollment-hero {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 28px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 15px 35px rgba(15, 23, 42, 0.08);
+}
+
+.enrollment-pill {
+  display: inline-flex;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: #fce8e8;
+  color: #800000;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.enrollment-hero h1 {
+  margin: 12px 0 8px;
+  font-size: 2rem;
+  color: #0f172a;
+}
+
+.enrollment-hero-copy {
+  max-width: 520px;
+  color: #475569;
+  margin-bottom: 18px;
+}
+
+.enrollment-hero-note {
+  background: #f9fafb;
+  border-radius: 12px;
+  padding: 16px;
+  min-width: 220px;
+  color: #475569;
+}
+
+.requirements-section {
+  background: #fff;
+  border-radius: 16px;
+  padding: 28px;
+  box-shadow: 0 15px 35px rgba(15, 23, 42, 0.08);
+}
+
+.requirements-section h2 {
+  margin-top: 0;
+  margin-bottom: 18px;
+}
+
+.requirements-grid {
+  display: grid;
+  gap: 18px;
+}
+
+.requirements-grid article {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  background: #f8f5f5;
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+.requirements-grid h3 {
+  margin: 0;
+  padding: 24px;
+  background: #7b1113;
+  color: #fff;
+  font-size: 1.15rem;
+}
+
+.requirements-grid ul {
+  list-style: none;
+  margin: 0;
+  padding: 20px 24px;
+  color: #111827;
+}
+
+.requirements-grid li {
+  margin-bottom: 8px;
+}
+
+.requirements-grid li.note {
+  color: #b45309;
+  font-size: 0.9rem;
+}
+
 .enrollment-section-title {
   font-size: 1.5rem;
   font-weight: 600;
@@ -86,11 +183,62 @@
   color: #333;
 }
 
+.applicant-type-group {
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.enrollment-radio-label.selected {
+  font-weight: 600;
+  color: #800000;
+}
+
 .enrollment-radio-label input[type="radio"] {
   accent-color: #800000; /* Replace with your desired color (e.g., #0000FF for blue) */
   width: 18px;           /* Optional: Makes the button slightly larger */
   height: 18px;          /* Optional: Makes the button slightly larger */
   cursor: pointer;
+}
+
+.requirements-upload-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.upload-hint {
+  font-size: 0.95rem;
+  color: #475569;
+}
+
+.enrollment-error.small {
+  font-size: 0.9rem;
+  text-align: left;
+}
+
+.selected-requirements-card {
+  border: 1px solid #f1d8d8;
+  border-radius: 12px;
+  padding: 16px 20px;
+  background: #fff8f8;
+}
+
+.selected-requirements-title {
+  margin: 0 0 10px;
+  font-weight: 600;
+  color: #7b1113;
+}
+
+.selected-requirements-card ul {
+  list-style: disc;
+  margin: 0 0 0 18px;
+  padding: 0;
+  color: #1f2937;
+}
+
+.selected-requirements-card li.note {
+  color: #b45309;
+  font-style: italic;
 }
 
 /* Buttons and Navigation */

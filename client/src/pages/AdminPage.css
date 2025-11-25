@@ -43,20 +43,25 @@
 
 /* Explicitly set widths for a balanced distribution */
 .admin-table th:nth-child(1), .admin-table td:nth-child(1) { /* Name */
-  width: 10%;
+  width: 16%;
 }
 .admin-table th:nth-child(2), .admin-table td:nth-child(2) { /* Email */
-  width: 10%;
+  width: 16%;
 }
-.admin-table th:nth-child(3), .admin-table td:nth-child(3) { /* Program */
-  width: 10%;
+.admin-table th:nth-child(3), .admin-table td:nth-child(3) { /* Applicant Type */
+  width: 15%;
 }
-.admin-table th:nth-child(4), .admin-table td:nth-child(4) { /* Year */
-  width: 5%;
+.admin-table th:nth-child(4), .admin-table td:nth-child(4) { /* Program */
+  width: 18%;
 }
-.admin-table th:nth-child(5), .admin-table td:nth-child(5) { /* Actions */
-  width: 10%;
-  /* Center align actions for better UX */
+.admin-table th:nth-child(5), .admin-table td:nth-child(5) { /* Year */
+  width: 8%;
+}
+.admin-table th:nth-child(6), .admin-table td:nth-child(6) { /* Requirements */
+  width: 12%;
+}
+.admin-table th:nth-child(7), .admin-table td:nth-child(7) { /* Actions */
+  width: 15%;
   text-align: center;
 }
 
@@ -116,6 +121,16 @@
 }
 .btn-reject:hover { 
   background-color: #8a0019; 
+}
+
+.doc-link {
+  color: #0b62c0;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.doc-link:hover {
+  text-decoration: underline;
 }
 
 /* --- MODERN MODAL STYLES --- */

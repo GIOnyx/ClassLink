@@ -45,6 +45,9 @@ public class Student {
     @Enumerated(EnumType.STRING)
     private StudentStatus status;
 
+    @Enumerated(EnumType.STRING)
+    private ApplicantType applicantType;
+
     @OneToMany(mappedBy = "student")
     @JsonIgnore
     private List<Enrollment> enrollments;
@@ -65,4 +68,7 @@ public class Student {
     
     // Profile image URL (stored as a relative or absolute path rather than a BLOB for simplicity/performance)
     private String profileImageUrl;
+
+    // PDF of submitted requirements for admin review
+    private String requirementsDocumentUrl;
 }
