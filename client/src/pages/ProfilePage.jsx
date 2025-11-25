@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../App.css';
 import './ProfilePage.css';
@@ -22,6 +22,7 @@ const ProfilePage = () => {
     const [historyEntries, setHistoryEntries] = useState([]);
     const [historyLoading, setHistoryLoading] = useState(false);
     const [historyError, setHistoryError] = useState('');
+    const fileInputRef = useRef(null);
 
     // Helper to resolve image URL (handles relative vs absolute)
     const resolveImageSrc = (url) => {
@@ -135,6 +136,18 @@ const ProfilePage = () => {
             setProfile(p => ({ ...p, profileImageUrl: originalProfile.profileImageUrl })); // revert to previous
         } finally {
             setUploading(false);
+        }
+    };
+
+    const handleAvatarClick = () => {
+        if (uploading) return;
+        fileInputRef.current?.click();
+    };
+
+    const handleAvatarKeyDown = (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            handleAvatarClick();
         }
     };
 
@@ -345,18 +358,35 @@ const ProfilePage = () => {
                 </aside>
                 
                 <main className="profile-main-content">
+                    <input
+                        type="file"
+                        ref={fileInputRef}
+                        style={{ display: 'none' }}
+                        accept="image/*"
+                        onChange={handleImageChange}
+                        disabled={uploading}
+                    />
                     <div className="profile-header">
-                        {(() => {
-                            const base = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api').replace(/\/api$/, '');
-                            const src = profile.profileImageUrl
-                                ? (profile.profileImageUrl.startsWith('http') ? profile.profileImageUrl : base + profile.profileImageUrl)
-                                : null;
-                            return src ? (
-                                <img src={src} alt="Profile" style={{ width: 70, height: 70, borderRadius: '50%', objectFit: 'cover', background: '#e0e0e0' }} />
-                            ) : (
-                                <div className="avatar-placeholder-md"></div>
-                            );
-                        })()}
+                        <div
+                            className={`profile-avatar-wrapper ${uploading ? 'uploading' : ''}`}
+                            role="button"
+                            tabIndex={0}
+                            onClick={handleAvatarClick}
+                            onKeyDown={handleAvatarKeyDown}
+                        >
+                            {(() => {
+                                const base = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api').replace(/\/api$/, '');
+                                const src = profile.profileImageUrl
+                                    ? (profile.profileImageUrl.startsWith('http') ? profile.profileImageUrl : base + profile.profileImageUrl)
+                                    : null;
+                                return src ? (
+                                    <img src={src} alt="Profile" />
+                                ) : (
+                                    <div className="avatar-placeholder-md"></div>
+                                );
+                            })()}
+                            <span className="profile-avatar-overlay">{uploading ? 'Uploading…' : 'Change photo'}</span>
+                        </div>
                         <div className="user-info">
                             <span className="user-name">{loading ? 'Loading…' : profile.name || '—'}</span>
                             <span className="user-email">{loading ? '' : profile.email || '—'}</span>
@@ -416,12 +446,6 @@ const ProfilePage = () => {
                                     </button>
                                 )}
                             </div>
-                            {isEditing && (
-                                <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'flex-end' }}>
-                                    <input type="file" accept="image/*" onChange={handleImageChange} disabled={uploading} />
-                                    {uploading && <span style={{ fontSize: '.85rem', color: '#555' }}>Uploading…</span>}
-                                </div>
-                            )}
                         </>
                     )}
                     {activePanel === 'change-password' && (

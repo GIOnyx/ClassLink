@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.classlink.server.model.ApplicantType;
 import com.classlink.server.model.ApplicationHistory;
 import com.classlink.server.model.Student;
 import com.classlink.server.model.StudentStatus;
@@ -45,6 +46,7 @@ public class StudentController {
     private final ApplicationHistoryRepository applicationHistoryRepository;
     private final Logger log = LoggerFactory.getLogger(StudentController.class);
     private static final int MAX_PHONE_LENGTH = 11;
+    private static final long MAX_REQUIREMENTS_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 
     public StudentController(StudentRepository studentRepository, ProgramRepository programRepository,
             DepartmentRepository departmentRepository, ApplicationHistoryRepository applicationHistoryRepository) {
@@ -120,6 +122,19 @@ public class StudentController {
         }
         if (body.containsKey("semester"))
             student.setSemester((String) body.get("semester"));
+
+        if (body.containsKey("applicantType")) {
+            String rawType = asTrimmedString(body.get("applicantType"));
+            if (rawType == null || rawType.isEmpty()) {
+                student.setApplicantType(null);
+            } else {
+                try {
+                    student.setApplicantType(ApplicantType.valueOf(rawType.toUpperCase()));
+                } catch (IllegalArgumentException ex) {
+                    return ResponseEntity.badRequest().body("Invalid applicant type.");
+                }
+            }
+        }
 
         // Handle Program and Department
         // Frontend sends 'programId' and 'departmentId'
@@ -218,6 +233,56 @@ public class StudentController {
         } catch (IOException e) {
             log.error("Failed to store profile image", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Could not store image");
+        }
+    }
+
+    @PostMapping("/me/requirements")
+    public ResponseEntity<?> uploadRequirementsDocument(@RequestParam("file") MultipartFile file, HttpSession session) {
+        Object userIdObj = session.getAttribute("userId");
+        if (userIdObj == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("You are not logged in.");
+        }
+        Long userId = ((Number) userIdObj).longValue();
+        Student student = studentRepository.findById(userId).orElse(null);
+        if (student == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Student record not found.");
+        }
+
+        if (file == null || file.isEmpty()) {
+            return ResponseEntity.badRequest().body("Empty file");
+        }
+        if (file.getSize() > MAX_REQUIREMENTS_FILE_SIZE) {
+            return ResponseEntity.badRequest().body("File exceeds 10 MB limit");
+        }
+        String contentType = file.getContentType();
+        String filename = file.getOriginalFilename();
+        boolean isPdf = (contentType != null && contentType.equalsIgnoreCase("application/pdf"))
+                || (filename != null && filename.toLowerCase().endsWith(".pdf"));
+        if (!isPdf) {
+            return ResponseEntity.badRequest().body("Requirements file must be a PDF");
+        }
+
+        try {
+            Path uploadRoot = Path.of("uploads", "requirements");
+            Files.createDirectories(uploadRoot);
+            String extension = ".pdf";
+            if (filename != null && filename.contains(".")) {
+                extension = filename.substring(filename.lastIndexOf('.'));
+            }
+            String storedName = UUID.randomUUID() + extension;
+            Path target = uploadRoot.resolve(storedName);
+            Files.copy(file.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
+
+            String relative = "/static/requirements/" + storedName;
+            String url = ServletUriComponentsBuilder.fromCurrentContextPath()
+                    .path(relative)
+                    .toUriString();
+            student.setRequirementsDocumentUrl(url);
+            studentRepository.save(student);
+            return ResponseEntity.ok(Map.of("requirementsDocumentUrl", url));
+        } catch (IOException e) {
+            log.error("Failed to store requirements document", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Could not store requirements file");
         }
     }
 

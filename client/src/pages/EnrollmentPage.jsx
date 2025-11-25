@@ -1,7 +1,41 @@
 import React, { useState, useEffect } from 'react';
-import { submitStudentApplication, getMyStudent, getDepartments, getPrograms } from '../services/backend';
+import { submitStudentApplication, getMyStudent, getDepartments, getPrograms, uploadMyRequirementsDocument } from '../services/backend';
 import '../App.css';
 import './EnrollmentPage.css';
+
+const APPLICANT_TYPE_DETAILS = [
+  {
+    value: 'NEW',
+    label: 'College / New Student',
+    heroTitle: 'College / New Students',
+    requirements: [
+      { text: 'Report Card / Form 138' },
+      { text: 'Applicants with a general average of 90%+ are exempt from the entrance exam.', note: true },
+      { text: 'Certificate of Good Moral Character' },
+      { text: 'PSA Certificate of Live Birth' },
+    ],
+  },
+  {
+    value: 'TRANSFEREE',
+    label: 'College Transferee',
+    heroTitle: 'College Transferees',
+    requirements: [
+      { text: 'Certificate of Transfer Credentials or Honorable Dismissal' },
+      { text: 'Transcript of Record for Evaluation' },
+      { text: 'Certificate of Good Moral Character' },
+      { text: 'PSA Certificate of Live Birth' },
+    ],
+  },
+  {
+    value: 'CROSS_ENROLLEE',
+    label: 'College Cross-enrollee',
+    heroTitle: 'College Cross-enrollees',
+    requirements: [
+      { text: 'Permit to cross-enroll' },
+      { text: 'Certificate of Good Moral Character' },
+    ],
+  },
+];
 
 const RELATIONSHIP_OPTIONS = [
   'Mother',
@@ -17,6 +51,8 @@ const RELATIONSHIP_OPTIONS = [
   'Other',
 ];
 
+const APPLICANT_TYPE_OPTIONS = APPLICANT_TYPE_DETAILS.map(({ value, label }) => ({ value, label }));
+
 const EnrollmentPage = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -28,8 +64,12 @@ const EnrollmentPage = () => {
   const [programs, setPrograms] = useState([]);
   const [yearOptions, setYearOptions] = useState([]);
   const [currentUserEmail, setCurrentUserEmail] = useState('');
+  const [showWizard, setShowWizard] = useState(false);
+  const [requirementsUploading, setRequirementsUploading] = useState(false);
+  const [requirementsUploadError, setRequirementsUploadError] = useState('');
   
   const [formData, setFormData] = useState({
+    applicantType: '', requirementsDocumentUrl: '',
     firstName: '', lastName: '', birthDate: '', gender: 'Male', studentAddress: '', contactNumber: '', emailAddress: '',
     parentGuardianName: '', relationshipToStudent: '', parentContactNumber: '', parentEmailAddress: '',
     departmentId: null, programId: null, yearLevel: null, semester: '', previousSchool: '',
@@ -71,22 +111,38 @@ const EnrollmentPage = () => {
     } else { setYearOptions([]); }
   };
 
+  const totalSteps = 4;
+
   const nextStep = () => {
     setError('');
     if (currentStep === 1) {
+      if (requirementsUploading) {
+        setError('Please wait for the requirements upload to finish.');
+        return;
+      }
+      if (!formData.applicantType) {
+        setError('Please select the type of applicant.');
+        return;
+      }
+      if (!formData.requirementsDocumentUrl) {
+        setError('Please upload your requirements PDF before continuing.');
+        return;
+      }
+    }
+    if (currentStep === 2) {
       const { firstName, lastName, birthDate, emailAddress } = formData;
       if (!firstName || !lastName || !birthDate || !emailAddress) {
         setError('Please fill out all required fields: Name, Birth Date, and Email.');
         return;
       }
     }
-    if (currentStep === 2) {
+    if (currentStep === 3) {
       if (!formData.parentGuardianName || !formData.parentContactNumber) {
         setError('Please fill out Parent/Guardian Name and Contact Number.');
         return; 
       }
     }
-    if (currentStep < 3) setCurrentStep(prev => prev + 1);
+    if (currentStep < totalSteps) setCurrentStep(prev => prev + 1);
   };
 
   const prevStep = () => {
@@ -97,10 +153,15 @@ const EnrollmentPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    const { firstName, lastName, emailAddress, birthDate, departmentId, programId, yearLevel, semester } = formData;
+    const { applicantType, requirementsDocumentUrl, firstName, lastName, emailAddress, birthDate, departmentId, programId, yearLevel, semester } = formData;
+    if (!applicantType || !requirementsDocumentUrl) {
+      setError('Please complete the applicant type and requirements upload step.');
+      setCurrentStep(1);
+      return;
+    }
     if (!firstName || !lastName || !emailAddress || !birthDate) {
       setError('Please go back and fill out all required student fields.');
-      setCurrentStep(1);
+      setCurrentStep(2);
       return;
     }
     if (!departmentId || !programId || !yearLevel || !semester) {
@@ -153,6 +214,8 @@ const EnrollmentPage = () => {
   useEffect(() => {
     if (!existingApp) return;
     setFormData(prev => ({
+      applicantType: existingApp.applicantType || prev.applicantType,
+      requirementsDocumentUrl: existingApp.requirementsDocumentUrl || prev.requirementsDocumentUrl,
       firstName: existingApp.firstName || prev.firstName,
       lastName: existingApp.lastName || prev.lastName,
       birthDate: existingApp.birthDate || prev.birthDate,
@@ -220,6 +283,41 @@ const EnrollmentPage = () => {
     }
   };
 
+  const beginApplication = () => {
+    setError('');
+    setRequirementsUploadError('');
+    setCurrentStep(1);
+    setShowWizard(true);
+  };
+
+  const handleRequirementsUpload = async (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      setRequirementsUploadError('Please upload a PDF file.');
+      e.target.value = '';
+      return;
+    }
+
+    setRequirementsUploadError('');
+    setRequirementsUploading(true);
+    try {
+      const res = await uploadMyRequirementsDocument(file);
+      const url = res.data?.requirementsDocumentUrl;
+      if (url) {
+        setFormData(prev => ({ ...prev, requirementsDocumentUrl: url }));
+      }
+    } catch (err) {
+      setRequirementsUploadError('Upload failed. Please try again.');
+    } finally {
+      setRequirementsUploading(false);
+      e.target.value = '';
+    }
+  };
+
+  const selectedTypeDetails = APPLICANT_TYPE_DETAILS.find(type => type.value === formData.applicantType);
+
   // --- RENDER ---
   if (existingApp) {
     const status = (existingApp.status || 'Pending').toUpperCase();
@@ -250,6 +348,60 @@ const EnrollmentPage = () => {
         </div>
         
         <form className="enrollment-form-container" onSubmit={handleSave}>
+            <section>
+              <h3 className="enrollment-section-title">Application Details</h3>
+              <div className="enrollment-grid">
+                <div className="enrollment-form-group enrollment-grid-full">
+                  <label className="enrollment-label">Applicant Type</label>
+                  <div className="enrollment-radio-group applicant-type-group">
+                    {APPLICANT_TYPE_OPTIONS.map(option => (
+                      <label key={option.value} className={`enrollment-radio-label ${formData.applicantType === option.value ? 'selected' : ''}`}>
+                        <input
+                          type="radio"
+                          name="applicantType"
+                          value={option.value}
+                          checked={formData.applicantType === option.value}
+                          onChange={handleChange}
+                          disabled={!editMode}
+                        />
+                        {option.label}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <div className="enrollment-form-group enrollment-grid-full">
+                  <label className="enrollment-label">Requirements PDF</label>
+                  <div className="requirements-upload-row">
+                    <input
+                      type="file"
+                      accept="application/pdf"
+                      onChange={handleRequirementsUpload}
+                      disabled={!editMode || requirementsUploading}
+                    />
+                    {requirementsUploading && <span className="upload-hint">Uploading…</span>}
+                    {formData.requirementsDocumentUrl ? (
+                      <a href={formData.requirementsDocumentUrl} target="_blank" rel="noreferrer" className="upload-hint">View uploaded PDF</a>
+                    ) : (
+                      <span className="upload-hint">No file uploaded yet</span>
+                    )}
+                    {requirementsUploadError && <span className="enrollment-error small">{requirementsUploadError}</span>}
+                    <small>Accepted format: PDF up to 10MB.</small>
+                  </div>
+                </div>
+                {selectedTypeDetails && (
+                  <div className="enrollment-form-group enrollment-grid-full">
+                    <div className="selected-requirements-card">
+                      <p className="selected-requirements-title">Requirements for {selectedTypeDetails.heroTitle || selectedTypeDetails.label}</p>
+                      <ul>
+                        {selectedTypeDetails.requirements.map((req, idx) => (
+                          <li key={idx} className={req.note ? 'note' : ''}>{req.text}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </section>
             <section>
               <h3 className="enrollment-section-title">Student Information</h3>
               <div className="enrollment-grid">
@@ -354,13 +506,104 @@ const EnrollmentPage = () => {
     );
   }
 
+  if (!showWizard) {
+    return (
+      <div className="standard-page-layout enrollment-intro">
+        <section className="enrollment-hero">
+          <div>
+            <p className="enrollment-pill">Welcome to CIT-University Online</p>
+            <h1>Start your journey</h1>
+            <p className="enrollment-hero-copy">
+              New applicants are greeted here. Review the enrollment requirements, prepare your documents,
+              and begin the three-step application whenever you are ready.
+            </p>
+            <button type="button" className="enrollment-submit-btn" onClick={beginApplication}>
+              Start Application
+            </button>
+          </div>
+          <div className="enrollment-hero-note">
+            <p>Need help?</p>
+            <span>Email admissions@cit.edu.ph for assistance.</span>
+          </div>
+        </section>
+
+        <section className="requirements-section">
+          <h2>Enrollment Requirements</h2>
+          <div className="requirements-grid">
+            {APPLICANT_TYPE_DETAILS.map(detail => (
+              <article key={detail.value}>
+                <h3>{detail.heroTitle}</h3>
+                <ul>
+                  {detail.requirements.map((req, idx) => (
+                    <li key={idx} className={req.note ? 'note' : ''}>{req.text}</li>
+                  ))}
+                </ul>
+              </article>
+            ))}
+          </div>
+        </section>
+      </div>
+    );
+  }
+
   // --- NEW APPLICATION WIZARD RENDER ---
   return (
     <div className="standard-page-layout">
       <form className="enrollment-form-container" onSubmit={handleSubmit}>
-        <h2 className="enrollment-header">Student Enrollment Form (Step {currentStep} of 3)</h2>
+        <h2 className="enrollment-header">Student Enrollment Form (Step {currentStep} of {totalSteps})</h2>
         
         {currentStep === 1 && (
+          <section>
+            <h3 className="enrollment-section-title">Application Details</h3>
+            <div className="enrollment-grid">
+              <div className="enrollment-form-group enrollment-grid-full">
+                <label className="enrollment-label">Applicant Type</label>
+                <div className="enrollment-radio-group applicant-type-group">
+                  {APPLICANT_TYPE_OPTIONS.map(option => (
+                    <label key={option.value} className={`enrollment-radio-label ${formData.applicantType === option.value ? 'selected' : ''}`}>
+                      <input
+                        type="radio"
+                        name="applicantType"
+                        value={option.value}
+                        checked={formData.applicantType === option.value}
+                        onChange={handleChange}
+                      />
+                      {option.label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div className="enrollment-form-group enrollment-grid-full">
+                <label className="enrollment-label">Requirements PDF</label>
+                <input type="file" accept="application/pdf" onChange={handleRequirementsUpload} className="enrollment-input" disabled={requirementsUploading} />
+                {requirementsUploading && <p className="upload-hint">Uploading…</p>}
+                {formData.requirementsDocumentUrl && (
+                  <p className="upload-hint">
+                    Uploaded: <a href={formData.requirementsDocumentUrl} target="_blank" rel="noreferrer">View file</a>
+                  </p>
+                )}
+                {requirementsUploadError && <p className="enrollment-error">{requirementsUploadError}</p>}
+                {!formData.requirementsDocumentUrl && !requirementsUploading && (
+                  <p className="upload-hint">Upload a single PDF containing the listed requirements.</p>
+                )}
+              </div>
+              {selectedTypeDetails && (
+                <div className="enrollment-form-group enrollment-grid-full">
+                  <div className="selected-requirements-card">
+                    <p className="selected-requirements-title">Requirements for {selectedTypeDetails.heroTitle || selectedTypeDetails.label}</p>
+                    <ul>
+                      {selectedTypeDetails.requirements.map((req, idx) => (
+                        <li key={idx} className={req.note ? 'note' : ''}>{req.text}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+
+        {currentStep === 2 && (
           <section>
             <h3 className="enrollment-section-title">Student Information</h3>
             <div className="enrollment-grid">
@@ -381,7 +624,7 @@ const EnrollmentPage = () => {
           </section>
         )}
 
-        {currentStep === 2 && (
+        {currentStep === 3 && (
           <section>
             <h3 className="enrollment-section-title">Parent / Guardian Information</h3>
             <div className="enrollment-grid">
@@ -407,7 +650,7 @@ const EnrollmentPage = () => {
           </section>
         )}
 
-        {currentStep === 3 && (
+        {currentStep === 4 && (
           <section>
             <h3 className="enrollment-section-title">Academic Information</h3>
             <div className="enrollment-grid">
@@ -453,7 +696,11 @@ const EnrollmentPage = () => {
 
         <div className="enrollment-nav-container">
           {currentStep > 1 ? <button type="button" onClick={prevStep} className="enrollment-submit-btn enrollment-back-btn">Back</button> : <div />}
-          {currentStep < 3 ? <button type="button" onClick={nextStep} className="enrollment-submit-btn">Next</button> : <button type="submit" className="enrollment-submit-btn" disabled={loading}>{loading ? 'Submitting...' : 'Submit Application'}</button>}
+          {currentStep < totalSteps ? (
+            <button type="button" onClick={nextStep} className="enrollment-submit-btn">Next</button>
+          ) : (
+            <button type="submit" className="enrollment-submit-btn" disabled={loading}>{loading ? 'Submitting...' : 'Submit Application'}</button>
+          )}
         </div>
       </form>
     </div>

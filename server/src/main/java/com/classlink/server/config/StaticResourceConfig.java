@@ -10,6 +10,10 @@ public class StaticResourceConfig implements WebMvcConfigurer {
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         // Serve files saved under ./uploads/profile as /static/profile/**
         registry.addResourceHandler("/static/profile/**")
-                .addResourceLocations("file:uploads/profile/");
+            .addResourceLocations("file:uploads/profile/");
+
+        // Serve requirements PDFs for admin review
+        registry.addResourceHandler("/static/requirements/**")
+            .addResourceLocations("file:uploads/requirements/");
     }
 }

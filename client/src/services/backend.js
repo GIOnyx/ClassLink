@@ -49,6 +49,13 @@ export const uploadMyProfileImage = (file) => {
     headers: { 'Content-Type': 'multipart/form-data' }
   });
 };
+export const uploadMyRequirementsDocument = (file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  return API.post('/students/me/requirements', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  });
+};
 export const getDepartments = () => API.get('/departments');
 export const getPrograms = (departmentId) => API.get('/programs', { params: { departmentId } });
 

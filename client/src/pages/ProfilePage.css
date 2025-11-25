@@ -38,6 +38,47 @@
 .sidebar-nav li a.active { background-color: #800000; color: #fff; }
 .profile-header { display: flex; align-items: center; gap: 20px; padding-bottom: 30px; border-bottom: 1px solid #eee; }
 .avatar-placeholder-md { width: 70px; height: 70px; border-radius: 50%; background-color: #e0e0e0; }
+.profile-avatar-wrapper {
+  position: relative;
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.profile-avatar-wrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  display: block;
+}
+.profile-avatar-wrapper .avatar-placeholder-md {
+  width: 100%;
+  height: 100%;
+}
+.profile-avatar-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 0.75rem;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  padding: 8px;
+}
+.profile-avatar-wrapper:hover .profile-avatar-overlay,
+.profile-avatar-wrapper.uploading .profile-avatar-overlay {
+  opacity: 1;
+}
+.profile-avatar-wrapper.uploading {
+  cursor: wait;
+}
 .profile-details-form { margin: 40px 0; }
 .sidebar-nav li {
   margin-bottom: 8px;

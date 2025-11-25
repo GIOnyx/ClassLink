@@ -5,6 +5,11 @@ import { getStudentsByStatus, approveStudent, rejectStudent, getDepartments, get
 
 const SEMESTER_OPTIONS = ['1st', '2nd', 'Summer'];
 const MAX_YEARS = 5; // Assuming max 5 years based on Program data loader
+const APPLICANT_TYPE_LABELS = {
+  NEW: 'New Student',
+  TRANSFEREE: 'Transferee',
+  CROSS_ENROLLEE: 'Cross-enrollee'
+};
 
 const AdminPage = () => {
   const [allPending, setAllPending] = useState([]); // Holds all pending students
@@ -154,6 +159,8 @@ const AdminPage = () => {
   };
 
   
+  const getApplicantTypeLabel = (type) => APPLICANT_TYPE_LABELS[type] || '—';
+
   return (
     <div className="standard-page-layout">
       {error && <div className="admin-error">{error}</div>}
@@ -248,8 +255,10 @@ const AdminPage = () => {
                 <tr>
                   <th>Name</th>
                   <th>Email</th>
+                  <th>Applicant Type</th>
                   <th>Program</th>
                   <th>Year</th>
+                  <th>Requirements</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -258,8 +267,14 @@ const AdminPage = () => {
                   <tr key={s.id}>
                     <td>{s.firstName} {s.lastName}</td>
                     <td>{s.email}</td>
+                    <td>{getApplicantTypeLabel(s.applicantType)}</td>
                     <td>{s.program ? s.program.name : '—'}</td>
                     <td>{s.yearLevel || '—'}</td>
+                    <td>
+                      {s.requirementsDocumentUrl ? (
+                        <a href={s.requirementsDocumentUrl} target="_blank" rel="noreferrer" className="doc-link">View PDF</a>
+                      ) : '—'}
+                    </td>
                     <td>
                       <button className="btn-view" onClick={() => setSelectedStudent(s)}>View</button>
                       <button className="btn-approve" onClick={() => onApprove(s.id)}>Approve</button>
@@ -269,7 +284,7 @@ const AdminPage = () => {
                 ))}
                 {filteredStudents.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="admin-empty-row">No matching pending registrations</td>
+                    <td colSpan={7} className="admin-empty-row">No matching pending registrations</td>
                   </tr>
                 )}
               </tbody>
@@ -344,6 +359,24 @@ const AdminPage = () => {
             </div>
 
             <div className="modal-scroll-body">
+              <section className="modal-section">
+                <h4 className="section-heading">Application Details</h4>
+                <div className="modal-form-grid">
+                  <div className="modal-field-group">
+                    <label className="modal-label">Applicant Type</label>
+                    <div className="modal-value">{getApplicantTypeLabel(selectedStudent.applicantType)}</div>
+                  </div>
+                  <div className="modal-field-group">
+                    <label className="modal-label">Requirements PDF</label>
+                    <div className="modal-value">
+                      {selectedStudent.requirementsDocumentUrl ? (
+                        <a href={selectedStudent.requirementsDocumentUrl} target="_blank" rel="noreferrer" className="doc-link">Download PDF</a>
+                      ) : 'Not provided'}
+                    </div>
+                  </div>
+                </div>
+              </section>
+
                 <section className="modal-section">
                     <h4 className="section-heading">Personal Information</h4>
                     <div className="modal-form-grid">
