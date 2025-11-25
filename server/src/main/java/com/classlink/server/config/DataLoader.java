@@ -1,5 +1,7 @@
 package com.classlink.server.config;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
@@ -18,6 +20,8 @@ import java.util.stream.Collectors;
 
 @Component
 public class DataLoader implements CommandLineRunner {
+
+    private static final Logger log = LoggerFactory.getLogger(DataLoader.class);
 
     private final DepartmentRepository departmentRepository;
     private final ProgramRepository programRepository;
@@ -147,46 +151,50 @@ public class DataLoader implements CommandLineRunner {
         // --- Seed or replace a BSIT curriculum (idempotent) ---
         boolean hasBsit = curriculumRepository.findByProgramCode("BSIT").isPresent() || curriculumRepository.findByProgramName("Bachelor of Science in Information Technology").isPresent();
         if (!hasBsit) {
-            Curriculum bsit = new Curriculum();
-            // store both short code and full program name; callers may lookup by either
-            bsit.setProgramCode("BSIT");
-            bsit.setProgramName("Bachelor of Science in Information Technology");
+            try {
+                Curriculum bsit = new Curriculum();
+                // store both short code and full program name; callers may lookup by either
+                bsit.setProgramCode("BSIT");
+                bsit.setProgramName("Bachelor of Science in Information Technology");
 
-            List<CurriculumItem> items = new ArrayList<>();
+                List<CurriculumItem> items = new ArrayList<>();
 
-            // First Year - First Term
-            items.add(item(bsit, "First Year", "First Term", "PHILO031", "", "PHILO031", "Ethics", 3, "First Semester"));
-            items.add(item(bsit, "First Year", "First Term", "CSIT121", "", "CSIT121", "Fundamentals of Programming", 3, "First Semester"));
-            items.add(item(bsit, "First Year", "First Term", "CSIT111", "", "CSIT111", "Introduction to Computing", 3, "First Semester"));
-            items.add(item(bsit, "First Year", "First Term", "MATH031", "", "MATH031", "Mathematics in the Modern World", 3, "First Semester"));
-            items.add(item(bsit, "First Year", "First Term", "PE103", "", "PE103", "Movement Enhancement / PATHFit 1-Movement Competency Training", 2, "First Semester"));
-            items.add(item(bsit, "First Year", "First Term", "NSTP111", "", "NSTP111", "National Service Training Program 1", 3, "First Semester"));
-            items.add(item(bsit, "First Year", "First Term", "ENGL031", "", "ENGL031", "Purposive Communication", 3, "First Semester"));
-            items.add(item(bsit, "First Year", "First Term", "PSYCH031", "", "PSYCH031", "Understanding the Self", 3, "First Semester"));
+                // First Year - First Term
+                items.add(item(bsit, "First Year", "First Term", "PHILO031", "", "PHILO031", "Ethics", 3, "First Semester"));
+                items.add(item(bsit, "First Year", "First Term", "CSIT121", "", "CSIT121", "Fundamentals of Programming", 3, "First Semester"));
+                items.add(item(bsit, "First Year", "First Term", "CSIT111", "", "CSIT111", "Introduction to Computing", 3, "First Semester"));
+                items.add(item(bsit, "First Year", "First Term", "MATH031", "", "MATH031", "Mathematics in the Modern World", 3, "First Semester"));
+                items.add(item(bsit, "First Year", "First Term", "PE103", "", "PE103", "Movement Enhancement / PATHFit 1-Movement Competency Training", 2, "First Semester"));
+                items.add(item(bsit, "First Year", "First Term", "NSTP111", "", "NSTP111", "National Service Training Program 1", 3, "First Semester"));
+                items.add(item(bsit, "First Year", "First Term", "ENGL031", "", "ENGL031", "Purposive Communication", 3, "First Semester"));
+                items.add(item(bsit, "First Year", "First Term", "PSYCH031", "", "PSYCH031", "Understanding the Self", 3, "First Semester"));
 
-            // First Year - Second Term
-            items.add(item(bsit, "First Year", "Second Term", "HUM031", "", "HUM031", "Art Appreciation", 3, "Second Semester"));
-            items.add(item(bsit, "First Year", "Second Term", "CSIT112", "CSIT121", "CSIT112", "Discrete Structures 1", 3, "Second Semester"));
-            items.add(item(bsit, "First Year", "Second Term", "PE104", "PE103", "PE104", "Fitness Exercises / PATHFit 2-Exercise-based Fitness Activities", 2, "Second Semester"));
-            items.add(item(bsit, "First Year", "Second Term", "CSIT122", "CSIT121", "CSIT122", "Intermediate Programming", 3, "Second Semester"));
-            items.add(item(bsit, "First Year", "Second Term", "CS132", "CSIT111", "CS132", "Introduction to Computer Systems", 3, "Second Semester"));
-            items.add(item(bsit, "First Year", "Second Term", "NSTP112", "NSTP111", "NSTP112", "National Service Training Program 2", 3, "Second Semester"));
-            items.add(item(bsit, "First Year", "Second Term", "CSIT201", "CSIT121", "CSIT201", "Platform-based Development 2 (Web)", 3, "Second Semester"));
-            items.add(item(bsit, "First Year", "Second Term", "SOCSC1031", "", "SOCSC1031", "Readings in Philippine History", 3, "Second Semester"));
-            items.add(item(bsit, "First Year", "Second Term", "STS031", "", "STS031", "Science, Technology and Society", 3, "Second Semester"));
+                // First Year - Second Term
+                items.add(item(bsit, "First Year", "Second Term", "HUM031", "", "HUM031", "Art Appreciation", 3, "Second Semester"));
+                items.add(item(bsit, "First Year", "Second Term", "CSIT112", "CSIT121", "CSIT112", "Discrete Structures 1", 3, "Second Semester"));
+                items.add(item(bsit, "First Year", "Second Term", "PE104", "PE103", "PE104", "Fitness Exercises / PATHFit 2-Exercise-based Fitness Activities", 2, "Second Semester"));
+                items.add(item(bsit, "First Year", "Second Term", "CSIT122", "CSIT121", "CSIT122", "Intermediate Programming", 3, "Second Semester"));
+                items.add(item(bsit, "First Year", "Second Term", "CS132", "CSIT111", "CS132", "Introduction to Computer Systems", 3, "Second Semester"));
+                items.add(item(bsit, "First Year", "Second Term", "NSTP112", "NSTP111", "NSTP112", "National Service Training Program 2", 3, "Second Semester"));
+                items.add(item(bsit, "First Year", "Second Term", "CSIT201", "CSIT121", "CSIT201", "Platform-based Development 2 (Web)", 3, "Second Semester"));
+                items.add(item(bsit, "First Year", "Second Term", "SOCSC1031", "", "SOCSC1031", "Readings in Philippine History", 3, "Second Semester"));
+                items.add(item(bsit, "First Year", "Second Term", "STS031", "", "STS031", "Science, Technology and Society", 3, "Second Semester"));
 
-            // Second Year - First Term (partial)
-            items.add(item(bsit, "Second Year", "First Term", "CSIT221", "CSIT122", "CSIT221", "Data Structures and Algorithms", 3, "First Semester"));
-            items.add(item(bsit, "Second Year", "First Term", "GE-IT1", "", "SDG031", "General Education Elective 1", 3, "First Semester"));
-            items.add(item(bsit, "Second Year", "First Term", "IT227", "CS132", "IT227", "Networking 1", 3, "First Semester"));
-            items.add(item(bsit, "Second Year", "First Term", "CSIT227", "CSIT122", "CSIT227", "Object-oriented Programming 1", 3, "First Semester"));
-            items.add(item(bsit, "Second Year", "First Term", "PE205", "PE103", "PE205", "PATHFIT 1 / PATHFIT 3-Menu of Sports, Dance, Recreation and Martial Arts", 2, "First Semester"));
-            items.add(item(bsit, "Second Year", "First Term", "CSIT104", "", "CSIT104", "Platform-based Development 1 (Multimedia)", 3, "First Semester"));
-            items.add(item(bsit, "Second Year", "First Term", "CSIT213", "CSIT111", "CSIT213", "Social Issues and Professional Practice", 3, "First Semester"));
-            items.add(item(bsit, "Second Year", "First Term", "SOCSIC032", "", "SOCSIC032", "The Contemporary World", 3, "First Semester"));
+                // Second Year - First Term (partial)
+                items.add(item(bsit, "Second Year", "First Term", "CSIT221", "CSIT122", "CSIT221", "Data Structures and Algorithms", 3, "First Semester"));
+                items.add(item(bsit, "Second Year", "First Term", "GE-IT1", "", "SDG031", "General Education Elective 1", 3, "First Semester"));
+                items.add(item(bsit, "Second Year", "First Term", "IT227", "CS132", "IT227", "Networking 1", 3, "First Semester"));
+                items.add(item(bsit, "Second Year", "First Term", "CSIT227", "CSIT122", "CSIT227", "Object-oriented Programming 1", 3, "First Semester"));
+                items.add(item(bsit, "Second Year", "First Term", "PE205", "PE103", "PE205", "PATHFIT 1 / PATHFIT 3-Menu of Sports, Dance, Recreation and Martial Arts", 2, "First Semester"));
+                items.add(item(bsit, "Second Year", "First Term", "CSIT104", "", "CSIT104", "Platform-based Development 1 (Multimedia)", 3, "First Semester"));
+                items.add(item(bsit, "Second Year", "First Term", "CSIT213", "CSIT111", "CSIT213", "Social Issues and Professional Practice", 3, "First Semester"));
+                items.add(item(bsit, "Second Year", "First Term", "SOCSIC032", "", "SOCSIC032", "The Contemporary World", 3, "First Semester"));
 
-            bsit.setItems(items);
-            curriculumRepository.save(bsit);
+                bsit.setItems(items);
+                curriculumRepository.save(bsit);
+            } catch (Exception ex) {
+                log.warn("Skipping BSIT curriculum seeding because: {}", ex.getMessage());
+            }
         } else {
             // If BSIT exists but user wants a fresh full curriculum, replace/update it here.
             // Current behavior: do not overwrite an existing BSIT entry. If you want to force-replace,

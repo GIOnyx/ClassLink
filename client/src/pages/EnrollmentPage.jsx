@@ -13,6 +13,7 @@ const EnrollmentPage = () => {
   const [departments, setDepartments] = useState([]);
   const [programs, setPrograms] = useState([]);
   const [yearOptions, setYearOptions] = useState([]);
+  const [currentUserEmail, setCurrentUserEmail] = useState('');
   
   const [formData, setFormData] = useState({
     firstName: '', lastName: '', birthDate: '', gender: 'Male', studentAddress: '', contactNumber: '', emailAddress: '',
@@ -21,7 +22,18 @@ const EnrollmentPage = () => {
   });
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { name } = e.target;
+    let { value } = e.target;
+
+    if (name === 'emailAddress') {
+      return; // email is bound to login email only
+    }
+
+    if (name === 'contactNumber' || name === 'parentContactNumber') {
+      // keep only digits and clamp to 11 characters
+      value = value.replace(/[^0-9]/g, '').slice(0, 11);
+    }
+
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
@@ -99,6 +111,11 @@ const EnrollmentPage = () => {
       try {
         const res = await getMyStudent();
         const student = res.data;
+        const loginEmail = student?.email || student?.emailAddress || '';
+        if (loginEmail) {
+          setCurrentUserEmail(loginEmail);
+          setFormData(prev => ({ ...prev, emailAddress: loginEmail }));
+        }
         const hasApplication = student && (student.program || student.parentGuardianName || student.previousSchool);
         if (hasApplication) {
             setExistingApp(student);
@@ -128,7 +145,7 @@ const EnrollmentPage = () => {
       gender: existingApp.gender || prev.gender,
       studentAddress: existingApp.studentAddress || prev.studentAddress,
       contactNumber: existingApp.contactNumber || prev.contactNumber,
-      emailAddress: existingApp.email || existingApp.emailAddress || prev.emailAddress,
+      emailAddress: currentUserEmail || existingApp.email || existingApp.emailAddress || prev.emailAddress,
       parentGuardianName: existingApp.parentGuardianName || prev.parentGuardianName,
       relationshipToStudent: existingApp.relationshipToStudent || prev.relationshipToStudent,
       parentContactNumber: existingApp.parentContactNumber || prev.parentContactNumber,
@@ -164,7 +181,7 @@ const EnrollmentPage = () => {
         }
       } catch (err) {}
     })();
-  }, [existingApp]);
+  }, [existingApp, currentUserEmail]);
 
   const startEdit = () => setEditMode(true);
   const cancelEdit = () => {
@@ -234,7 +251,7 @@ const EnrollmentPage = () => {
                 </div>
                 <div className="enrollment-form-group enrollment-grid-full"><label className="enrollment-label">Address</label><input className="enrollment-input" name="studentAddress" value={formData.studentAddress} onChange={handleChange} disabled={!editMode}/></div>
                 <div className="enrollment-form-group"><label className="enrollment-label">Contact</label><input className="enrollment-input" name="contactNumber" value={formData.contactNumber} onChange={handleChange} disabled={!editMode}/></div>
-                <div className="enrollment-form-group"><label className="enrollment-label">Email</label><input className="enrollment-input" name="emailAddress" value={formData.emailAddress} onChange={handleChange} disabled={!editMode}/></div>
+                <div className="enrollment-form-group"><label className="enrollment-label">Email</label><input className="enrollment-input" name="emailAddress" value={formData.emailAddress} readOnly title="Email is tied to your login account" /></div>
               </div>
             </section>
 
@@ -331,7 +348,7 @@ const EnrollmentPage = () => {
               </div>
               <div className="enrollment-form-group enrollment-grid-full"><label htmlFor="studentAddress" className="enrollment-label">Address</label><input id="studentAddress" name="studentAddress" value={formData.studentAddress} onChange={handleChange} className="enrollment-input" /></div>
               <div className="enrollment-form-group"><label htmlFor="contactNumber" className="enrollment-label">Contact Number</label><input type="tel" id="contactNumber" name="contactNumber" value={formData.contactNumber} onChange={handleChange} className="enrollment-input" /></div>
-              <div className="enrollment-form-group"><label htmlFor="emailAddress" className="enrollment-label">Email Address</label><input type="email" id="emailAddress" name="emailAddress" value={formData.emailAddress} onChange={handleChange} className="enrollment-input" /></div>
+              <div className="enrollment-form-group"><label htmlFor="emailAddress" className="enrollment-label">Email Address</label><input type="email" id="emailAddress" name="emailAddress" value={formData.emailAddress} readOnly className="enrollment-input" title="Email is tied to your login account" /></div>
             </div>
           </section>
         )}
