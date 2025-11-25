@@ -37,6 +37,14 @@ const SecondaryNavbar = ({ role }) => {
                                 Admins
                             </NavLink>
                         </li>
+                        <li>
+                            <NavLink
+                                to="/students"
+                                className={({ isActive }) => isActive ? 'active' : ''}
+                            >
+                                Students
+                            </NavLink>
+                        </li>
                         
                         <li>
                             <NavLink

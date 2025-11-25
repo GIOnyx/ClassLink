@@ -6,6 +6,7 @@ import MainLayout from './components/MainLayout.jsx';
 import LandingPage from './pages/LandingPage.jsx'; // This will be our main public page
 import EnrollmentPage from './pages/EnrollmentPage.jsx';
 import StudentPage from './pages/StudentPage.jsx';
+import StudentsListPage from './pages/StudentsListPage.jsx';
 import AdminPage from './pages/AdminPage.jsx';
 import ProfilePage from './pages/ProfilePage.jsx';
 import CalendarPage from './pages/CalendarPage.jsx';
@@ -62,6 +63,7 @@ function App() {
             <Route index element={role === 'ADMIN' ? <AdminPage /> : <EnrollmentPage />} />
             <Route path="admin" element={role === 'ADMIN' ? <AdminPage /> : <Navigate to="/" />} />
             <Route path="admins" element={role === 'ADMIN' ? <StudentPage /> : <Navigate to="/" />} />
+            <Route path="students" element={role === 'ADMIN' ? <StudentsListPage /> : <Navigate to="/" />} />
             <Route path="profile" element={<ProfilePage />} />
             <Route path="calendar" element={<CalendarPage />} />
             <Route path="curriculum" element={<CurriculumPage />} />
