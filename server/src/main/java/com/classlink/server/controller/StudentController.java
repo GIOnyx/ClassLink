@@ -74,6 +74,13 @@ public class StudentController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Student record not found.");
         }
 
+        StudentStatus currentStatus = student.getStatus();
+        boolean hasLockedApplication = currentStatus != null && currentStatus != StudentStatus.REJECTED;
+        if (hasLockedApplication) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("Your application is under review. Please wait for the admin decision before making changes.");
+        }
+
         // Update simple fields
         if (body.containsKey("firstName"))
             student.setFirstName((String) body.get("firstName"));
