@@ -15,6 +15,7 @@ export const login = (email, password, role = 'student') =>
 export const me = () => API.get('/auth/me');
 
 export const logout = () => API.post('/auth/logout');
+export const changeMyPassword = (payload) => API.post('/auth/change-password', payload);
 
 export const register = (payload) => API.post('/auth/register', payload);
 
