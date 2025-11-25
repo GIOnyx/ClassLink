@@ -230,10 +230,6 @@ const ProfilePage = () => {
                 }, 0);
             }
         },
-        {
-            label: 'Manage Guardians',
-            action: () => navigate('/', { state: { focus: 'guardian' } })
-        },
     ];
 
     if (role !== 'ADMIN') {
@@ -280,9 +276,8 @@ const ProfilePage = () => {
                 : 'Your application was denied. Please review the notes from the admissions team.')
         : 'Submit an application to see your status updates here.';
     const heroStatusClass = heroEntry ? (heroEntry.status === 'APPROVED' ? 'approved' : 'denied') : 'empty';
-    const totalHistoryCount = historyEntries.length || 1;
-    const approvedProgress = totalHistoryCount ? Math.round((approvedHistory.length / totalHistoryCount) * 100) : 0;
-    const deniedProgress = totalHistoryCount ? Math.round((deniedHistory.length / totalHistoryCount) * 100) : 0;
+    const approvedBarWidth = approvedHistory.length ? '100%' : '0%';
+    const deniedBarWidth = deniedHistory.length ? '100%' : '0%';
 
     const buildReasonList = (text) => {
         if (!text) return [];
@@ -495,13 +490,13 @@ const ProfilePage = () => {
                                             <div className="progress-row">
                                                 <span>Approved</span>
                                                 <div className="progress-track">
-                                                    <span className="progress-bar approved" style={{ width: `${Math.max(approvedProgress, approvedHistory.length ? 8 : 0)}%` }}></span>
+                                                    <span className="progress-bar approved" style={{ width: approvedBarWidth }}></span>
                                                 </div>
                                             </div>
                                             <div className="progress-row">
                                                 <span>Denied</span>
                                                 <div className="progress-track">
-                                                    <span className="progress-bar denied" style={{ width: `${Math.max(deniedProgress, deniedHistory.length ? 8 : 0)}%` }}></span>
+                                                    <span className="progress-bar denied" style={{ width: deniedBarWidth }}></span>
                                                 </div>
                                             </div>
                                         </div>

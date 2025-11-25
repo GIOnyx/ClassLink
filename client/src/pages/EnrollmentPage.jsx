@@ -3,6 +3,20 @@ import { submitStudentApplication, getMyStudent, getDepartments, getPrograms } f
 import '../App.css';
 import './EnrollmentPage.css';
 
+const RELATIONSHIP_OPTIONS = [
+  'Mother',
+  'Father',
+  'Guardian',
+  'Grandmother',
+  'Grandfather',
+  'Aunt',
+  'Uncle',
+  'Sibling',
+  'Cousin',
+  'Family Friend',
+  'Other',
+];
+
 const EnrollmentPage = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -259,7 +273,21 @@ const EnrollmentPage = () => {
               <h3 className="enrollment-section-title">Parent / Guardian</h3>
               <div className="enrollment-grid">
                 <div className="enrollment-form-group enrollment-grid-full"><label className="enrollment-label">Guardian Name</label><input className="enrollment-input" name="parentGuardianName" value={formData.parentGuardianName} onChange={handleChange} disabled={!editMode}/></div>
-                <div className="enrollment-form-group"><label className="enrollment-label">Relationship</label><input className="enrollment-input" name="relationshipToStudent" value={formData.relationshipToStudent} onChange={handleChange} disabled={!editMode}/></div>
+                <div className="enrollment-form-group">
+                  <label className="enrollment-label">Relationship</label>
+                  <select
+                    className="enrollment-input"
+                    name="relationshipToStudent"
+                    value={formData.relationshipToStudent || ''}
+                    onChange={handleChange}
+                    disabled={!editMode}
+                  >
+                    <option value="">Select relationship…</option>
+                    {RELATIONSHIP_OPTIONS.map(option => (
+                      <option key={option} value={option}>{option}</option>
+                    ))}
+                  </select>
+                </div>
                 <div className="enrollment-form-group"><label className="enrollment-label">Guardian Contact</label><input className="enrollment-input" name="parentContactNumber" value={formData.parentContactNumber} onChange={handleChange} disabled={!editMode}/></div>
               </div>
             </section>
@@ -358,7 +386,21 @@ const EnrollmentPage = () => {
             <h3 className="enrollment-section-title">Parent / Guardian Information</h3>
             <div className="enrollment-grid">
               <div className="enrollment-form-group enrollment-grid-full"><label htmlFor="parentGuardianName" className="enrollment-label">Parent/Guardian Name</label><input id="parentGuardianName" name="parentGuardianName" value={formData.parentGuardianName} onChange={handleChange} className="enrollment-input" /></div>
-              <div className="enrollment-form-group"><label htmlFor="relationshipToStudent" className="enrollment-label">Relationship</label><input id="relationshipToStudent" name="relationshipToStudent" value={formData.relationshipToStudent} onChange={handleChange} className="enrollment-input" /></div>
+              <div className="enrollment-form-group">
+                <label htmlFor="relationshipToStudent" className="enrollment-label">Relationship</label>
+                <select
+                  id="relationshipToStudent"
+                  name="relationshipToStudent"
+                  value={formData.relationshipToStudent || ''}
+                  onChange={handleChange}
+                  className="enrollment-input"
+                >
+                  <option value="">Select relationship…</option>
+                  {RELATIONSHIP_OPTIONS.map(option => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
+                </select>
+              </div>
               <div className="enrollment-form-group"><label htmlFor="parentContactNumber" className="enrollment-label">Contact Number</label><input type="tel" id="parentContactNumber" name="parentContactNumber" value={formData.parentContactNumber} onChange={handleChange} className="enrollment-input" /></div>
               <div className="enrollment-form-group enrollment-grid-full"><label htmlFor="parentEmailAddress" className="enrollment-label">Email Address</label><input type="email" id="parentEmailAddress" name="parentEmailAddress" value={formData.parentEmailAddress} onChange={handleChange} className="enrollment-input" /></div>
             </div>
