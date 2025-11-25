@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../App.css';
 import './ProfilePage.css';
-import { me, getMyStudent, getMyAdmin, submitStudentApplication, uploadMyProfileImage, uploadMyAdminProfileImage, updateMyAdmin, changeMyPassword, logout as apiLogout } from '../services/backend';
+import { me, getMyStudent, getMyAdmin, submitStudentApplication, uploadMyProfileImage, uploadMyAdminProfileImage, updateMyAdmin, changeMyPassword, getMyApplicationHistory, logout as apiLogout } from '../services/backend';
 
 const ProfilePage = () => {
     const navigate = useNavigate();
@@ -19,6 +19,9 @@ const ProfilePage = () => {
     const [passwordForm, setPasswordForm] = useState({ oldPassword: '', newPassword: '', confirmPassword: '' });
     const [passwordFeedback, setPasswordFeedback] = useState({ error: '', success: '' });
     const [changingPassword, setChangingPassword] = useState(false);
+    const [historyEntries, setHistoryEntries] = useState([]);
+    const [historyLoading, setHistoryLoading] = useState(false);
+    const [historyError, setHistoryError] = useState('');
 
     // Helper to resolve image URL (handles relative vs absolute)
     const resolveImageSrc = (url) => {
@@ -86,6 +89,31 @@ const ProfilePage = () => {
                 setChangingPassword(false);
             }
         }, [activePanel]);
+
+        useEffect(() => {
+            if (activePanel !== 'profile' && error) {
+                setError('');
+            }
+        }, [activePanel, error]);
+
+        useEffect(() => {
+            if (activePanel !== 'application-history' || role === 'ADMIN') {
+                return;
+            }
+            setHistoryLoading(true);
+            setHistoryError('');
+            (async () => {
+                try {
+                    const res = await getMyApplicationHistory();
+                    setHistoryEntries(res?.data || []);
+                } catch (err) {
+                    const message = err?.response?.data?.error || 'Unable to load application history.';
+                    setHistoryError(message);
+                } finally {
+                    setHistoryLoading(false);
+                }
+            })();
+        }, [activePanel, role]);
 
     // Handle profile image file selection & upload
     const handleImageChange = async (e) => {
@@ -206,11 +234,19 @@ const ProfilePage = () => {
             label: 'Manage Guardians',
             action: () => navigate('/', { state: { focus: 'guardian' } })
         },
-        {
-            label: 'View Application History',
-            action: () => navigate('/student', { state: { tab: 'history' } })
-        }
     ];
+
+    if (role !== 'ADMIN') {
+        settingsSubmenu.push({
+            label: 'View Application History',
+            action: () => {
+                setActivePanel('application-history');
+                setTimeout(() => {
+                    document.getElementById('application-history-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 0);
+            }
+        });
+    }
 
     const handleProfileAction = (fn) => {
         try {
@@ -219,6 +255,41 @@ const ProfilePage = () => {
             console.warn('Action not available yet', err);
             setError('That shortcut is not available yet.');
         }
+    };
+
+    const formatHistoryDate = (value) => {
+        if (!value) return '—';
+        const parsed = new Date(value);
+        if (Number.isNaN(parsed.getTime())) {
+            return value;
+        }
+        return parsed.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+    };
+
+    const approvedHistory = historyEntries.filter((entry) => entry.status === 'APPROVED');
+    const deniedHistory = historyEntries.filter((entry) => entry.status === 'REJECTED');
+    const heroEntry = approvedHistory[0] || deniedHistory[0] || null;
+    const heroStatusLabel = heroEntry
+        ? `${heroEntry.status === 'APPROVED' ? 'Approved' : 'Denied'} on ${formatHistoryDate(heroEntry.changedAt)}`
+        : 'No application history yet';
+    const heroMessage = heroEntry
+        ? (heroEntry.remarks && heroEntry.remarks.trim().length > 0
+            ? heroEntry.remarks
+            : heroEntry.status === 'APPROVED'
+                ? 'Your academic status has been verified. Congratulations!'
+                : 'Your application was denied. Please review the notes from the admissions team.')
+        : 'Submit an application to see your status updates here.';
+    const heroStatusClass = heroEntry ? (heroEntry.status === 'APPROVED' ? 'approved' : 'denied') : 'empty';
+    const totalHistoryCount = historyEntries.length || 1;
+    const approvedProgress = totalHistoryCount ? Math.round((approvedHistory.length / totalHistoryCount) * 100) : 0;
+    const deniedProgress = totalHistoryCount ? Math.round((deniedHistory.length / totalHistoryCount) * 100) : 0;
+
+    const buildReasonList = (text) => {
+        if (!text) return [];
+        return text
+            .split(/\r?\n|\u2022|•/)
+            .map((item) => item.trim())
+            .filter(Boolean);
     };
 
     return (
@@ -296,63 +367,67 @@ const ProfilePage = () => {
                             <span className="user-email">{loading ? '' : profile.email || '—'}</span>
                         </div>
                     </div>
-                    <div className="profile-details-form" id="profile-details-form">
-                        <div className="form-row">
-                            <label>Name</label>
-                            <input
-                                type="text"
-                                value={profile.name}
-                                disabled={!isEditing}
-                                onChange={(e) => setProfile((p) => ({ ...p, name: e.target.value }))}
-                            />
-                        </div>
-                        <div className="form-row">
-                            <label>Email account</label>
-                            <input
-                                type="text"
-                                value={profile.email}
-                                readOnly
-                                disabled
-                            />
-                        </div>
-                        {role !== 'ADMIN' && (
-                            <>
+                    {activePanel === 'profile' && (
+                        <>
+                            <div className="profile-details-form" id="profile-details-form">
                                 <div className="form-row">
-                                    <label>Mobile number</label>
+                                    <label>Name</label>
                                     <input
                                         type="text"
-                                        value={profile.phone}
+                                        value={profile.name}
                                         disabled={!isEditing}
-                                        onChange={(e) => setProfile((p) => ({ ...p, phone: e.target.value }))}
+                                        onChange={(e) => setProfile((p) => ({ ...p, name: e.target.value }))}
                                     />
                                 </div>
                                 <div className="form-row">
-                                    <label>Enrollment status</label>
-                                    <div>
-                                        <span className={`status-pill ${(profile.status||'').toLowerCase()}`}>
-                                            {profile.status ? profile.status : 'Pending'}
-                                        </span>
-                                    </div>
+                                    <label>Email account</label>
+                                    <input
+                                        type="text"
+                                        value={profile.email}
+                                        readOnly
+                                        disabled
+                                    />
                                 </div>
-                            </>
-                        )}
-                    </div>
-                    {error && <div style={{ color: '#b00020', margin: '8px 0' }}>{error}</div>}
-                    <div className="actions-row">
-                        {!isEditing && (
-                            <button className="save-changes-button" onClick={handleEdit} disabled={loading}>Edit Profile</button>
-                        )}
-                        {isEditing && (
-                            <button className="save-changes-button editing" onClick={handleSave} disabled={loading || saving}>
-                                {saving ? 'Saving…' : 'Save Changes'}
-                            </button>
-                        )}
-                    </div>
-                    {isEditing && (
-                        <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'flex-end' }}>
-                            <input type="file" accept="image/*" onChange={handleImageChange} disabled={uploading} />
-                            {uploading && <span style={{ fontSize: '.85rem', color: '#555' }}>Uploading…</span>}
-                        </div>
+                                {role !== 'ADMIN' && (
+                                    <>
+                                        <div className="form-row">
+                                            <label>Mobile number</label>
+                                            <input
+                                                type="text"
+                                                value={profile.phone}
+                                                disabled={!isEditing}
+                                                onChange={(e) => setProfile((p) => ({ ...p, phone: e.target.value }))}
+                                            />
+                                        </div>
+                                        <div className="form-row">
+                                            <label>Enrollment status</label>
+                                            <div>
+                                                <span className={`status-pill ${(profile.status||'').toLowerCase()}`}>
+                                                    {profile.status ? profile.status : 'Pending'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                            {error && <div style={{ color: '#b00020', margin: '8px 0' }}>{error}</div>}
+                            <div className="actions-row">
+                                {!isEditing && (
+                                    <button className="save-changes-button" onClick={handleEdit} disabled={loading}>Edit Profile</button>
+                                )}
+                                {isEditing && (
+                                    <button className="save-changes-button editing" onClick={handleSave} disabled={loading || saving}>
+                                        {saving ? 'Saving…' : 'Save Changes'}
+                                    </button>
+                                )}
+                            </div>
+                            {isEditing && (
+                                <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'flex-end' }}>
+                                    <input type="file" accept="image/*" onChange={handleImageChange} disabled={uploading} />
+                                    {uploading && <span style={{ fontSize: '.85rem', color: '#555' }}>Uploading…</span>}
+                                </div>
+                            )}
+                        </>
                     )}
                     {activePanel === 'change-password' && (
                         <section className="card-section" id="change-password-card">
@@ -398,6 +473,52 @@ const ProfilePage = () => {
                                     {changingPassword ? 'Updating…' : 'Update Password'}
                                 </button>
                             </form>
+                        </section>
+                    )}
+                    {activePanel === 'application-history' && (
+                        <section className="card-section" id="application-history-card">
+                            <h3>Application History</h3>
+                            {historyLoading && <p className="form-feedback">Loading application history…</p>}
+                            {!historyLoading && historyError && (
+                                <p className="form-feedback error">{historyError}</p>
+                            )}
+                            {!historyLoading && !historyError && (
+                                <>
+                                    <div className="history-card">
+                                        <div className="history-summary">
+                                            <div>
+                                                <h4>Application Overview</h4>
+                                                <p>Track every approval or denial with clear reasoning.</p>
+                                            </div>
+                                        </div>
+                                        <div className="history-progress">
+                                            <div className="progress-row">
+                                                <span>Approved</span>
+                                                <div className="progress-track">
+                                                    <span className="progress-bar approved" style={{ width: `${Math.max(approvedProgress, approvedHistory.length ? 8 : 0)}%` }}></span>
+                                                </div>
+                                            </div>
+                                            <div className="progress-row">
+                                                <span>Denied</span>
+                                                <div className="progress-track">
+                                                    <span className="progress-bar denied" style={{ width: `${Math.max(deniedProgress, deniedHistory.length ? 8 : 0)}%` }}></span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {heroEntry && (
+                                            <div className={`history-hero ${heroStatusClass}`}>
+                                                <div className="history-hero-header">
+                                                    <span className="history-hero-status">{heroStatusLabel}</span>
+                                                    <span className="history-hero-type">Latest update</span>
+                                                </div>
+                                                <div className="history-hero-body">
+                                                    <p>{heroMessage}</p>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </>
+                            )}
                         </section>
                     )}
                 </main>

@@ -16,9 +16,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.classlink.server.model.ApplicationHistory;
 import com.classlink.server.model.Student;
 import com.classlink.server.model.StudentStatus;
 import com.classlink.server.model.Admin;
+import com.classlink.server.repository.ApplicationHistoryRepository;
 import com.classlink.server.repository.StudentRepository;
 import com.classlink.server.repository.AdminRepository;
 import jakarta.servlet.http.HttpSession;
@@ -29,10 +31,13 @@ public class AdminController {
 
 	private final StudentRepository studentRepository;
 	private final AdminRepository adminRepository;
+	private final ApplicationHistoryRepository applicationHistoryRepository;
 
-	public AdminController(StudentRepository studentRepository, AdminRepository adminRepository) {
+	public AdminController(StudentRepository studentRepository, AdminRepository adminRepository,
+			ApplicationHistoryRepository applicationHistoryRepository) {
 		this.studentRepository = studentRepository;
 		this.adminRepository = adminRepository;
+		this.applicationHistoryRepository = applicationHistoryRepository;
 	}
 
 	// List students, optionally filtered by status e.g.,
@@ -93,6 +98,7 @@ public class AdminController {
 
 		try {
 			StudentStatus newStatus = StudentStatus.valueOf(statusStr.toUpperCase());
+			StudentStatus previousStatus = student.getStatus();
 			student.setStatus(newStatus);
 
 			// ✅ Save rejection reason if present
@@ -100,7 +106,9 @@ public class AdminController {
 				student.setRejectionReason(body.get("reason"));
 			}
 
-			return ResponseEntity.ok(studentRepository.save(student));
+			Student saved = studentRepository.save(student);
+			recordStatusChange(saved, previousStatus, newStatus, body.get("reason"));
+			return ResponseEntity.ok(saved);
 		} catch (IllegalArgumentException ex) {
 			return ResponseEntity.badRequest().body("Invalid status value");
 		}
@@ -122,6 +130,23 @@ public class AdminController {
 	private boolean isAdmin(HttpSession session) {
 		Object role = session.getAttribute("role");
 		return role != null && "ADMIN".equals(role.toString());
+	}
+
+	private void recordStatusChange(Student student, StudentStatus previous, StudentStatus next, String remarks) {
+		if (student == null || next == null) {
+			return;
+		}
+		if (next != StudentStatus.APPROVED && next != StudentStatus.REJECTED) {
+			return;
+		}
+		if (previous == next) {
+			return;
+		}
+		ApplicationHistory entry = new ApplicationHistory();
+		entry.setStudent(student);
+		entry.setStatus(next);
+		entry.setRemarks(remarks);
+		applicationHistoryRepository.save(entry);
 	}
 
 	// Return currently authenticated admin basic profile (excluding password)

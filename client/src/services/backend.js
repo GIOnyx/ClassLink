@@ -39,6 +39,7 @@ export const updateMyAdmin = (payload) => API.put('/admin/me', payload);
 
 export const submitStudentApplication = (payload) => API.put('/students/me', payload);
 export const getMyStudent = () => API.get('/students/me');
+export const getMyApplicationHistory = () => API.get('/students/me/history');
 export const uploadMyProfileImage = (file) => {
   const formData = new FormData();
   formData.append('file', file);

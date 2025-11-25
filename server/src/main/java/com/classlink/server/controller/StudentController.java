@@ -1,6 +1,9 @@
 package com.classlink.server.controller;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -22,11 +25,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.classlink.server.model.ApplicationHistory;
 import com.classlink.server.model.Student;
 import com.classlink.server.model.StudentStatus;
 import com.classlink.server.repository.DepartmentRepository;
 import com.classlink.server.repository.ProgramRepository;
 import com.classlink.server.repository.StudentRepository;
+import com.classlink.server.repository.ApplicationHistoryRepository;
 
 import jakarta.servlet.http.HttpSession;
 
@@ -37,14 +42,16 @@ public class StudentController {
     private final StudentRepository studentRepository;
     private final ProgramRepository programRepository;
     private final DepartmentRepository departmentRepository;
+    private final ApplicationHistoryRepository applicationHistoryRepository;
     private final Logger log = LoggerFactory.getLogger(StudentController.class);
     private static final int MAX_PHONE_LENGTH = 11;
 
     public StudentController(StudentRepository studentRepository, ProgramRepository programRepository,
-            DepartmentRepository departmentRepository) {
+            DepartmentRepository departmentRepository, ApplicationHistoryRepository applicationHistoryRepository) {
         this.studentRepository = studentRepository;
         this.programRepository = programRepository;
         this.departmentRepository = departmentRepository;
+        this.applicationHistoryRepository = applicationHistoryRepository;
     }
 
     // Use a Map<String, Object> for flexibility or a dedicated DTO class
@@ -146,6 +153,29 @@ public class StudentController {
         if (student == null)
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Student record not found.");
         return ResponseEntity.ok(student);
+    }
+
+    @GetMapping("/me/history")
+    public ResponseEntity<?> getMyHistory(HttpSession session) {
+        Object userIdObj = session.getAttribute("userId");
+        if (userIdObj == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("You are not logged in.");
+        }
+        Long userId = ((Number) userIdObj).longValue();
+        List<ApplicationHistory> entries = applicationHistoryRepository.findAllByStudentIdOrderByChangedAtDesc(userId);
+        List<Map<String, Object>> payload = new ArrayList<>();
+        for (ApplicationHistory entry : entries) {
+            if (entry.getStatus() != StudentStatus.APPROVED && entry.getStatus() != StudentStatus.REJECTED) {
+                continue;
+            }
+            Map<String, Object> row = new HashMap<>();
+            row.put("id", entry.getId());
+            row.put("status", entry.getStatus());
+            row.put("remarks", entry.getRemarks());
+            row.put("changedAt", entry.getChangedAt());
+            payload.add(row);
+        }
+        return ResponseEntity.ok(payload);
     }
 
     @PostMapping("/me/profile-image")
