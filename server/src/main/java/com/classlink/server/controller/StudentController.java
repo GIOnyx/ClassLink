@@ -38,6 +38,7 @@ public class StudentController {
     private final ProgramRepository programRepository;
     private final DepartmentRepository departmentRepository;
     private final Logger log = LoggerFactory.getLogger(StudentController.class);
+    private static final int MAX_PHONE_LENGTH = 11;
 
     public StudentController(StudentRepository studentRepository, ProgramRepository programRepository,
             DepartmentRepository departmentRepository) {
@@ -77,22 +78,35 @@ public class StudentController {
         if (body.containsKey("gender"))
             student.setGender((String) body.get("gender"));
         if (body.containsKey("studentAddress"))
-            student.setStudentAddress((String) body.get("studentAddress"));
-        if (body.containsKey("contactNumber"))
-            student.setContactNumber((String) body.get("contactNumber"));
+            student.setStudentAddress(asTrimmedString(body.get("studentAddress")));
+
+        String contactNumber = asTrimmedString(body.get("contactNumber"));
+        if (contactNumber != null) {
+            if (contactNumber.length() > MAX_PHONE_LENGTH) {
+                return ResponseEntity.badRequest().body("Contact number must not exceed 11 characters.");
+            }
+            student.setContactNumber(contactNumber);
+        }
         if (body.containsKey("emailAddress"))
             student.setEmail((String) body.get("emailAddress")); // Update email
 
         if (body.containsKey("parentGuardianName"))
-            student.setParentGuardianName((String) body.get("parentGuardianName"));
+            student.setParentGuardianName(asTrimmedString(body.get("parentGuardianName")));
         if (body.containsKey("relationshipToStudent"))
-            student.setRelationshipToStudent((String) body.get("relationshipToStudent"));
-        if (body.containsKey("parentContactNumber"))
-            student.setParentContactNumber((String) body.get("parentContactNumber"));
+            student.setRelationshipToStudent(asTrimmedString(body.get("relationshipToStudent")));
+
+        String parentContact = asTrimmedString(body.get("parentContactNumber"));
+        if (parentContact != null) {
+            if (parentContact.length() > MAX_PHONE_LENGTH) {
+                return ResponseEntity.badRequest().body("Parent/guardian contact must not exceed 11 characters.");
+            }
+            student.setParentContactNumber(parentContact);
+        }
+
         if (body.containsKey("parentEmailAddress"))
-            student.setParentEmailAddress((String) body.get("parentEmailAddress"));
+            student.setParentEmailAddress(asTrimmedString(body.get("parentEmailAddress")));
         if (body.containsKey("previousSchool"))
-            student.setPreviousSchool((String) body.get("previousSchool"));
+            student.setPreviousSchool(asTrimmedString(body.get("previousSchool")));
 
         if (body.containsKey("yearLevel") && body.get("yearLevel") != null) {
             student.setYearLevel(((Number) body.get("yearLevel")).intValue());
@@ -175,5 +189,12 @@ public class StudentController {
             log.error("Failed to store profile image", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Could not store image");
         }
+    }
+
+    private String asTrimmedString(Object value) {
+        if (value == null) {
+            return null;
+        }
+        return value.toString().trim();
     }
 }

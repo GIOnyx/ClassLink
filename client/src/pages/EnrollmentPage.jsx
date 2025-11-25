@@ -21,7 +21,14 @@ const EnrollmentPage = () => {
   });
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { name } = e.target;
+    let { value } = e.target;
+
+    if (name === 'contactNumber' || name === 'parentContactNumber') {
+      // keep only digits and clamp to 11 characters
+      value = value.replace(/[^0-9]/g, '').slice(0, 11);
+    }
+
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
