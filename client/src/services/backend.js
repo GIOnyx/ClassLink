@@ -26,6 +26,8 @@ export const getStudentsByStatus = (status) => API.get('/admin/students', { para
 export const setStudentStatus = (id, status) => API.patch(`/admin/students/${id}/status`, { status });
 export const approveStudent = (id) => API.post(`/admin/students/${id}/approve`);
 export const rejectStudent = (id, reason) => API.post(`/admin/students/${id}/reject`, { reason });
+export const getAdminAccounts = () => API.get('/admin/accounts');
+export const createAdminAccount = (payload) => API.post('/admin/accounts', payload);
 // Admin self profile
 export const getMyAdmin = () => API.get('/admin/me');
 export const uploadMyAdminProfileImage = (file) => {

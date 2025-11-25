@@ -61,7 +61,7 @@ function App() {
             {/* Default landing after login per role */}
             <Route index element={role === 'ADMIN' ? <AdminPage /> : <EnrollmentPage />} />
             <Route path="admin" element={role === 'ADMIN' ? <AdminPage /> : <Navigate to="/" />} />
-            <Route path="student" element={<StudentPage />} />
+            <Route path="admins" element={role === 'ADMIN' ? <StudentPage /> : <Navigate to="/" />} />
             <Route path="profile" element={<ProfilePage />} />
             <Route path="calendar" element={<CalendarPage />} />
             <Route path="curriculum" element={<CurriculumPage />} />
