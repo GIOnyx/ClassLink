@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 
 import com.classlink.server.model.Department;
 import com.classlink.server.model.Program;
-import com.classlink.server.model.Curriculum;
+// legacy Curriculum model still present in the repo; seeding now targets Program + CurriculumItem
 import com.classlink.server.model.CurriculumItem;
 import com.classlink.server.repository.DepartmentRepository;
 import com.classlink.server.repository.ProgramRepository;
@@ -138,24 +138,14 @@ public class DataLoader implements CommandLineRunner {
 
         programRepository.saveAll(toSave);
 
-        // --- Handle existing orphan curriculum rows: set program code/name when missing ---
-        curriculumRepository.findAll().stream()
-                .filter(c -> (c.getProgramCode() == null || c.getProgramCode().isBlank()) && (c.getProgramName() == null || c.getProgramName().isBlank()) && c.getItems() != null && !c.getItems().isEmpty())
-                .findFirst()
-                .ifPresent(orphan -> {
-                    orphan.setProgramCode("BSIT");
-                    orphan.setProgramName("Bachelor of Science in Information Technology");
-                    curriculumRepository.save(orphan);
-                });
-
-        // --- Seed or replace a BSIT curriculum (idempotent) ---
-        boolean hasBsit = curriculumRepository.findByProgramCode("BSIT").isPresent() || curriculumRepository.findByProgramName("Bachelor of Science in Information Technology").isPresent();
+        // --- Seed or replace a BSIT program + curriculum (idempotent) ---
+        boolean hasBsit = programRepository.findByName("Bachelor of Science in Information Technology").isPresent();
         if (!hasBsit) {
             try {
-                Curriculum bsit = new Curriculum();
-                // store both short code and full program name; callers may lookup by either
-                bsit.setProgramCode("BSIT");
-                bsit.setProgramName("Bachelor of Science in Information Technology");
+                Program bsit = new Program();
+                bsit.setName("Bachelor of Science in Information Technology");
+                bsit.setDepartment(ccs);
+                bsit.setDurationInYears(4);
 
                 List<CurriculumItem> items = new ArrayList<>();
 
@@ -190,8 +180,8 @@ public class DataLoader implements CommandLineRunner {
                 items.add(item(bsit, "Second Year", "First Term", "CSIT213", "CSIT111", "CSIT213", "Social Issues and Professional Practice", 3, "First Semester"));
                 items.add(item(bsit, "Second Year", "First Term", "SOCSIC032", "", "SOCSIC032", "The Contemporary World", 3, "First Semester"));
 
-                bsit.setItems(items);
-                curriculumRepository.save(bsit);
+                items.forEach(i -> bsit.getCurriculum().add(i));
+                programRepository.save(bsit);
             } catch (Exception ex) {
                 log.warn("Skipping BSIT curriculum seeding because: {}", ex.getMessage());
             }
@@ -278,9 +268,9 @@ public class DataLoader implements CommandLineRunner {
         }
     }
 
-    private CurriculumItem item(Curriculum cur, String year, String term, String code, String prereq, String equiv, String desc, Integer units, String semester) {
+    private CurriculumItem item(Program prog, String year, String term, String code, String prereq, String equiv, String desc, Integer units, String semester) {
         CurriculumItem it = new CurriculumItem();
-        it.setCurriculum(cur);
+        it.setProgram(prog);
         it.setYearLabel(year);
         it.setTermTitle(term);
         it.setSubjectCode(code);

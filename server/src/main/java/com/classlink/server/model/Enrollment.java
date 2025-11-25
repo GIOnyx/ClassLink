@@ -17,7 +17,6 @@ public class Enrollment {
     @JsonIgnoreProperties("enrollments")
     private Student student;
 
-    // ✅ ADD THIS BACK
     @ManyToOne
     @JoinColumn(name = "course_id")
     private Course course;

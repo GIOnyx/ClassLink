@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { submitStudentApplication, getMyStudent, getDepartments, getPrograms, uploadMyRequirementsDocument } from '../services/backend';
+import { submitStudentApplication, getMyStudent, uploadMyRequirementsDocument } from '../services/backend';
+import useDepartments from '../hooks/useDepartments';
+import usePrograms from '../hooks/usePrograms';
 import '../App.css';
 import './EnrollmentPage.css';
 
@@ -60,21 +62,20 @@ const EnrollmentPage = () => {
   const [loading, setLoading] = useState(false);
   const [existingApp, setExistingApp] = useState(null);
   const [editMode, setEditMode] = useState(false);
-  const [departments, setDepartments] = useState([]);
-  const [programs, setPrograms] = useState([]);
-  const [yearOptions, setYearOptions] = useState([]);
-  const [currentUserEmail, setCurrentUserEmail] = useState('');
-  const [showWizard, setShowWizard] = useState(false);
-  const [requirementsUploading, setRequirementsUploading] = useState(false);
-  const [requirementsUploadError, setRequirementsUploadError] = useState('');
-  
   const [formData, setFormData] = useState({
     applicantType: '', requirementsDocumentUrl: '',
     firstName: '', lastName: '', birthDate: '', gender: 'Male', studentAddress: '', contactNumber: '', emailAddress: '',
     parentGuardianName: '', relationshipToStudent: '', parentContactNumber: '', parentEmailAddress: '',
     departmentId: null, programId: null, yearLevel: null, semester: '', previousSchool: '',
   });
-
+  const { departments, loading: depsLoading } = useDepartments();
+  const { programs, loading: programsLoading, refresh: refreshPrograms } = usePrograms(formData.departmentId);
+  const [yearOptions, setYearOptions] = useState([]);
+  const [currentUserEmail, setCurrentUserEmail] = useState('');
+  const [showWizard, setShowWizard] = useState(false);
+  const [requirementsUploading, setRequirementsUploading] = useState(false);
+  const [requirementsUploadError, setRequirementsUploadError] = useState('');
+  
   const handleChange = (e) => {
     const { name } = e.target;
     let { value } = e.target;
@@ -95,17 +96,14 @@ const EnrollmentPage = () => {
   const handleDepartmentChange = async (e) => {
     const deptId = e.target.value ? Number(e.target.value) : null;
     setFormData(prev => ({ ...prev, departmentId: deptId, programId: null, yearLevel: null }));
-    setPrograms([]); 
     setYearOptions([]);
-    if (deptId) {
-      try { const res = await getPrograms(deptId); setPrograms(res.data || []); } catch (err) {}
-    }
+    // programs will be fetched automatically by the usePrograms hook based on formData.departmentId
   };
 
   const handleProgramChange = (e) => {
     const pid = e.target.value ? Number(e.target.value) : null;
     setFormData(prev => ({ ...prev, programId: pid, yearLevel: null }));
-    const sel = programs.find(p => p.id === pid);
+    const sel = programs && programs.find(p => p.id === pid);
     if (sel && sel.durationInYears) {
       setYearOptions(Array.from({ length: sel.durationInYears }, (_, i) => i + 1));
     } else { setYearOptions([]); }
@@ -171,11 +169,21 @@ const EnrollmentPage = () => {
     setLoading(true);
     try {
       const payload = { ...formData };
+      console.debug('Submitting student application payload:', payload);
       const res = await submitStudentApplication(payload);
       setExistingApp(res.data || null);
       setIsSubmitted(true);
     } catch (err) {
-      setError('Submission failed. Please try again.');
+      console.error('Enrollment submission error:', err);
+      // Try to show a helpful server message when available
+      const serverMsg = err?.response?.data;
+      if (serverMsg && typeof serverMsg === 'string') {
+        setError(serverMsg);
+      } else if (serverMsg && typeof serverMsg === 'object' && serverMsg.message) {
+        setError(serverMsg.message);
+      } else {
+        setError('Submission failed. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -191,24 +199,23 @@ const EnrollmentPage = () => {
           setCurrentUserEmail(loginEmail);
           setFormData(prev => ({ ...prev, emailAddress: loginEmail }));
         }
-        const hasApplication = student && (student.program || student.parentGuardianName || student.previousSchool);
-        if (hasApplication) {
-            setExistingApp(student);
-            if (student.status === 'REJECTED') {
-                setEditMode(true);
-                setError('Your application was rejected. Please review your details and resubmit.');
-            }
-        }
+          // consider there an existing application if student has program/previous info OR a non-null status
+            const hasApplication = student && (student.program || student.parentGuardianName || student.previousSchool || (student.status && student.status !== 'REGISTERED'));
+          if (hasApplication) {
+              setExistingApp(student);
+              if (student.status && student.status === 'REJECTED') {
+                  setEditMode(true);
+                  setError('Your application was rejected. Please review your details and resubmit.');
+              }
+                // Only show 'under review' when the server reports PENDING
+                if (student.status && student.status === 'PENDING') {
+                  setError('Your application is under review. Please wait for the admin decision before making changes.');
+                }
+          }
       } catch (err) {}
     };
     load();
-    const loadDeps = async () => {
-      try {
-        const res = await getDepartments();
-        setDepartments(res.data || []);
-      } catch (err) { setDepartments([]); }
-    };
-    loadDeps();
+    // departments are provided by useDepartments hook
   }, []);
 
   useEffect(() => {
@@ -233,32 +240,19 @@ const EnrollmentPage = () => {
       semester: existingApp.semester || prev.semester,
       previousSchool: existingApp.previousSchool || prev.previousSchool,
     }));
-    (async () => {
-      try {
-        if (existingApp.departmentId || existingApp.department?.id) {
-          const depId = existingApp.departmentId || existingApp.department?.id;
-          const res = await getPrograms(depId);
-          setPrograms(res.data || []);
-        }
-        if (existingApp.programId || existingApp.program?.id) {
-          const pid = existingApp.programId || existingApp.program?.id;
-          // Wait for programs to set, or find directly from response if needed
-          // For simplicity, relies on useEffect race or existing data. 
-          // Ideally we fetch program specific details if 'programs' state isn't ready.
-          // For now, let's assume programs load fast or are consistent.
-          // Trigger year options update manually if needed or rely on user interaction for edit.
-          // To ensure Year Options appear on load:
-           const res = await getPrograms(existingApp.departmentId || existingApp.department?.id);
-           const progList = res.data || [];
-           setPrograms(progList);
-           const sel = progList.find(p => p.id === pid);
-           if (sel && sel.durationInYears) {
-             setYearOptions(Array.from({ length: sel.durationInYears }, (_, i) => i + 1));
-           }
-        }
-      } catch (err) {}
-    })();
+    // programs will be fetched by the usePrograms hook when formData.departmentId is set above
   }, [existingApp, currentUserEmail]);
+
+
+  // When programs load (or change) and there's a selected program in the form, set year options
+  useEffect(() => {
+    if (formData.programId && programs && programs.length > 0) {
+      const sel = programs.find(p => p.id === formData.programId);
+      if (sel && sel.durationInYears) {
+        setYearOptions(Array.from({ length: sel.durationInYears }, (_, i) => i + 1));
+      }
+    }
+  }, [programs, formData.programId]);
 
   const startEdit = () => setEditMode(true);
   const cancelEdit = () => {
@@ -284,6 +278,11 @@ const EnrollmentPage = () => {
   };
 
   const beginApplication = () => {
+    // Prevent starting new application if there's an existing one under review
+    if (existingApp && existingApp.status && existingApp.status !== 'REJECTED') {
+      setError('Your application is under review. Please wait for the admin decision before making changes.');
+      return;
+    }
     setError('');
     setRequirementsUploadError('');
     setCurrentStep(1);
@@ -520,9 +519,14 @@ const EnrollmentPage = () => {
               New applicants are greeted here. Review the enrollment requirements, prepare your documents,
               and begin the three-step application whenever you are ready.
             </p>
-            <button type="button" className="enrollment-submit-btn" onClick={beginApplication}>
+            <button type="button" className="enrollment-submit-btn" onClick={beginApplication} disabled={existingApp && existingApp.status && existingApp.status !== 'REJECTED'}>
               Start Application
             </button>
+            {existingApp && existingApp.status && existingApp.status !== 'REJECTED' ? (
+              <div className="enrollment-error" style={{ marginTop: 12 }}>
+                Your application is under review. Please wait for the admin decision before making changes.
+              </div>
+            ) : null}
           </div>
           <div className="enrollment-hero-note">
             <p>Need help?</p>

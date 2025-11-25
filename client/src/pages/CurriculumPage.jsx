@@ -1,20 +1,45 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import '../App.css';
 import './CurriculumPage.css';
-import { getCurriculum } from '../services/backend';
+import { getCurriculum, getCurriculumByProgramId, createCurriculum, updateCurriculum } from '../services/backend';
+import useDepartments from '../hooks/useDepartments';
+import usePrograms from '../hooks/usePrograms';
 
 // when curriculum data comes from the server, it will be a flat list of items with yearLabel and termTitle
 
-const departments = [
-  { id: 'BSIT', label: 'BSIT - Bachelor of Science in Information Technology' },
-  { id: 'BSCS', label: 'BSCS - Bachelor of Science in Computer Science' },
-  { id: 'BSIS', label: 'BSIS - Bachelor of Science in Information Systems' },
-];
-
-const CurriculumPage = () => {
-  const [selectedDept, setSelectedDept] = useState(departments[0].label);
+const CurriculumPage = ({ role }) => {
+  const [selectedDept, setSelectedDept] = useState('');
   const [current, setCurrent] = useState(null);
   const [loading, setLoading] = useState(false);
+  // removed unused showForm state
+  const [selectedDeptId, setSelectedDeptId] = useState('');
+  const { departments: adminDepartments, loading: depsLoading, refresh: refreshDepartments } = useDepartments();
+  const { programs: adminPrograms, loading: programsLoading, refresh: refreshPrograms } = usePrograms(selectedDeptId);
+  const [viewingCurriculum, setViewingCurriculum] = useState(null);
+  const [editingCurriculum, setEditingCurriculum] = useState(null);
+  const [newYearLabelInput, setNewYearLabelInput] = useState('');
+  const [newTermTitleInput, setNewTermTitleInput] = useState('');
+  const [errors, setErrors] = useState({});
+  const [saving, setSaving] = useState(false);
+
+  const setFieldError = (field, msg) => setErrors(prev => ({ ...prev, [field]: msg }));
+  const clearFieldError = (field) => setErrors(prev => { const c = { ...prev }; delete c[field]; return c; });
+  const clearItemError = (index, field) => setErrors(prev => {
+    const c = { ...prev };
+    if (!c.items) return prev;
+    const itemsCopy = { ...c.items };
+    if (itemsCopy[index]) {
+      const itemCopy = { ...itemsCopy[index] };
+      delete itemCopy[field];
+      if (Object.keys(itemCopy).length === 0) {
+        delete itemsCopy[index];
+      } else {
+        itemsCopy[index] = itemCopy;
+      }
+    }
+    if (Object.keys(itemsCopy).length === 0) delete c.items; else c.items = itemsCopy;
+    return c;
+  });
 
   useEffect(() => {
     let mounted = true;
@@ -29,25 +54,323 @@ const CurriculumPage = () => {
     return () => { mounted = false; };
   }, [selectedDept]);
 
+  // when departments load, pick the first by default and set selected state
+  useEffect(() => {
+    if (adminDepartments && adminDepartments.length > 0) {
+      const firstId = adminDepartments[0].id?.toString() || '';
+      if (!selectedDeptId) {
+        setSelectedDeptId(firstId);
+        setSelectedDept(adminDepartments[0].name || '');
+      }
+    }
+  }, [adminDepartments]);
+
+  // If the admin opens the editor but departments haven't loaded yet, fetch them.
+  useEffect(() => {
+    if (editingCurriculum && role === 'ADMIN' && (!adminDepartments || adminDepartments.length === 0)) {
+      refreshDepartments();
+    }
+  }, [editingCurriculum, role, adminDepartments]);
+
   return (
     <div className="standard-page-layout curriculum-root">
-      <div className="curriculum-header">
-        <div className="curriculum-controls">
-          <label htmlFor="deptSelect" className="small-label">Department</label>
-          <select id="deptSelect" className="dept-select" value={selectedDept} onChange={(e) => setSelectedDept(e.target.value)}>
-            {departments.map(d => (
-              <option key={d.id} value={d.label}>{d.label}</option>
-            ))}
-          </select>
+      {!viewingCurriculum && !editingCurriculum && (
+        <div className="curriculum-header">
+          {role === 'ADMIN' ? (
+          <div className="curriculum-controls admin-controls">
+            <div className="dept-block">
+              <label htmlFor="deptSelect" className="small-label">Department</label>
+              <select
+                id="deptSelect"
+                className="dept-select"
+                value={selectedDeptId}
+                      onChange={(e) => {
+                        const deptId = e.target.value;
+                        setSelectedDeptId(deptId);
+                        const deptObj = adminDepartments.find(d => String(d.id) === String(deptId));
+                        if (deptObj) setSelectedDept(deptObj.name || '');
+                      }}
+              >
+                {adminDepartments.length > 0 ? (
+                  adminDepartments.map(d => (
+                    <option key={d.id} value={d.id}>{d.name}</option>
+                  ))
+                ) : (
+                  <option value="">-- No Departments --</option>
+                )}
+              </select>
+            </div>
+
+            <div className="programs-list-wrap">
+              <h4 className="programs-heading">Programs</h4>
+              <div className="programs-panel">
+                {adminPrograms.length === 0 ? (
+                  <div className="no-programs">No programs for selected department.</div>
+                ) : (
+                  <div className="admin-program-list">
+                    {adminPrograms.map(p => (
+                      <div className="program-row" key={p.id}>
+                        <div className="program-name">{p.name}</div>
+                            <div className="program-actions">
+                              <button className="btn-view" onClick={async () => {
+                                try {
+                                  const res = await getCurriculumByProgramId(p.id);
+                                  setViewingCurriculum(res.data);
+                                  setEditingCurriculum(null);
+                                } catch (e) {
+                                  console.error('View error for programId', p.id, e);
+                                  alert('No curriculum found for this program.');
+                                }
+                              }}>View</button>
+
+                              <button className="btn-edit" onClick={async () => {
+                                try {
+                                  const res = await getCurriculumByProgramId(p.id);
+                                  // make a deep copy for editing
+                                  setEditingCurriculum(JSON.parse(JSON.stringify(res.data)));
+                                  setViewingCurriculum(null);
+                                } catch (e) {
+                                  console.error('Edit error for programId', p.id, e);
+                                  alert('No curriculum found to edit for this program.');
+                                }
+                              }}>Edit</button>
+
+                              <button className="btn-delete" onClick={() => { if (window.confirm('Delete program?')) { alert('Delete not implemented'); } }}>Delete</button>
+                            </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', gap:12}}>
+            <div className="curriculum-controls">
+              <label htmlFor="deptSelect" className="small-label">Department</label>
+              <select id="deptSelect" className="dept-select" value={selectedDept} onChange={(e) => setSelectedDept(e.target.value)}>
+                {adminDepartments.map(d => (
+                  <option key={d.id} value={d.name}>{d.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="curriculum-title">
+              <h2>{current ? current.programName : 'Curriculum'}</h2>
+            </div>
+          </div>
+        )}
         </div>
-        <div className="curriculum-title">
-          <h2>{current ? current.programName : 'Curriculum'}</h2>
+      )}
+
+      {(viewingCurriculum || editingCurriculum) && (
+        <div className="fullview-header" style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12}}>
+          <div style={{flex:1}}>
+            <h2 style={{margin:0}}>{(viewingCurriculum && viewingCurriculum.programName) || (editingCurriculum && editingCurriculum.programName) || 'Curriculum'}</h2>
+          </div>
+          <button className="back-btn" onClick={() => { setViewingCurriculum(null); setEditingCurriculum(null); }}>← Back</button>
         </div>
-      </div>
+      )}
 
       <div className="curriculum-content">
         {loading ? <div>Loading…</div> : null}
-        {current ? (
+        {viewingCurriculum ? (
+          // FULL-PAGE READ-ONLY VIEW (replaces modal)
+          <div className="curriculum-fullview">
+            
+            <div className="fullview-body">
+              {(() => {
+                const items = viewingCurriculum.items || [];
+                const byYear = {};
+                items.forEach(it => {
+                  const y = it.yearLabel || 'Unknown Year';
+                  const t = it.termTitle || 'Term';
+                  byYear[y] = byYear[y] || {};
+                  byYear[y][t] = byYear[y][t] || [];
+                  byYear[y][t].push(it);
+                });
+                return Object.keys(byYear).map((yearKey, yi) => (
+                  <div className="curriculum-year" key={yi}>
+                    <h3 className="year-title">{yearKey}</h3>
+                    {Object.keys(byYear[yearKey]).map((termKey, ti) => (
+                      <div className="term-block" key={ti}>
+                        <h4 className="term-title">{termKey}</h4>
+                        <div className="table-wrap">
+                          <table className="curriculum-table">
+                            <thead>
+                              <tr>
+                                <th>Subject Code</th>
+                                <th>Prerequisite</th>
+                                <th>Equiv. Subject Code</th>
+                                <th>Description</th>
+                                <th>Units</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {byYear[yearKey][termKey].map((s, i) => (
+                                <tr key={i}>
+                                  <td className="mono">{s.subjectCode}</td>
+                                  <td className="mono">{s.prerequisite}</td>
+                                  <td className="mono">{s.equivSubjectCode}</td>
+                                  <td>{s.description}</td>
+                                  <td className="mono">{s.units}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ));
+              })()}
+            </div>
+          </div>
+        ) : editingCurriculum ? (
+          // EDIT MODE: full-page editable view with program fields and add-row controls
+          (() => {
+            const cur = editingCurriculum;
+            const items = cur.items || [];
+            const byYear = {};
+            items.forEach((it, idx) => {
+              const y = it.yearLabel || 'Unknown Year';
+              const t = it.termTitle || 'Term';
+              byYear[y] = byYear[y] || {};
+              byYear[y][t] = byYear[y][t] || [];
+              byYear[y][t].push({ ...it, __idx: idx });
+            });
+
+            const handleItemChange = (idx, field, value) => {
+              setEditingCurriculum(prev => {
+                const copy = { ...prev };
+                copy.items = copy.items.map((it, i) => i === idx ? { ...it, [field]: value } : it);
+                return copy;
+              });
+            };
+
+            const addSubject = () => {
+              setEditingCurriculum(prev => ({ ...prev, items: [...(prev.items||[]), { yearLabel: 'First Year', termTitle: 'First Term', subjectCode:'', prerequisite:'', equivSubjectCode:'', description:'', units: '' }] }));
+            };
+
+            return (
+              <div>
+                    <div className="editor-row">
+                      <div className="editor-col flex-1">
+                        <label className="label-block">Program Code</label>
+                        <input className={`program-meta-input input-full ${errors.programCode ? 'invalid' : ''}`} value={cur.programCode || ''} onChange={(e) => { clearFieldError('programCode'); setEditingCurriculum(prev => ({ ...prev, programCode: e.target.value })); }} />
+                        {errors.programCode ? <div className="inline-error">{errors.programCode}</div> : null}
+                      </div>
+                      <div className="editor-col flex-3">
+                        <label className="label-block">Program Name</label>
+                        <input className={`program-meta-input input-full ${errors.programName ? 'invalid' : ''}`} value={cur.programName || ''} onChange={(e) => { clearFieldError('programName'); setEditingCurriculum(prev => ({ ...prev, programName: e.target.value })); }} />
+                        {errors.programName ? <div className="inline-error">{errors.programName}</div> : null}
+                      </div>
+                      <div className="editor-col flex-1">
+                        <label className="label-block">Duration (years)</label>
+                        <input type="number" min={1} className={`program-meta-input input-full`} value={cur.durationInYears || ''} onChange={(e) => {
+                          const v = e.target.value ? Number(e.target.value) : null;
+                          setEditingCurriculum(prev => ({ ...prev, durationInYears: v }));
+                          // if creating new curriculum, auto-populate years
+                          if (cur.isNew && v && Number.isInteger(v) && v > 0) {
+                            // build items: for each year add first term with one blank subject
+                            const newItems = [];
+                            for (let yi = 1; yi <= v; yi++) {
+                              const yearLabel = (['First','Second','Third','Fourth','Fifth','Sixth'][yi-1] || (yi + 'th')) + ' Year';
+                              // start each year with one 'First Term' placeholder
+                              newItems.push({ yearLabel, termTitle: 'First Term', subjectCode:'', prerequisite:'', equivSubjectCode:'', description:'', units: '' });
+                            }
+                            setEditingCurriculum(prev => ({ ...prev, items: newItems, durationInYears: v }));
+                          }
+                        }} />
+                      </div>
+                      <div className="editor-col flex-2">
+                        <label className="label-block">Department</label>
+                        <select
+                          className={`program-meta-input input-full ${errors.departmentId ? 'invalid' : ''}`}
+                          value={cur.departmentId || (cur.department && cur.department.id) || ''}
+                          onChange={(e) => { clearFieldError('departmentId'); setEditingCurriculum(prev => ({ ...prev, departmentId: e.target.value })); }}
+                        >
+                          <option value="">-- Select Department --</option>
+                          {adminDepartments && adminDepartments.length > 0 ? (
+                            adminDepartments.map(d => (<option key={d.id} value={d.id}>{d.name}</option>))
+                          ) : (
+                            <option value="">-- No Departments --</option>
+                          )}
+                        </select>
+                        {errors.departmentId ? <div className="inline-error">{errors.departmentId}</div> : null}
+                      </div>
+                      
+                    </div>
+
+                {/* When creating via Duration we auto-generate years; manual year/term inputs removed */}
+                {errors.newYearTerm ? <div className="inline-error">{errors.newYearTerm}</div> : null}
+
+                {items.length === 0 ? (
+                  <div className="no-items-box">No curriculum items yet. Use "Add Subject" to create entries.</div>
+                ) : (
+                  Object.keys(byYear).map((yearKey, yi) => (
+                    <div className="curriculum-year" key={yi}>
+                      <div className="year-header">
+                        <h3 className="year-title" style={{margin:0}}>{yearKey}</h3>
+                        <div>
+                          <button className="inline-action" onClick={() => {
+                            // add next term for this year (Second Term, Third Term...)
+                            const terms = Object.keys(byYear[yearKey] || {});
+                            const nextIdx = (terms ? terms.length : 0) + 1;
+                            const ord = ['First','Second','Third','Fourth','Fifth','Sixth'][nextIdx-1] || (nextIdx + 'th');
+                            const nextTerm = ord + ' Term';
+                            setEditingCurriculum(prev => ({ ...prev, items: [...(prev.items||[]), { yearLabel: yearKey, termTitle: nextTerm, subjectCode:'', prerequisite:'', equivSubjectCode:'', description:'', units: '' }] }));
+                          }}>Add Term</button>
+                        </div>
+                      </div>
+                      {Object.keys(byYear[yearKey]).map((termKey, ti) => (
+                        <div className="term-block" key={ti}>
+                          <div className="term-header">
+                            <h4 className="term-title" style={{margin:0}}>{termKey}</h4>
+                            <div>
+                              <button className="inline-action" onClick={() => {
+                                // add a blank subject to this year/term
+                                setEditingCurriculum(prev => ({ ...prev, items: [...(prev.items||[]), { yearLabel: yearKey, termTitle: termKey, subjectCode:'', prerequisite:'', equivSubjectCode:'', description:'', units: '' }] }));
+                              }}>Add Subject</button>
+                            </div>
+                          </div>
+                          <div className="table-wrap">
+                            <table className="curriculum-table">
+                              <thead>
+                                <tr>
+                                  <th>Subject Code</th>
+                                  <th>Prerequisite</th>
+                                  <th>Equiv. Subject Code</th>
+                                  <th>Description</th>
+                                  <th>Units</th>
+                                  <th></th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {byYear[yearKey][termKey].map((s) => (
+                                  <tr key={s.__idx}>
+                                    <td className="mono"><input className="table-input" value={s.subjectCode || ''} onChange={(e) => handleItemChange(s.__idx, 'subjectCode', e.target.value)} /></td>
+                                    <td className="mono"><input className="table-input" value={s.prerequisite || ''} onChange={(e) => handleItemChange(s.__idx, 'prerequisite', e.target.value)} /></td>
+                                    <td className="mono"><input className="table-input" value={s.equivSubjectCode || ''} onChange={(e) => handleItemChange(s.__idx, 'equivSubjectCode', e.target.value)} /></td>
+                                    <td><input className="table-input" value={s.description || ''} onChange={(e) => handleItemChange(s.__idx, 'description', e.target.value)} /></td>
+                                    <td className="mono">
+                                      <input className={`table-input ${errors.items && errors.items[s.__idx] && errors.items[s.__idx].units ? 'invalid' : ''}`} value={s.units || ''} onChange={(e) => { clearItemError(s.__idx, 'units'); handleItemChange(s.__idx, 'units', e.target.value); }} />
+                                      {errors.items && errors.items[s.__idx] && errors.items[s.__idx].units ? <div className="inline-error">{errors.items[s.__idx].units}</div> : null}
+                                    </td>
+                                    <td><button className="modal-btn" onClick={() => setEditingCurriculum(prev => { const copy = { ...prev }; copy.items = copy.items.filter((_,i)=> i !== s.__idx); return copy; })}>Remove</button></td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ))
+                )}
+              </div>
+            );
+          })()
+        ) : current ? (
           // group items by yearLabel then termTitle
           (() => {
             const items = current.items || [];
@@ -96,9 +419,107 @@ const CurriculumPage = () => {
             ));
           })()
         ) : (
-          <div>No curriculum available for selected department.</div>
+          null
         )}
       </div>
+
+      {/* Admin floating Add button (hidden when viewing) */}
+      {role === 'ADMIN' && !viewingCurriculum && !editingCurriculum && (
+        <>
+          <button className="fab-add" onClick={() => { setEditingCurriculum({ programCode: '', programName: '', items: [], isNew: true, departmentId: selectedDeptId || '' }); }} title="Add Curriculum">Add Curriculum</button>
+
+          {/* Add modal removed — Add now opens full-page editor via setEditingCurriculum */}
+        </>
+      )}
+
+      
+
+      {/* Save button when editing */}
+      {editingCurriculum && (
+        <button className="save-curriculum-btn" disabled={saving} onClick={async () => {
+          try {
+            const id = editingCurriculum.curriculumId || editingCurriculum.id;
+            const confirmSave = window.confirm(id ? 'Save changes to this curriculum?' : 'Create this new curriculum?');
+            if (!confirmSave) return;
+            setSaving(true);
+
+            // Basic client-side validation (collect inline errors)
+            setErrors({});
+            if (!editingCurriculum.departmentId || editingCurriculum.departmentId === '') {
+              setFieldError('departmentId', 'Please select a Department for this curriculum.');
+              setSaving(false);
+              return;
+            }
+            if (!editingCurriculum.programCode || !editingCurriculum.programCode.toString().trim()) {
+              setFieldError('programCode', 'Program Code is required.');
+              setSaving(false);
+              return;
+            }
+            if (!editingCurriculum.programName || !editingCurriculum.programName.toString().trim()) {
+              setFieldError('programName', 'Program Name is required.');
+              setSaving(false);
+              return;
+            }
+
+            // validate units are numeric when provided
+            const itemsToValidate = editingCurriculum.items || [];
+            const itemsErrors = {};
+            for (let i = 0; i < itemsToValidate.length; i++) {
+              const u = itemsToValidate[i].units;
+              if (u !== undefined && u !== null && u !== '' && isNaN(Number(u))) {
+                itemsErrors[i] = { units: 'Units must be a number' };
+              }
+            }
+            if (Object.keys(itemsErrors).length > 0) {
+              setErrors(prev => ({ ...prev, items: itemsErrors }));
+              setSaving(false);
+              return;
+            }
+
+            // Prepare payload (normalize units to numbers where appropriate)
+            const payload = { ...editingCurriculum };
+            // convert departmentId into department object expected by backend
+            if (payload.departmentId) {
+              payload.department = { id: payload.departmentId };
+              delete payload.departmentId;
+            } else if (editingCurriculum.department && editingCurriculum.department.id) {
+              payload.department = { id: editingCurriculum.department.id };
+            }
+            payload.items = (payload.items || []).map(it => ({ ...it, units: (it.units === '' || it.units === null || it.units === undefined) ? null : Number(it.units) }));
+
+            // saving payload (debug logs removed for cleaner console)
+
+            const deptToRefresh = selectedDeptId || (payload.department && payload.department.id) || editingCurriculum.departmentId || '';
+
+            if (id) {
+              const res = await updateCurriculum(id, payload);
+              alert('Curriculum updated');
+            } else {
+              const res = await createCurriculum(payload);
+              alert('Curriculum created');
+            }
+
+            // Refresh programs list for the active department so admin sees the new program immediately
+            try {
+              if (deptToRefresh) {
+                setSelectedDeptId(deptToRefresh);
+                // programs hook will react to selectedDeptId change; also trigger explicit refresh
+                refreshPrograms();
+              }
+            } catch (e) {
+              console.warn('Failed to refresh programs after save', e);
+            }
+
+            setEditingCurriculum(null);
+            setSaving(false);
+          } catch (e) {
+            console.error('Save error', e);
+            if (e?.response?.data) console.error('Server response:', e.response.data);
+            alert('Failed to save curriculum — see console for details');
+            setSaving(false);
+          }
+        }}>{editingCurriculum.curriculumId || editingCurriculum.id ? 'Save Changes' : 'Create Curriculum'}</button>
+      )}
     </div>
   );
 };

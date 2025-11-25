@@ -12,14 +12,16 @@ public class CurriculumItem {
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "curriculum_id")
+    @JoinColumn(name = "program_id")
     @JsonIgnore
-    private Curriculum curriculum;
+    private Program program;
 
     // Year label, e.g. "First Year" or numeric year value
+    @Column(name = "year")
     private String yearLabel;
 
-    // Term title, e.g. "First Term", "Second Term"
+    // Term title (deprecated) — kept for compatibility but not used. Prefer `semester`.
+    // NOTE: UI and controllers should prefer `semester` and `yearLabel`.
     private String termTitle;
 
     private String subjectCode;

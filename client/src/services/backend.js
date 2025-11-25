@@ -67,6 +67,9 @@ export const getCourses = () => API.get('/courses');
 export const addCourse = (payload) => API.post('/courses', payload);
 
 export const getCurriculum = (programCode) => API.get(`/curricula/${encodeURIComponent(programCode)}`);
+export const getCurriculumByProgramId = (programId) => API.get(`/curricula/byProgramId/${programId}`);
+export const createCurriculum = (payload) => API.post('/curricula', payload);
+export const updateCurriculum = (id, payload) => API.put(`/curricula/${id}`, payload);
 
 export const getFilteredEnrollmentForms = (filters) => {
     // Note: Axios automatically serializes the 'filters' object into URL query parameters (?department=X&yearLevel=Y)

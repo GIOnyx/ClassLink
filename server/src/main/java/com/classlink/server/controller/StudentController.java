@@ -75,10 +75,11 @@ public class StudentController {
         }
 
         StudentStatus currentStatus = student.getStatus();
-        boolean hasLockedApplication = currentStatus != null && currentStatus != StudentStatus.REJECTED;
+        // Only treat the application as locked when it is actively under review (PENDING).
+        boolean hasLockedApplication = currentStatus == StudentStatus.PENDING;
         if (hasLockedApplication) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body("Your application is under review. Please wait for the admin decision before making changes.");
+                .body("Your application is under review. Please wait for the admin decision before making changes.");
         }
 
         // Update simple fields

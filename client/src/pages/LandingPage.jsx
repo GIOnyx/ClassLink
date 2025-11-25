@@ -1,15 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import BrandHeader from '../components/BrandHeader.jsx';
 import Login from '../components/Login.jsx';
 import Register from '../components/Register.jsx';
 import Footer from '../components/Footer.jsx';
 import '../App.css';
 import './LandingPage.css';
+import useDepartments from '../hooks/useDepartments';
 
 const LandingPage = ({ onLoginSuccess }) => {
     // State to control the visibility of the login pop-up
     const [isLoginVisible, setIsLoginVisible] = useState(false);
     const [isRegisterVisible, setIsRegisterVisible] = useState(false);
+
+    const { departments } = useDepartments();
 
     return (
         <div className="landing-page">
@@ -99,12 +102,11 @@ const LandingPage = ({ onLoginSuccess }) => {
                             Enroll NOW in our Future-Forward programs and UNLEASH your creative power!
                         </p>
                         <div className="programs-grid">
-                            <div className="program-card"><h3>College of Computer Studies</h3></div>
-                            <div className="program-card"><h3>College of Arts, Sciences & Education</h3></div>
-                            <div className="program-card"><h3>College of Management, Business & Accountancy</h3></div>
-                            <div className="program-card"><h3>College of Nursing & Allied Sciences</h3></div>
-                            <div className="program-card"><h3>College of Criminal Justice</h3></div>
-                            <div className="program-card"><h3>College of Engineering & Architecture</h3></div>
+                            {departments.length > 0 ? (
+                                departments.map(d => (<div key={d.id} className="program-card"><h3>{d.name}</h3></div>))
+                            ) : (
+                                <div className="program-card"><h3>Loading programs…</h3></div>
+                            )}
                         </div>
                     </div>
                 </section>
