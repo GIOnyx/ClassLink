@@ -44,6 +44,7 @@
   display: flex;
   flex-direction: column;
   gap: 18px;
+  color: #111; /* make default content text dark to avoid white-on-white */
 }
 
 .curriculum-year {
@@ -53,19 +54,29 @@
   border-radius: 6px;
 }
 
-.year-title {
-  margin: 0 0 8px 0;
-  background: linear-gradient(#8b3a3a, #6f2b2b);
-  color: white;
-  padding: 6px 10px;
-  border-radius: 4px;
-  display: inline-block;
-  font-size: 0.95rem;
+/* header layout for a year (title + controls) */
+.curriculum-year .year-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
 }
+
+/* year-title styling consolidated further down */
 
 .term-title {
   margin: 10px 0 8px 0;
   font-size: 0.95rem;
+}
+
+/* header layout for a term (title + controls) */
+.term-block .term-header {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:6px;
 }
 
 /* ensure semester/term text is readable (dark) */
@@ -107,10 +118,130 @@
   padding: 12px 0;
 }
 
+/* removed static no-curriculum message styles */
+
+/* Admin program list and controls */
+.admin-controls { display:flex; flex-direction:column; align-items:flex-start; gap: 12px; width: 100%; }
+.dept-block { display:flex; flex-direction:row; gap:8px; align-items:center; width:100%; }
+.programs-list-wrap { margin-left: 0; width: 100%; }
+.programs-panel { background:#fff; border:1px solid #e6e6e6; padding:12px; border-radius:6px; width:100%; max-width:unset; display:flex; flex-direction:column; }
+.programs-heading { margin: 0 0 8px 0; font-size: 0.95rem; color: #111; }
+.admin-program-list { display:flex; flex-direction:column; gap:8px; flex:1 1 auto; overflow:auto; max-height: none; }
+.program-row { display:flex; align-items:center; justify-content:space-between; background:#fff; border:1px solid #eee; padding:10px 12px; border-radius:8px; }
+.program-name { font-size:0.95rem; color:#111; }
+.program-actions button { margin-left:8px; color: #fff; font-weight:600; padding:6px 10px; border-radius:6px; border:none; cursor:pointer; }
+.btn-edit { background:#fb8c00; }
+.btn-edit:hover { background:#ef6c00; }
+.btn-delete { background:#d32f2f; }
+.btn-delete:hover { background:#c62828; }
+
+/* view/edit button styling */
+.btn-view { background:#1976d2; }
+.btn-view:hover { background:#1565c0; }
+
+/* Save Curriculum floating button (lower-right) */
+.save-curriculum-btn {
+  position: fixed;
+  right: 28px;
+  bottom: 28px;
+  min-width: 160px;
+  height: 44px;
+  border-radius: 8px;
+  background: #2e7d32;
+  color: #fff;
+  font-size: 14px;
+  border: none;
+  padding: 0 16px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+}
+
+/* Small input styling inside editable table */
+.curriculum-table input { width: 100%; padding:6px 8px; border-radius:4px; border:1px solid #ddd; background:#fff !important; color:#111 !important; }
+
+/* Editor layout classes */
+.editor-row { display:flex; gap:12px; margin-bottom:12px; align-items:flex-start; }
+.editor-col { display:flex; flex-direction:column; }
+.flex-1 { flex:1; }
+.flex-2 { flex:2; }
+.flex-3 { flex:3; }
+.label-block { display:block; font-weight:600; margin-bottom:6px; }
+.input-full { width:100%; padding:8px; border-radius:6px; border:1px solid #ddd; }
+.editor-actions { display:flex; align-items:flex-end; gap:8px; }
+
+/* New Year/Term row */
+.new-year-row { display:flex; gap:8px; margin-bottom:12px; align-items:center; }
+.new-year-input, .new-term-input { padding:8px; border-radius:6px; border:1px solid #ddd; flex:1; }
+
+/* Table input class */
+.table-input { width:100%; padding:6px 8px; border-radius:4px; border:1px solid #ddd; background:#fff; color:#111; }
+
+/* invalid state */
+.invalid { border-color: #d32f2f !important; box-shadow: 0 0 0 3px rgba(211,47,47,0.08); }
+.inline-error { color:#d32f2f; font-size:0.85rem; margin-top:6px; }
+
+.save-curriculum-btn[disabled] { opacity:0.6; cursor:not-allowed; }
+
+.no-items-box { padding:12px; background:#fff; border:1px solid #e6e6e6; border-radius:6px; }
+
+/* Floating Add button */
+.fab-add {
+  position: fixed;
+  right: 28px;
+  bottom: 28px;
+  min-width: 160px;
+  height: 44px;
+  border-radius: 8px;
+  background: #2e7d32; /* green */
+  color: #fff;
+  font-size: 14px;
+  border: none;
+  padding: 0 16px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Simple modal placeholder styles */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.35); display:flex; align-items:center; justify-content:center; z-index:9999; }
+.modal-content { background: #fff; width: 720px; max-width: calc(100% - 32px); border-radius: 8px; padding: 16px; box-shadow: 0 12px 40px rgba(0,0,0,0.2); }
+.modal-header-row { display:flex; justify-content:space-between; align-items:center; }
+.modal-close-btn { border:none; background:transparent; font-size:20px; cursor:pointer; }
+.modal-scroll-body { padding: 12px 0; max-height: 60vh; overflow:auto; }
+.modal-footer { display:flex; justify-content:flex-end; gap:8px; padding-top:12px; }
+.modal-btn { padding:8px 12px; border-radius:6px; border: none; cursor:pointer; }
+
+/* smaller variant for inline action buttons */
+.inline-action {
+  padding:6px 10px;
+  font-size:0.9rem;
+  background:#111;
+  color:#fff;
+  border-radius:6px;
+  border:none;
+  cursor:pointer;
+}
+
+.inline-action:hover { opacity:0.95; }
+.modal-save { background:#8b3a3a; color:#fff; }
+
 /* make year/title text darker to avoid white-on-white issues */
 .year-title {
   color: #111; /* dark text */
   background: #b97d7d; /* slightly lighter than before for contrast */
+}
+
+.year-title {
+  display:inline-block;
+  padding:6px 8px;
+  border-radius:4px;
+  font-weight:700;
 }
 
 .curriculum-title h2 {
@@ -122,3 +253,22 @@
   .curriculum-header { flex-direction: column; align-items: stretch; }
   .curriculum-controls { justify-content: space-between; }
 }
+
+/* Full-page view header when viewing a curriculum */
+.curriculum-fullview { display:flex; flex-direction:column; gap:12px; }
+.fullview-header { display:flex; align-items:center; gap:12px; padding-bottom:6px; justify-content:space-between; }
+.back-btn { background:transparent; border:none; color:#111; font-weight:700; cursor:pointer; font-size:16px; }
+.back-btn:hover { text-decoration:underline; }
+.fullview-body { display:flex; flex-direction:column; gap:12px; }
+
+/* ensure program meta inputs are black text and white background */
+.program-meta-input { background:#fff !important; color:#111 !important; }
+
+/* make inputs in fullview white and dark */
+.curriculum-fullview input, .curriculum-fullview textarea { background:#fff !important; color:#111 !important; }
+
+/* Force inputs/selects/textarea across the curriculum editor to be white with dark text */
+.curriculum-root input, .curriculum-root textarea, .curriculum-root select { background:#fff !important; color:#111 !important; }
+
+/* ensure fullview header title is dark */
+.fullview-header h2 { color: #111 !important; }

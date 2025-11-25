@@ -66,7 +66,7 @@ function App() {
             <Route path="students" element={role === 'ADMIN' ? <StudentsListPage /> : <Navigate to="/" />} />
             <Route path="profile" element={<ProfilePage />} />
             <Route path="calendar" element={<CalendarPage />} />
-            <Route path="curriculum" element={<CurriculumPage />} />
+            <Route path="curriculum" element={<CurriculumPage role={role} />} />
             <Route path="*" element={<Navigate to="/" />} />
           </Route>
         ) : (

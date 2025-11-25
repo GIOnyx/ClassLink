@@ -2,29 +2,29 @@ import React, { useState, useEffect } from 'react';
 import '../App.css';
 import './CoursePage.css';
 import { getCourses, addCourse, getTeachers } from '/src/services/backend.js';
-
-const programs = [
-    'College of Computer Studies',
-    'College of Arts, Sciences & Education',
-    'College of Management, Business & Accountancy',
-    'College of Nursing & Allied Sciences',
-    'College of Criminal Justice',
-    'College of Engineering & Architecture',
-];
+import usePrograms from '../hooks/usePrograms';
 
 const CoursePage = () => {
     const [courses, setCourses] = useState([]);
     const [teachers, setTeachers] = useState([]);
+    const { programs, loading: programsLoading } = usePrograms();
     const [newCourse, setNewCourse] = useState({
         title: '',
         courseCode: '',
-        program: programs[0],
+        program: '',
         teacherId: ''
     });
 
     useEffect(() => {
         loadData();
     }, []);
+
+    // when programs load/update, ensure default program is set in the newCourse form
+    useEffect(() => {
+        if (!programsLoading && programs && programs.length > 0) {
+            setNewCourse(prev => ({ ...prev, program: programs[0].name || '' }));
+        }
+    }, [programs, programsLoading]);
 
     const loadData = async () => {
         try {
@@ -34,6 +34,10 @@ const CoursePage = () => {
             ]);
             setCourses(coursesRes.data);
             setTeachers(teachersRes.data);
+            // programs are provided by the hook; set default if available
+            if (!programsLoading && programs && programs.length > 0) {
+                setNewCourse(prev => ({ ...prev, program: programs[0].name || '' }));
+            }
         } catch (error) {
             console.error('Failed to fetch data:', error);
         }
@@ -55,7 +59,7 @@ const CoursePage = () => {
             };
             
             await addCourse(payload);
-            setNewCourse({ title: '', courseCode: '', program: programs[0], teacherId: '' });
+            setNewCourse({ title: '', courseCode: '', program: (programs && programs[0] ? programs[0].name : ''), teacherId: '' });
             loadData();
         } catch (err) {
             console.error('Failed to add course:', err);
@@ -84,7 +88,7 @@ const CoursePage = () => {
                         className="course-form-input"
                     />
                     <select name="program" value={newCourse.program} onChange={handleInputChange} className="course-form-select">
-                        {programs.map(p => <option key={p} value={p}>{p}</option>)}
+                        {programs.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
                     </select>
                     
                     <select name="teacherId" value={newCourse.teacherId} onChange={handleInputChange} className="course-form-select">
