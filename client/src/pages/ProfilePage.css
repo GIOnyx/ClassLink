@@ -39,6 +39,62 @@
 .profile-header { display: flex; align-items: center; gap: 20px; padding-bottom: 30px; border-bottom: 1px solid #eee; }
 .avatar-placeholder-md { width: 70px; height: 70px; border-radius: 50%; background-color: #e0e0e0; }
 .profile-details-form { margin: 40px 0; }
+.sidebar-nav li {
+  margin-bottom: 8px;
+}
+.sidebar-link {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: none;
+  font-weight: 600;
+  color: #555;
+  cursor: pointer;
+  text-align: left;
+}
+.sidebar-link.active {
+  background-color: #800000;
+  color: #fff;
+}
+.sidebar-link:hover {
+  background-color: #fdf2f2;
+  border-color: #f8d7da;
+}
+.sidebar-link svg.open {
+  transform: rotate(90deg);
+}
+.settings-group {
+  margin-top: 12px;
+}
+.settings-submenu {
+  list-style: none;
+  margin: 8px 0 0;
+  padding-left: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.settings-submenu button {
+  background: none;
+  border: none;
+  text-align: left;
+  padding: 6px 10px;
+  border-radius: 6px;
+  width: 100%;
+  font-size: 0.95rem;
+  color: #555;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+.settings-submenu button:hover {
+  background-color: #f4f4f4;
+  color: #800000;
+}
 .form-row { display: flex; justify-content: space-between; align-items: center; padding: 25px 10px; border-bottom: 1px solid #eee; }
 .form-row:last-child { border-bottom: none; }
 .form-row label { font-weight: 600; color: #333; }
@@ -56,4 +112,58 @@
   border-color: #d0d0d0;
   cursor: not-allowed;
   opacity: 1; /* keep text readable */
+}
+.card-section {
+  margin-top: 30px;
+  padding: 24px;
+  border: 1px solid #eee;
+  border-radius: 12px;
+  background: #fafafa;
+}
+.card-section h3 {
+  margin-top: 0;
+  margin-bottom: 18px;
+  font-size: 1.25rem;
+  color: #333;
+}
+.change-password-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.change-password-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-weight: 600;
+  color: #333;
+}
+.change-password-form input {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #d9d9d9;
+  background: #fff;
+}
+.password-submit-button {
+  align-self: flex-start;
+  background-color: #800000;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 24px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.password-submit-button:disabled {
+  opacity: .6;
+  cursor: not-allowed;
+}
+.form-feedback {
+  font-size: .95rem;
+}
+.form-feedback.error {
+  color: #b00020;
+}
+.form-feedback.success {
+  color: #2e7d32;
 }

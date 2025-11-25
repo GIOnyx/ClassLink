@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import '../App.css';
 import './ProfilePage.css';
-import { me, getMyStudent, getMyAdmin, submitStudentApplication, uploadMyProfileImage, uploadMyAdminProfileImage, updateMyAdmin, logout as apiLogout } from '../services/backend';
+import { me, getMyStudent, getMyAdmin, submitStudentApplication, uploadMyProfileImage, uploadMyAdminProfileImage, updateMyAdmin, changeMyPassword, logout as apiLogout } from '../services/backend';
 
 const ProfilePage = () => {
+    const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [profile, setProfile] = useState({ name: '', email: '', phone: '', status: '', profileImageUrl: '' });
@@ -12,6 +14,11 @@ const ProfilePage = () => {
     const [isEditing, setIsEditing] = useState(false);
     const [saving, setSaving] = useState(false);
     const [role, setRole] = useState('');
+    const [settingsOpen, setSettingsOpen] = useState(false);
+    const [activePanel, setActivePanel] = useState('profile');
+    const [passwordForm, setPasswordForm] = useState({ oldPassword: '', newPassword: '', confirmPassword: '' });
+    const [passwordFeedback, setPasswordFeedback] = useState({ error: '', success: '' });
+    const [changingPassword, setChangingPassword] = useState(false);
 
     // Helper to resolve image URL (handles relative vs absolute)
     const resolveImageSrc = (url) => {
@@ -72,6 +79,14 @@ const ProfilePage = () => {
         })();
     }, []);
 
+        useEffect(() => {
+            if (activePanel !== 'change-password') {
+                setPasswordFeedback({ error: '', success: '' });
+                setPasswordForm({ oldPassword: '', newPassword: '', confirmPassword: '' });
+                setChangingPassword(false);
+            }
+        }, [activePanel]);
+
     // Handle profile image file selection & upload
     const handleImageChange = async (e) => {
         const file = e.target.files?.[0];
@@ -121,6 +136,91 @@ const ProfilePage = () => {
         }
     };
 
+    const handlePasswordFieldChange = (e) => {
+        const { name, value } = e.target;
+        setPasswordForm((prev) => ({ ...prev, [name]: value }));
+    };
+
+    const handlePasswordSubmit = async (e) => {
+        e.preventDefault();
+        setPasswordFeedback({ error: '', success: '' });
+        if (!passwordForm.oldPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
+            setPasswordFeedback({ error: 'All fields are required.', success: '' });
+            return;
+        }
+        if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+            setPasswordFeedback({ error: 'New password and confirmation do not match.', success: '' });
+            return;
+        }
+        if (passwordForm.oldPassword === passwordForm.newPassword) {
+            setPasswordFeedback({ error: 'New password must be different from the old password.', success: '' });
+            return;
+        }
+        setChangingPassword(true);
+        try {
+            await changeMyPassword({ oldPassword: passwordForm.oldPassword, newPassword: passwordForm.newPassword });
+            setPasswordFeedback({ error: '', success: 'Password updated successfully.' });
+            setPasswordForm({ oldPassword: '', newPassword: '', confirmPassword: '' });
+        } catch (err) {
+            const message = err?.response?.data?.error || 'Failed to change password.';
+            setPasswordFeedback({ error: message, success: '' });
+        } finally {
+            setChangingPassword(false);
+        }
+    };
+
+    const profileActions = [
+        {
+            label: 'My Profile',
+            primary: true,
+            action: () => {
+                setActivePanel('profile');
+                document.querySelector('.profile-main-content')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+    ];
+
+    const settingsSubmenu = [
+        {
+            label: 'Update Personal Info',
+            action: () => {
+                setActivePanel('profile');
+                if (!isEditing) {
+                    setIsEditing(true);
+                }
+                setTimeout(() => {
+                    document.getElementById('profile-details-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 0);
+            }
+        },
+        {
+            label: 'Change Password',
+            action: () => {
+                setActivePanel('change-password');
+                setTimeout(() => {
+                    document.getElementById('change-password-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 0);
+            }
+        },
+        {
+            label: 'Manage Guardians',
+            action: () => navigate('/', { state: { focus: 'guardian' } })
+        },
+        {
+            label: 'View Application History',
+            action: () => navigate('/student', { state: { tab: 'history' } })
+        }
+    ];
+
+    const handleProfileAction = (fn) => {
+        try {
+            fn();
+        } catch (err) {
+            console.warn('Action not available yet', err);
+            setError('That shortcut is not available yet.');
+        }
+    };
+
     return (
         <div className="standard-page-layout">
             <div className="profile-page-wrapper">
@@ -140,12 +240,41 @@ const ProfilePage = () => {
                         </div>
                     </div>
                     <nav className="sidebar-nav">
-                    <ul>
-                        <li><a href="#" className="active"><ProfileIcon /> My Profile <ChevronRightIcon /></a></li>
-                        <li><a href="#"><SettingsIcon /> Settings <ChevronRightIcon /></a></li>
-                        <li><a href="#"><NotificationIcon /> Notification <span>Allow</span></a></li>
-                        <li><a href="#" onClick={async (e) => { e.preventDefault(); try { await apiLogout(); } catch {} window.location.href = '/'; }}><LogoutIcon /> Log Out</a></li>
-                    </ul>
+                        <ul>
+                            {profileActions.map(({ label, action, primary }) => (
+                                <li key={label}>
+                                    <button
+                                        type="button"
+                                        className={`sidebar-link ${primary ? 'active' : ''}`}
+                                        onClick={() => handleProfileAction(action)}
+                                    >
+                                        {primary && <ProfileIcon />}
+                                        <span>{label}</span>
+                                        <ChevronRightIcon />
+                                    </button>
+                                </li>
+                            ))}
+                            <li className="settings-group">
+                                <button type="button" className="sidebar-link" onClick={() => setSettingsOpen(o => !o)}>
+                                    <SettingsIcon />
+                                    <span>Settings</span>
+                                    <ChevronRightIcon className={settingsOpen ? 'open' : ''} />
+                                </button>
+                                {settingsOpen && (
+                                    <ul className="settings-submenu">
+                                        {settingsSubmenu.map(item => (
+                                            <li key={item.label}>
+                                                <button type="button" onClick={() => handleProfileAction(item.action)}>
+                                                    {item.label}
+                                                </button>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+                            </li>
+                            <li><a href="#"><NotificationIcon /> Notification <span>Allow</span></a></li>
+                            <li><a href="#" onClick={async (e) => { e.preventDefault(); try { await apiLogout(); } catch {} window.location.href = '/'; }}><LogoutIcon /> Log Out</a></li>
+                        </ul>
                     </nav>
                 </aside>
                 
@@ -167,7 +296,7 @@ const ProfilePage = () => {
                             <span className="user-email">{loading ? '' : profile.email || '—'}</span>
                         </div>
                     </div>
-                    <div className="profile-details-form">
+                    <div className="profile-details-form" id="profile-details-form">
                         <div className="form-row">
                             <label>Name</label>
                             <input
@@ -224,6 +353,52 @@ const ProfilePage = () => {
                             <input type="file" accept="image/*" onChange={handleImageChange} disabled={uploading} />
                             {uploading && <span style={{ fontSize: '.85rem', color: '#555' }}>Uploading…</span>}
                         </div>
+                    )}
+                    {activePanel === 'change-password' && (
+                        <section className="card-section" id="change-password-card">
+                            <h3>Change Password</h3>
+                            <form className="change-password-form" onSubmit={handlePasswordSubmit}>
+                                <label>
+                                    Old password
+                                    <input
+                                        type="password"
+                                        name="oldPassword"
+                                        value={passwordForm.oldPassword}
+                                        onChange={handlePasswordFieldChange}
+                                        autoComplete="current-password"
+                                    />
+                                </label>
+                                <label>
+                                    New password
+                                    <input
+                                        type="password"
+                                        name="newPassword"
+                                        value={passwordForm.newPassword}
+                                        onChange={handlePasswordFieldChange}
+                                        autoComplete="new-password"
+                                    />
+                                </label>
+                                <label>
+                                    Confirm new password
+                                    <input
+                                        type="password"
+                                        name="confirmPassword"
+                                        value={passwordForm.confirmPassword}
+                                        onChange={handlePasswordFieldChange}
+                                        autoComplete="new-password"
+                                    />
+                                </label>
+                                {passwordFeedback.error && (
+                                    <p className="form-feedback error">{passwordFeedback.error}</p>
+                                )}
+                                {passwordFeedback.success && (
+                                    <p className="form-feedback success">{passwordFeedback.success}</p>
+                                )}
+                                <button type="submit" className="password-submit-button" disabled={changingPassword}>
+                                    {changingPassword ? 'Updating…' : 'Update Password'}
+                                </button>
+                            </form>
+                        </section>
                     )}
                 </main>
             </div>
