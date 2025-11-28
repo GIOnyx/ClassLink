@@ -197,8 +197,13 @@ const EnrollmentPage = () => {
         const loginEmail = student?.email || student?.emailAddress || '';
         if (loginEmail) {
           setCurrentUserEmail(loginEmail);
-          setFormData(prev => ({ ...prev, emailAddress: loginEmail }));
         }
+        setFormData(prev => ({
+          ...prev,
+          emailAddress: loginEmail || prev.emailAddress,
+          firstName: prev.firstName || student?.firstName || '',
+          lastName: prev.lastName || student?.lastName || ''
+        }));
           // consider there an existing application if student has program/previous info OR a non-null status
             const hasApplication = student && (student.program || student.parentGuardianName || student.previousSchool || (student.status && student.status !== 'REGISTERED'));
           if (hasApplication) {

@@ -117,6 +117,11 @@ public class AdminController {
 			StudentStatus previousStatus = student.getStatus();
 			student.setStatus(newStatus);
 
+			if (newStatus == StudentStatus.APPROVED) {
+				student.setFirstName(capitalizeFirstLetter(student.getFirstName()));
+				student.setLastName(capitalizeFirstLetter(student.getLastName()));
+			}
+
 			if (newStatus == StudentStatus.APPROVED && (student.getAccountId() == null || student.getAccountId().isBlank())) {
 				student.setAccountId(generateAccountId());
 			}
@@ -369,5 +374,16 @@ public class AdminController {
 		AdminAccountDto response = new AdminAccountDto(saved.getAdminId(), saved.getEmail(), saved.getPassword(), saved.getName());
 		adminAccountsFileService.appendAccount(response);
 		return ResponseEntity.status(HttpStatus.CREATED).body(response);
+	}
+
+	private String capitalizeFirstLetter(String value) {
+		if (value == null) {
+			return null;
+		}
+		String trimmed = value.trim();
+		if (trimmed.isEmpty()) {
+			return value;
+		}
+		return trimmed.substring(0, 1).toUpperCase() + trimmed.substring(1);
 	}
 }
