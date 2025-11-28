@@ -161,7 +161,6 @@ public class StudentController {
 
         Student savedStudent = studentRepository.save(student);
         log.info("Student {} application updated successfully.", userId);
-
         return ResponseEntity.ok(savedStudent);
     }
 

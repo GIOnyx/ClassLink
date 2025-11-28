@@ -183,7 +183,7 @@ const CurriculumPage = ({ role }) => {
                 const byYear = {};
                 items.forEach(it => {
                   const y = it.yearLabel || 'Unknown Year';
-                  const t = it.termTitle || 'Term';
+                  const t = it.semester || 'Semester';
                   byYear[y] = byYear[y] || {};
                   byYear[y][t] = byYear[y][t] || [];
                   byYear[y][t].push(it);
@@ -233,7 +233,7 @@ const CurriculumPage = ({ role }) => {
             const byYear = {};
             items.forEach((it, idx) => {
               const y = it.yearLabel || 'Unknown Year';
-              const t = it.termTitle || 'Term';
+              const t = it.semester || 'Term';
               byYear[y] = byYear[y] || {};
               byYear[y][t] = byYear[y][t] || [];
               byYear[y][t].push({ ...it, __idx: idx });
@@ -248,7 +248,7 @@ const CurriculumPage = ({ role }) => {
             };
 
             const addSubject = () => {
-              setEditingCurriculum(prev => ({ ...prev, items: [...(prev.items||[]), { yearLabel: 'First Year', termTitle: 'First Term', subjectCode:'', prerequisite:'', equivSubjectCode:'', description:'', units: '' }] }));
+              setEditingCurriculum(prev => ({ ...prev, items: [...(prev.items||[]), { yearLabel: 'First Year', semester: 'First Term', subjectCode:'', prerequisite:'', equivSubjectCode:'', description:'', units: '' }] }));
             };
 
             return (
@@ -275,8 +275,8 @@ const CurriculumPage = ({ role }) => {
                             const newItems = [];
                             for (let yi = 1; yi <= v; yi++) {
                               const yearLabel = (['First','Second','Third','Fourth','Fifth','Sixth'][yi-1] || (yi + 'th')) + ' Year';
-                              // start each year with one 'First Term' placeholder
-                              newItems.push({ yearLabel, termTitle: 'First Term', subjectCode:'', prerequisite:'', equivSubjectCode:'', description:'', units: '' });
+                              // start each year with one 'First Term' placeholder (stored in `semester`)
+                              newItems.push({ yearLabel, semester: 'First Term', subjectCode:'', prerequisite:'', equivSubjectCode:'', description:'', units: '' });
                             }
                             setEditingCurriculum(prev => ({ ...prev, items: newItems, durationInYears: v }));
                           }
@@ -318,8 +318,8 @@ const CurriculumPage = ({ role }) => {
                             const nextIdx = (terms ? terms.length : 0) + 1;
                             const ord = ['First','Second','Third','Fourth','Fifth','Sixth'][nextIdx-1] || (nextIdx + 'th');
                             const nextTerm = ord + ' Term';
-                            setEditingCurriculum(prev => ({ ...prev, items: [...(prev.items||[]), { yearLabel: yearKey, termTitle: nextTerm, subjectCode:'', prerequisite:'', equivSubjectCode:'', description:'', units: '' }] }));
-                          }}>Add Term</button>
+                            setEditingCurriculum(prev => ({ ...prev, items: [...(prev.items||[]), { yearLabel: yearKey, semester: nextTerm, subjectCode:'', prerequisite:'', equivSubjectCode:'', description:'', units: '' }] }));
+                          }}>Add Semester</button>
                         </div>
                       </div>
                       {Object.keys(byYear[yearKey]).map((termKey, ti) => (
@@ -329,7 +329,7 @@ const CurriculumPage = ({ role }) => {
                             <div>
                               <button className="inline-action" onClick={() => {
                                 // add a blank subject to this year/term
-                                setEditingCurriculum(prev => ({ ...prev, items: [...(prev.items||[]), { yearLabel: yearKey, termTitle: termKey, subjectCode:'', prerequisite:'', equivSubjectCode:'', description:'', units: '' }] }));
+                                setEditingCurriculum(prev => ({ ...prev, items: [...(prev.items||[]), { yearLabel: yearKey, semester: termKey, subjectCode:'', prerequisite:'', equivSubjectCode:'', description:'', units: '' }] }));
                               }}>Add Subject</button>
                             </div>
                           </div>
@@ -377,7 +377,7 @@ const CurriculumPage = ({ role }) => {
             const byYear = {};
             items.forEach(it => {
               const y = it.yearLabel || 'Unknown Year';
-              const t = it.termTitle || 'Term';
+              const t = it.semester || 'Term';
               byYear[y] = byYear[y] || {};
               byYear[y][t] = byYear[y][t] || [];
               byYear[y][t].push(it);

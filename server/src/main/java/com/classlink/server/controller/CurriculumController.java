@@ -1,7 +1,9 @@
 package com.classlink.server.controller;
 
 import com.classlink.server.model.Curriculum;
+import com.classlink.server.model.Course;
 import com.classlink.server.repository.CurriculumRepository;
+import com.classlink.server.repository.CourseRepository;
 import com.classlink.server.repository.ProgramRepository;
 import com.classlink.server.repository.DepartmentRepository;
 import com.classlink.server.model.Department;
@@ -10,6 +12,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Optional;
+import java.util.Map;
+import java.util.List;
+import java.util.Comparator;
 
 @RestController
 @RequestMapping("/api/curricula")
@@ -18,30 +23,122 @@ public class CurriculumController {
     private final CurriculumRepository curriculumRepository;
     private final ProgramRepository programRepository;
     private final DepartmentRepository departmentRepository;
+    private final CourseRepository courseRepository;
 
-    public CurriculumController(CurriculumRepository curriculumRepository, ProgramRepository programRepository, DepartmentRepository departmentRepository) {
+    public CurriculumController(CurriculumRepository curriculumRepository, ProgramRepository programRepository, DepartmentRepository departmentRepository, CourseRepository courseRepository) {
         this.curriculumRepository = curriculumRepository;
         this.programRepository = programRepository;
         this.departmentRepository = departmentRepository;
+        this.courseRepository = courseRepository;
+    }
+
+    private static final String[] YEAR_LABELS = new String[]{
+            "First Year",
+            "Second Year",
+            "Third Year",
+            "Fourth Year",
+            "Fifth Year",
+            "Sixth Year"
+    };
+
+    private Integer parseYearLabel(Object labelObj) {
+        if (labelObj == null) {
+            return null;
+        }
+        String raw = String.valueOf(labelObj).trim();
+        if (raw.isEmpty()) {
+            return null;
+        }
+        String normalized = raw.toLowerCase();
+        for (int i = 0; i < YEAR_LABELS.length; i++) {
+            String candidate = YEAR_LABELS[i].toLowerCase();
+            if (candidate.equals(normalized) || normalized.contains(candidate)) {
+                return i + 1;
+            }
+        }
+        if (normalized.endsWith("year")) {
+            normalized = normalized.substring(0, normalized.length() - 4).trim();
+        }
+        try {
+            return Integer.valueOf(normalized.replaceAll("[^0-9]", ""));
+        } catch (Exception ignore) {
+            return null;
+        }
+    }
+
+    private String toYearLabel(Integer year) {
+        if (year == null || year <= 0) {
+            return null;
+        }
+        if (year <= YEAR_LABELS.length) {
+            return YEAR_LABELS[year - 1];
+        }
+        return year + "th Year";
+    }
+
+    private int yearOrder(Integer year) {
+        return year != null && year > 0 ? year : Integer.MAX_VALUE;
+    }
+
+    private int termOrder(String term) {
+        if (term == null) {
+            return Integer.MAX_VALUE;
+        }
+        String normalized = term.trim().toLowerCase();
+        if (normalized.isEmpty()) {
+            return Integer.MAX_VALUE;
+        }
+        String[] labels = new String[]{"first", "second", "third", "fourth", "fifth", "sixth"};
+        for (int i = 0; i < labels.length; i++) {
+            if (normalized.startsWith(labels[i])) {
+                return i + 1;
+            }
+        }
+        try {
+            return Integer.parseInt(normalized.replaceAll("[^0-9]", ""));
+        } catch (Exception ignore) {
+            return Integer.MAX_VALUE;
+        }
+    }
+
+    private String resolveTermLabel(Course course) {
+        String semester = course.getSemester();
+        if (semester != null && !semester.isBlank()) {
+            return semester;
+        }
+        String termTitle = course.getTermTitle();
+        return termTitle == null || termTitle.isBlank() ? null : termTitle;
+    }
+
+    private Map<String, Object> courseToDto(Course course) {
+        Map<String, Object> dto = new java.util.LinkedHashMap<>();
+        dto.put("id", course.getId());
+        dto.put("subjectCode", course.getSubjectCode());
+        dto.put("description", course.getDescription());
+        dto.put("equivSubjectCode", course.getEquivSubjectCode());
+        dto.put("prerequisite", course.getPrerequisite());
+        String semester = resolveTermLabel(course);
+        dto.put("semester", semester);
+        dto.put("termTitle", course.getTermTitle());
+        dto.put("units", course.getUnits());
+        dto.put("year", course.getYear());
+        String yearLabel = toYearLabel(course.getYear());
+        dto.put("yearLabel", yearLabel != null ? yearLabel : "Unknown Year");
+        return dto;
     }
 
     @GetMapping
     public ResponseEntity<?> listAll() {
         try {
-            var all = curriculumRepository.findAll();
-            // return lightweight metadata to avoid serialization issues
-            var out = all.stream().map(c -> {
+            var progs = programRepository.findAll();
+            var out = progs.stream().map(p -> {
                 java.util.Map<String,Object> m = new java.util.HashMap<>();
-                m.put("curriculumId", c.getCurriculumId());
-                m.put("programCode", c.getProgramCode());
-                m.put("programName", c.getProgramName());
-                m.put("itemsCount", c.getItems() == null ? 0 : c.getItems().size());
-                if (c.getDepartment() != null) {
-                    java.util.Map<String,Object> d = new java.util.HashMap<>();
-                    d.put("id", c.getDepartment().getId());
-                    d.put("name", c.getDepartment().getName());
-                    m.put("department", d);
-                }
+                m.put("programId", p.getId());
+                m.put("programName", p.getName());
+                m.put("durationInYears", p.getDurationInYears());
+                if (p.getDepartment() != null) m.put("department", java.util.Map.of("id", p.getDepartment().getId(), "name", p.getDepartment().getName()));
+                int itemsCount = courseRepository.findAllByProgram_Id(p.getId()).size();
+                m.put("itemsCount", itemsCount);
                 return m;
             }).toList();
             return ResponseEntity.ok(out);
@@ -51,136 +148,211 @@ public class CurriculumController {
         }
     }
 
-    @GetMapping("/{programCode}")
-    public ResponseEntity<?> getByProgram(@PathVariable String programCode) {
-        // Prefer Program-based curricula (new model). Try exact program name first.
-        String normalized = programCode.trim();
-        // Try to find a Program whose name exactly matches the incoming value
-        java.util.Optional<Program> maybeProg = programRepository.findAll().stream()
-                .filter(p -> p.getName() != null && (p.getName().equalsIgnoreCase(normalized) || (p.getName().trim()).equalsIgnoreCase(normalized)))
+    @GetMapping("/{programIdentifier}")
+    public ResponseEntity<?> getByProgram(@PathVariable String programIdentifier) {
+        String normalized = programIdentifier.trim();
+        Optional<Program> maybeProg = programRepository.findAll().stream()
+                .filter(p -> p.getName() != null && (p.getName().equalsIgnoreCase(normalized) || p.getName().trim().equalsIgnoreCase(normalized)))
                 .findFirst();
 
         if (maybeProg.isPresent()) {
             Program prog = maybeProg.get();
-            return ResponseEntity.ok(prog);
+            var items = courseRepository.findAllByProgram_Id(prog.getId());
+                var dtoItems = items.stream()
+                    .sorted(Comparator
+                        .comparing((Course c) -> yearOrder(c.getYear()))
+                        .thenComparing(c -> termOrder(resolveTermLabel(c)))
+                    .thenComparing(Course::getId, Comparator.nullsLast(Long::compareTo)))
+                .map(this::courseToDto)
+                .toList();
+            java.util.Map<String,Object> out = new java.util.HashMap<>();
+            out.put("program", java.util.Map.of("id", prog.getId(), "name", prog.getName(), "durationInYears", prog.getDurationInYears()));
+            out.put("department", prog.getDepartment() == null ? null : java.util.Map.of("id", prog.getDepartment().getId(), "name", prog.getDepartment().getName()));
+                out.put("programId", prog.getId());
+                out.put("programName", prog.getName());
+                out.put("programCode", prog.getName());
+                out.put("durationInYears", prog.getDurationInYears());
+                if (prog.getDepartment() != null) {
+                    out.put("departmentId", prog.getDepartment().getId());
+                }
+                var versions = curriculumRepository.findAllByProgram_Id(prog.getId());
+                Curriculum version = versions.isEmpty() ? null : versions.get(0);
+                if (version != null) {
+                    out.put("curriculumId", version.getId());
+                    if (version.getVersionName() != null) out.put("curriculumVersionName", version.getVersionName());
+                    if (version.getEffectivityYear() != null) out.put("effectivityYear", version.getEffectivityYear());
+                    if (version.getDurationInYears() != null && out.get("durationInYears") == null) {
+                        out.put("durationInYears", version.getDurationInYears());
+                    }
+                }
+            out.put("items", dtoItems);
+            return ResponseEntity.ok(out);
         }
 
-        // Fallback to legacy Curriculum lookup by code or name
-        Optional<Curriculum> cur = curriculumRepository.findByProgramCode(programCode);
-        if (cur.isPresent()) {
-            Long id = cur.get().getCurriculumId();
-            Optional<Curriculum> withItems = curriculumRepository.findById(id);
-            if (withItems.isPresent()) return ResponseEntity.ok(withItems.get());
-            return ResponseEntity.ok(cur.get());
-        }
-
-        cur = curriculumRepository.findByProgramName(programCode);
-        if (cur.isPresent()) {
-            Long id = cur.get().getCurriculumId();
-            Optional<Curriculum> withItems = curriculumRepository.findById(id);
-            if (withItems.isPresent()) return ResponseEntity.ok(withItems.get());
-            return ResponseEntity.ok(cur.get());
-        }
-
-        // Try formatted match like "CODE - Program Name" and other heuristics (legacy behavior)
-        Optional<Curriculum> found = curriculumRepository.findAll().stream()
-                .filter(c -> (c.getProgramName() != null && c.getProgramName().toLowerCase().contains(normalized.toLowerCase()))
-                        || (c.getProgramCode() != null && c.getProgramCode().equalsIgnoreCase(normalized)))
-                .findFirst();
-
-        return found.map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
+        return ResponseEntity.notFound().build();
     }
 
     @PostMapping
-    public ResponseEntity<?> create(@RequestBody Curriculum c) {
+    public ResponseEntity<?> create(@RequestBody Map<String,Object> payload) {
         // Resolve department if provided
         Department d = null;
-        if (c.getDepartment() != null && c.getDepartment().getId() != null) {
-            try {
-                Long did = Long.valueOf(String.valueOf(c.getDepartment().getId()));
-                d = departmentRepository.findById(did).orElse(null);
-            } catch (Exception ex) {
-                d = null;
+        try {
+            Object deptObj = payload.get("department");
+            if (deptObj instanceof Map) {
+                Object didObj = ((Map<?,?>)deptObj).get("id");
+                if (didObj != null) {
+                    Long did = Long.valueOf(String.valueOf(didObj));
+                    d = departmentRepository.findById(did).orElse(null);
+                }
             }
+        } catch (Exception ex) {
+            d = null;
         }
 
         // Persist curriculum as part of Program (collapse Curriculum -> Program)
+        String programName = payload.get("programName") == null ? null : String.valueOf(payload.get("programName"));
+        String programCode = payload.get("programCode") == null ? null : String.valueOf(payload.get("programCode"));
         Program program = null;
-        if (c.getProgramName() != null && !c.getProgramName().isBlank()) {
-            program = programRepository.findByName(c.getProgramName()).orElse(null);
+        if (programName != null && !programName.isBlank()) {
+            program = programRepository.findByName(programName).orElse(null);
         }
-        if (program == null) {
-            program = new Program();
-        }
-        // prefer programName; fall back to programCode
-        if (c.getProgramName() != null && !c.getProgramName().isBlank()) program.setName(c.getProgramName());
-        else if (c.getProgramCode() != null && !c.getProgramCode().isBlank()) program.setName(c.getProgramCode());
+        if (program == null) program = new Program();
 
-        if (c.getDurationInYears() != null) program.setDurationInYears(c.getDurationInYears());
+        // prefer programName; fall back to programCode
+        if (programName != null && !programName.isBlank()) program.setName(programName);
+        else if (programCode != null && !programCode.isBlank()) program.setName(programCode);
+
+        Object durObj = payload.get("durationInYears");
+        if (durObj != null) {
+            try { program.setDurationInYears(Integer.valueOf(String.valueOf(durObj))); } catch (Exception ignore) {}
+        }
         if (d != null) program.setDepartment(d);
 
-        // Replace curriculum items on the Program
-        program.getCurriculum().clear();
-        if (c.getItems() != null) {
-            for (var it : c.getItems()) {
-                if (it.getYearLabel() == null || it.getYearLabel().isBlank()) it.setYearLabel("First Year");
-                if ((it.getSemester() == null || it.getSemester().isBlank()) && (it.getTermTitle() != null)) {
-                    it.setSemester(it.getTermTitle());
-                }
-                com.classlink.server.model.CurriculumItem newIt = new com.classlink.server.model.CurriculumItem();
-                newIt.setYearLabel(it.getYearLabel());
-                newIt.setSemester(it.getSemester());
-                newIt.setSubjectCode(it.getSubjectCode());
-                newIt.setPrerequisite(it.getPrerequisite());
-                newIt.setEquivSubjectCode(it.getEquivSubjectCode());
-                newIt.setDescription(it.getDescription());
-                newIt.setUnits(it.getUnits());
-                newIt.setProgram(program);
-                program.getCurriculum().add(newIt);
+        // Replace curriculum items on the Program by creating Course entities linked to a curriculum version
+        Program savedProgram = programRepository.save(program);
+        Object itemsObj = payload.get("items");
+        if (itemsObj instanceof List) {
+            // remove existing courses for this program
+            var existing = courseRepository.findAllByProgram_Id(savedProgram.getId());
+            if (existing != null && !existing.isEmpty()) {
+                courseRepository.deleteAll(existing);
             }
+
+            // ensure a default curriculum version exists
+            java.util.List<Curriculum> versions = curriculumRepository.findAllByProgram_Id(savedProgram.getId());
+            Curriculum version = versions.isEmpty() ? null : versions.get(0);
+            if (version == null) {
+                version = new Curriculum();
+                version.setProgram(savedProgram);
+                version.setVersionName("Imported - initial");
+                version.setEffectivityYear(java.time.LocalDate.now().getYear());
+                version.setDurationInYears(savedProgram.getDurationInYears());
+                version = curriculumRepository.save(version);
+            }
+
+            List<Course> toSave = new java.util.ArrayList<>();
+            for (Object itemObj : (List<?>)itemsObj) {
+                if (!(itemObj instanceof Map)) continue;
+                Map<?,?> it = (Map<?,?>) itemObj;
+                String semester = it.get("semester") == null ? null : String.valueOf(it.get("semester"));
+                String termTitle = it.get("termTitle") == null ? null : String.valueOf(it.get("termTitle"));
+                if ((semester == null || semester.isBlank()) && termTitle != null) semester = termTitle;
+                Integer year = parseYearLabel(it.get("yearLabel"));
+                if (year == null && it.get("year") != null) {
+                    try { year = Integer.valueOf(String.valueOf(it.get("year"))); } catch (Exception ignore) {}
+                }
+
+                Course newIt = new Course();
+                newIt.setSemester(semester);
+                newIt.setTermTitle(termTitle == null || termTitle.isBlank() ? semester : termTitle);
+                newIt.setSubjectCode(it.get("subjectCode") == null ? null : String.valueOf(it.get("subjectCode")));
+                newIt.setPrerequisite(it.get("prerequisite") == null ? null : String.valueOf(it.get("prerequisite")));
+                newIt.setEquivSubjectCode(it.get("equivSubjectCode") == null ? null : String.valueOf(it.get("equivSubjectCode")));
+                newIt.setDescription(it.get("description") == null ? null : String.valueOf(it.get("description")));
+                try { newIt.setUnits(it.get("units") == null ? null : Integer.valueOf(String.valueOf(it.get("units")))); } catch (Exception ignore) {}
+                newIt.setYear(year);
+                newIt.setProgram(savedProgram);
+                newIt.setCurriculum(version);
+                toSave.add(newIt);
+            }
+            if (!toSave.isEmpty()) courseRepository.saveAll(toSave);
         }
 
-        Program saved = programRepository.save(program);
-        return ResponseEntity.ok(saved);
+        return ResponseEntity.ok(savedProgram);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> update(@PathVariable Long id, @RequestBody Curriculum c) {
-        // For updates, map the incoming Curriculum DTO into Program and upsert program by name.
-        String desiredName = c.getProgramName() != null && !c.getProgramName().isBlank() ? c.getProgramName() : c.getProgramCode();
+    public ResponseEntity<?> update(@PathVariable Long id, @RequestBody Map<String,Object> payload) {
+        // For updates, map the incoming payload into Program and upsert program by name.
+        String programName = payload.get("programName") == null ? null : String.valueOf(payload.get("programName"));
+        String programCode = payload.get("programCode") == null ? null : String.valueOf(payload.get("programCode"));
+        String desiredName = (programName != null && !programName.isBlank()) ? programName : programCode;
         if (desiredName == null || desiredName.isBlank()) return ResponseEntity.badRequest().body(java.util.Map.of("error", "programName or programCode required"));
 
         Program program = programRepository.findByName(desiredName).orElseGet(() -> new Program());
         program.setName(desiredName);
-        if (c.getDurationInYears() != null) program.setDurationInYears(c.getDurationInYears());
-        if (c.getDepartment() != null && c.getDepartment().getId() != null) {
-            Long did = c.getDepartment().getId();
-            Department d = departmentRepository.findById(did).orElse(null);
-            program.setDepartment(d);
+        Object durObj2 = payload.get("durationInYears");
+        if (durObj2 != null) {
+            try { program.setDurationInYears(Integer.valueOf(String.valueOf(durObj2))); } catch (Exception ignore) {}
         }
-
-        // Replace curriculum items
-        program.getCurriculum().clear();
-        if (c.getItems() != null) {
-            for (var it : c.getItems()) {
-                if (it.getYearLabel() == null || it.getYearLabel().isBlank()) it.setYearLabel("First Year");
-                if ((it.getSemester() == null || it.getSemester().isBlank()) && (it.getTermTitle() != null)) {
-                    it.setSemester(it.getTermTitle());
+        try {
+            Object deptObj = payload.get("department");
+            if (deptObj instanceof Map) {
+                Object didObj = ((Map<?,?>)deptObj).get("id");
+                if (didObj != null) {
+                    Long did = Long.valueOf(String.valueOf(didObj));
+                    Department d = departmentRepository.findById(did).orElse(null);
+                    program.setDepartment(d);
                 }
-                com.classlink.server.model.CurriculumItem newIt = new com.classlink.server.model.CurriculumItem();
-                newIt.setYearLabel(it.getYearLabel());
-                newIt.setSemester(it.getSemester());
-                newIt.setSubjectCode(it.getSubjectCode());
-                newIt.setPrerequisite(it.getPrerequisite());
-                newIt.setEquivSubjectCode(it.getEquivSubjectCode());
-                newIt.setDescription(it.getDescription());
-                newIt.setUnits(it.getUnits());
-                newIt.setProgram(program);
-                program.getCurriculum().add(newIt);
             }
+        } catch (Exception ignore) {}
+
+        Program savedProgram = programRepository.save(program);
+        Object itemsObj2 = payload.get("items");
+        if (itemsObj2 instanceof List) {
+            var existing = courseRepository.findAllByProgram_Id(savedProgram.getId());
+            if (existing != null && !existing.isEmpty()) courseRepository.deleteAll(existing);
+
+            java.util.List<Curriculum> versions = curriculumRepository.findAllByProgram_Id(savedProgram.getId());
+            Curriculum version = versions.isEmpty() ? null : versions.get(0);
+            if (version == null) {
+                version = new Curriculum();
+                version.setProgram(savedProgram);
+                version.setVersionName("Imported - initial");
+                version.setEffectivityYear(java.time.LocalDate.now().getYear());
+                version.setDurationInYears(savedProgram.getDurationInYears());
+                version = curriculumRepository.save(version);
+            }
+
+            List<Course> toSave = new java.util.ArrayList<>();
+            for (Object itemObj : (List<?>)itemsObj2) {
+                if (!(itemObj instanceof Map)) continue;
+                Map<?,?> it = (Map<?,?>) itemObj;
+                String semester = it.get("semester") == null ? null : String.valueOf(it.get("semester"));
+                String termTitle = it.get("termTitle") == null ? null : String.valueOf(it.get("termTitle"));
+                if ((semester == null || semester.isBlank()) && termTitle != null) semester = termTitle;
+                Integer year = parseYearLabel(it.get("yearLabel"));
+                if (year == null && it.get("year") != null) {
+                    try { year = Integer.valueOf(String.valueOf(it.get("year"))); } catch (Exception ignore) {}
+                }
+
+                Course newIt = new Course();
+                newIt.setSemester(semester);
+                newIt.setTermTitle(termTitle == null || termTitle.isBlank() ? semester : termTitle);
+                newIt.setSubjectCode(it.get("subjectCode") == null ? null : String.valueOf(it.get("subjectCode")));
+                newIt.setPrerequisite(it.get("prerequisite") == null ? null : String.valueOf(it.get("prerequisite")));
+                newIt.setEquivSubjectCode(it.get("equivSubjectCode") == null ? null : String.valueOf(it.get("equivSubjectCode")));
+                newIt.setDescription(it.get("description") == null ? null : String.valueOf(it.get("description")));
+                try { newIt.setUnits(it.get("units") == null ? null : Integer.valueOf(String.valueOf(it.get("units")))); } catch (Exception ignore) {}
+                newIt.setYear(year);
+                newIt.setProgram(savedProgram);
+                newIt.setCurriculum(version);
+                toSave.add(newIt);
+            }
+            if (!toSave.isEmpty()) courseRepository.saveAll(toSave);
         }
 
-        Program saved = programRepository.save(program);
+        Program saved = savedProgram;
         return ResponseEntity.ok(saved);
     }
 
@@ -193,20 +365,29 @@ public class CurriculumController {
 
     @PostMapping("/{id}/clone")
     public ResponseEntity<?> cloneCurriculum(@PathVariable Long id) {
-        Optional<Curriculum> existing = curriculumRepository.findById(id);
-        if (existing.isEmpty()) return ResponseEntity.notFound().build();
-        Curriculum src = existing.get();
+        // Interpret {id} as a Program id to clone the program and its curriculum items
+        Optional<Program> srcProg = programRepository.findById(id);
+        if (srcProg.isEmpty()) return ResponseEntity.notFound().build();
+        Program src = srcProg.get();
 
-        // Clone legacy Curriculum into a new Program with curriculum items
         Program p = new Program();
-        String baseName = src.getProgramName() != null && !src.getProgramName().isBlank() ? src.getProgramName() : src.getProgramCode();
+        String baseName = src.getName();
         p.setName(baseName == null ? "Cloned Program" : baseName + " (Copy)");
         p.setDepartment(src.getDepartment());
+        p.setDurationInYears(src.getDurationInYears());
 
-        if (src.getItems() != null) {
-            for (var it : src.getItems()) {
-                com.classlink.server.model.CurriculumItem newIt = new com.classlink.server.model.CurriculumItem();
-                newIt.setYearLabel(it.getYearLabel());
+        var items = courseRepository.findAllByProgram_Id(src.getId());
+        Curriculum newVersion = new Curriculum();
+        newVersion.setProgram(p);
+        newVersion.setVersionName((baseName == null ? "Cloned" : baseName) + " - Clone");
+        newVersion.setEffectivityYear(java.time.LocalDate.now().getYear());
+        newVersion.setDurationInYears(p.getDurationInYears());
+        newVersion = curriculumRepository.save(newVersion);
+
+        if (items != null) {
+            java.util.List<Course> toSave = new java.util.ArrayList<>();
+            for (var it : items) {
+                Course newIt = new Course();
                 newIt.setSemester(it.getSemester());
                 newIt.setSubjectCode(it.getSubjectCode());
                 newIt.setPrerequisite(it.getPrerequisite());
@@ -214,8 +395,10 @@ public class CurriculumController {
                 newIt.setDescription(it.getDescription());
                 newIt.setUnits(it.getUnits());
                 newIt.setProgram(p);
-                p.getCurriculum().add(newIt);
+                newIt.setCurriculum(newVersion);
+                toSave.add(newIt);
             }
+            if (!toSave.isEmpty()) courseRepository.saveAll(toSave);
         }
 
         Program saved = programRepository.save(p);
@@ -224,118 +407,38 @@ public class CurriculumController {
 
     @GetMapping("/byProgramId/{programId}")
     public ResponseEntity<?> getByProgramId(@PathVariable Long programId) {
-        System.out.println("[DEBUG][CurriculumController] getByProgramId called with programId=" + programId);
         Optional<Program> prog = programRepository.findById(programId);
         if (prog.isEmpty()) return ResponseEntity.notFound().build();
-        String name = prog.get().getName() != null ? prog.get().getName().trim() : "";
-        System.out.println("[DEBUG][CurriculumController] program.name='" + name + "'");
-
-        // try exact code/name first
-        Optional<Curriculum> cur = curriculumRepository.findByProgramCode(name);
-        if (cur.isPresent()) {
-            Long id = cur.get().getCurriculumId();
-            Optional<Curriculum> withItems = curriculumRepository.findById(id);
-            if (withItems.isPresent()) return ResponseEntity.ok(withItems.get());
-            return ResponseEntity.ok(cur.get());
+        Program p = prog.get();
+        var items = courseRepository.findAllByProgram_Id(p.getId());
+        var dtoItems = items.stream()
+            .sorted(Comparator
+                .comparing((Course c) -> yearOrder(c.getYear()))
+                .thenComparing(c -> termOrder(resolveTermLabel(c)))
+                .thenComparing(Course::getId, Comparator.nullsLast(Long::compareTo)))
+            .map(this::courseToDto)
+            .toList();
+        java.util.Map<String,Object> out = new java.util.HashMap<>();
+        out.put("program", java.util.Map.of("id", p.getId(), "name", p.getName(), "durationInYears", p.getDurationInYears()));
+        out.put("department", p.getDepartment() == null ? null : java.util.Map.of("id", p.getDepartment().getId(), "name", p.getDepartment().getName()));
+        out.put("programId", p.getId());
+        out.put("programName", p.getName());
+        out.put("programCode", p.getName());
+        out.put("durationInYears", p.getDurationInYears());
+        if (p.getDepartment() != null) {
+            out.put("departmentId", p.getDepartment().getId());
         }
-        cur = curriculumRepository.findByProgramName(name);
-        if (cur.isPresent()) {
-            Long id = cur.get().getCurriculumId();
-            Optional<Curriculum> withItems = curriculumRepository.findById(id);
-            if (withItems.isPresent()) return ResponseEntity.ok(withItems.get());
-            return ResponseEntity.ok(cur.get());
-        }
-
-        // if the program name contains a code prefix like "CODE - Program Name", try splitting
-        if (name.contains(" - ")) {
-            String[] parts = name.split(" - ", 2);
-            String maybeCode = parts[0].trim();
-            String maybeProgramName = parts.length > 1 ? parts[1].trim() : "";
-            // try code
-            cur = curriculumRepository.findByProgramCode(maybeCode);
-            if (cur.isPresent()) {
-                Long id = cur.get().getCurriculumId();
-                Optional<Curriculum> withItems = curriculumRepository.findById(id);
-                if (withItems.isPresent()) return ResponseEntity.ok(withItems.get());
-                return ResponseEntity.ok(cur.get());
-            }
-            // try program name portion
-            cur = curriculumRepository.findByProgramName(maybeProgramName);
-            if (cur.isPresent()) {
-                Long id = cur.get().getCurriculumId();
-                Optional<Curriculum> withItems = curriculumRepository.findById(id);
-                if (withItems.isPresent()) return ResponseEntity.ok(withItems.get());
-                return ResponseEntity.ok(cur.get());
+        var versions = curriculumRepository.findAllByProgram_Id(p.getId());
+        Curriculum version = versions.isEmpty() ? null : versions.get(0);
+        if (version != null) {
+            out.put("curriculumId", version.getId());
+            if (version.getVersionName() != null) out.put("curriculumVersionName", version.getVersionName());
+            if (version.getEffectivityYear() != null) out.put("effectivityYear", version.getEffectivityYear());
+            if (version.getDurationInYears() != null && out.get("durationInYears") == null) {
+                out.put("durationInYears", version.getDurationInYears());
             }
         }
-
-        // try contains match on programName (case-insensitive) or match by code equality
-        String lower = name.toLowerCase();
-        // DEBUG: list all curricula metadata for troubleshooting
-        try {
-            var all = curriculumRepository.findAll();
-            System.out.println("[DEBUG][CurriculumController] curricula in DB (count=" + (all == null ? 0 : all.size()) + ")");
-            if (all != null) {
-                all.forEach(c -> System.out.println("[DEBUG][CurriculumController] curriculum: code='" + c.getProgramCode() + "' name='" + c.getProgramName() + "' id=" + c.getCurriculumId()));
-            }
-        } catch (Exception ex) {
-            System.out.println("[DEBUG][CurriculumController] failed to list curricula: " + ex.getMessage());
-        }
-
-        Optional<Curriculum> found = curriculumRepository.findAll().stream()
-                .filter(c -> (c.getProgramName() != null && c.getProgramName().toLowerCase().contains(lower))
-                        || (c.getProgramCode() != null && c.getProgramCode().equalsIgnoreCase(name)))
-                .findFirst();
-
-        if (found.isEmpty()) {
-            System.out.println("[DEBUG][CurriculumController] no curriculum matched for program name='" + name + "' (lower='" + lower + "')");
-            // fallback: try to build an acronym/code from the program name (e.g., "Bachelor of Science in Information Technology" -> "BSIT")
-            if (!name.isBlank()) {
-                String[] parts = name.split("[^A-Za-z0-9]+");
-                java.util.List<String> words = new java.util.ArrayList<>();
-                for (String w : parts) {
-                    if (w == null || w.isBlank()) continue;
-                    String lw = w.toLowerCase();
-                    if (lw.equals("of") || lw.equals("in") || lw.equals("and") || lw.equals("the") || lw.equals("for") || lw.equals("&")) continue;
-                    words.add(w);
-                }
-                StringBuilder code = new StringBuilder();
-                // Build acronym by taking uppercase letters first, otherwise first letters of each significant word
-                String upperLetters = "";
-                for (char ch : name.toCharArray()) {
-                    if (Character.isUpperCase(ch) && Character.isLetter(ch)) upperLetters += ch;
-                }
-                if (!upperLetters.isBlank()) {
-                    code.append(upperLetters);
-                } else {
-                    for (String w : words) {
-                        code.append(Character.toUpperCase(w.charAt(0)));
-                    }
-                }
-                String acronym = code.toString();
-                if (acronym.length() >= 2) {
-                    System.out.println("[DEBUG][CurriculumController] trying acronym fallback='" + acronym + "'");
-                    Optional<Curriculum> byCode = curriculumRepository.findByProgramCode(acronym);
-                    if (byCode.isPresent()) {
-                        System.out.println("[DEBUG][CurriculumController] matched curriculum by acronym code='" + acronym + "' id=" + byCode.get().getCurriculumId());
-                        Long id = byCode.get().getCurriculumId();
-                        Optional<Curriculum> withItems = curriculumRepository.findById(id);
-                        if (withItems.isPresent()) return ResponseEntity.ok(withItems.get());
-                        return ResponseEntity.ok(byCode.get());
-                    }
-                }
-            }
-        } else {
-            System.out.println("[DEBUG][CurriculumController] matched curriculum id=" + found.get().getCurriculumId());
-        }
-
-        if (found.isPresent()) {
-            Long id = found.get().getCurriculumId();
-            Optional<Curriculum> withItems = curriculumRepository.findById(id);
-            if (withItems.isPresent()) return ResponseEntity.ok(withItems.get());
-            return ResponseEntity.ok(found.get());
-        }
-
-        return ResponseEntity.notFound().build();
+        out.put("items", dtoItems);
+        return ResponseEntity.ok(out);
     }
 }

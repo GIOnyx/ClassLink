@@ -17,7 +17,6 @@ import com.classlink.server.model.Course;
 import com.classlink.server.model.Enrollment;
 import com.classlink.server.model.EnrollmentForm;
 import com.classlink.server.model.Student;
-import com.classlink.server.repository.CourseRepository;
 import com.classlink.server.repository.EnrollmentRepository;
 import com.classlink.server.repository.EnrollmentFormRepository; // Added this import
 import com.classlink.server.repository.StudentRepository;
@@ -28,13 +27,13 @@ public class EnrollmentController {
 
     private final EnrollmentRepository enrollmentRepository;
     private final StudentRepository studentRepository;
-    private final CourseRepository courseRepository;
+    private final com.classlink.server.repository.CourseRepository courseRepository;
     // ASSUMPTION: You use EnrollmentFormRepository for EnrollmentForm entities
     private final EnrollmentFormRepository enrollmentFormRepository;
 
     public EnrollmentController(EnrollmentRepository enrollmentRepository,
             StudentRepository studentRepository,
-            CourseRepository courseRepository,
+            com.classlink.server.repository.CourseRepository courseRepository,
             // You might need to inject the EnrollmentFormRepository here if it's not done
             // already
             EnrollmentFormRepository enrollmentFormRepository) {
@@ -69,7 +68,7 @@ public class EnrollmentController {
     // Minimal DTO expected: { "studentName": "Full Name", "courseId": 1 }
     @PostMapping
     public ResponseEntity<?> createEnrollment(@RequestBody EnrollmentRequest req) {
-        Student student = new Student();
+            Student student = new Student();
         // Example splits; in production parse names properly
         if (req.getStudentName() != null) {
             String[] parts = req.getStudentName().split(" ", 2);
@@ -80,8 +79,8 @@ public class EnrollmentController {
 
         Enrollment enrollment = new Enrollment();
         enrollment.setStudent(student);
-        if (req.getCourseId() != null) {
-            Optional<Course> c = courseRepository.findById(req.getCourseId());
+        if (req.getCurriculumId() != null) {
+            Optional<Course> c = courseRepository.findById(req.getCurriculumId());
             c.ifPresent(enrollment::setCourse);
         }
         enrollment.setStatus("enrolled");
@@ -90,9 +89,9 @@ public class EnrollmentController {
         return ResponseEntity.created(URI.create("/api/enrollments/" + saved.getEnrollmentID())).body(saved);
     }
 
-    public static class EnrollmentRequest {
+        public static class EnrollmentRequest {
         private String studentName;
-        private Integer courseId;
+        private Long curriculumId;
 
         public String getStudentName() {
             return studentName;
@@ -102,12 +101,12 @@ public class EnrollmentController {
             this.studentName = studentName;
         }
 
-        public Integer getCourseId() {
-            return courseId;
+        public Long getCurriculumId() {
+            return curriculumId;
         }
 
-        public void setCourseId(Integer courseId) {
-            this.courseId = courseId;
+        public void setCurriculumId(Long curriculumId) {
+            this.curriculumId = curriculumId;
         }
     }
 }

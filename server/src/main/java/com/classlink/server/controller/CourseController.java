@@ -28,13 +28,13 @@ public class CourseController {
     @GetMapping
     public List<Course> getAll(@RequestParam(name = "programId", required = false) Optional<Long> programId) {
         return programId
-                .map(courseRepository::findByProgramId)
+                .map(courseRepository::findAllByProgram_Id)
                 .orElseGet(courseRepository::findAll);
     }
 
     @PostMapping
     public ResponseEntity<Course> create(@RequestBody Course course) {
         Course saved = courseRepository.save(course);
-        return ResponseEntity.created(URI.create("/api/courses/" + saved.getCourseID())).body(saved);
+        return ResponseEntity.created(URI.create("/api/courses/" + saved.getId())).body(saved);
     }
 }

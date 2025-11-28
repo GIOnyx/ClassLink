@@ -8,7 +8,9 @@ import org.springframework.stereotype.Component;
 import com.classlink.server.model.Department;
 import com.classlink.server.model.Program;
 // legacy Curriculum model still present in the repo; seeding now targets Program + CurriculumItem
-import com.classlink.server.model.CurriculumItem;
+import com.classlink.server.model.Curriculum;
+import com.classlink.server.model.Course;
+import com.classlink.server.repository.CourseRepository;
 import com.classlink.server.repository.DepartmentRepository;
 import com.classlink.server.repository.ProgramRepository;
 import com.classlink.server.repository.CurriculumRepository;
@@ -26,11 +28,13 @@ public class DataLoader implements CommandLineRunner {
     private final DepartmentRepository departmentRepository;
     private final ProgramRepository programRepository;
     private final CurriculumRepository curriculumRepository;
+    private final CourseRepository courseRepository;
 
-    public DataLoader(DepartmentRepository departmentRepository, ProgramRepository programRepository, CurriculumRepository curriculumRepository) {
+    public DataLoader(DepartmentRepository departmentRepository, ProgramRepository programRepository, CurriculumRepository curriculumRepository, CourseRepository courseRepository) {
         this.departmentRepository = departmentRepository;
         this.programRepository = programRepository;
         this.curriculumRepository = curriculumRepository;
+        this.courseRepository = courseRepository;
     }
 
     @Override
@@ -147,41 +151,51 @@ public class DataLoader implements CommandLineRunner {
                 bsit.setDepartment(ccs);
                 bsit.setDurationInYears(4);
 
-                List<CurriculumItem> items = new ArrayList<>();
+                // Save program first so we can attach courses and a default curriculum version
+                bsit = programRepository.save(bsit);
+
+                // Create a default curriculum version for this program
+                Curriculum defaultVersion = new Curriculum();
+                defaultVersion.setProgram(bsit);
+                defaultVersion.setVersionName("Imported - initial");
+                defaultVersion.setEffectivityYear(java.time.LocalDate.now().getYear());
+                defaultVersion.setDurationInYears(bsit.getDurationInYears());
+                defaultVersion = curriculumRepository.save(defaultVersion);
+
+                List<Course> items = new ArrayList<>();
 
                 // First Year - First Term
-                items.add(item(bsit, "First Year", "First Term", "PHILO031", "", "PHILO031", "Ethics", 3, "First Semester"));
-                items.add(item(bsit, "First Year", "First Term", "CSIT121", "", "CSIT121", "Fundamentals of Programming", 3, "First Semester"));
-                items.add(item(bsit, "First Year", "First Term", "CSIT111", "", "CSIT111", "Introduction to Computing", 3, "First Semester"));
-                items.add(item(bsit, "First Year", "First Term", "MATH031", "", "MATH031", "Mathematics in the Modern World", 3, "First Semester"));
-                items.add(item(bsit, "First Year", "First Term", "PE103", "", "PE103", "Movement Enhancement / PATHFit 1-Movement Competency Training", 2, "First Semester"));
-                items.add(item(bsit, "First Year", "First Term", "NSTP111", "", "NSTP111", "National Service Training Program 1", 3, "First Semester"));
-                items.add(item(bsit, "First Year", "First Term", "ENGL031", "", "ENGL031", "Purposive Communication", 3, "First Semester"));
-                items.add(item(bsit, "First Year", "First Term", "PSYCH031", "", "PSYCH031", "Understanding the Self", 3, "First Semester"));
+                items.add(itemCourse(bsit, defaultVersion, "PHILO031", "", "PHILO031", "Ethics", 3, "First Semester"));
+                items.add(itemCourse(bsit, defaultVersion, "CSIT121", "", "CSIT121", "Fundamentals of Programming", 3, "First Semester"));
+                items.add(itemCourse(bsit, defaultVersion, "CSIT111", "", "CSIT111", "Introduction to Computing", 3, "First Semester"));
+                items.add(itemCourse(bsit, defaultVersion, "MATH031", "", "MATH031", "Mathematics in the Modern World", 3, "First Semester"));
+                items.add(itemCourse(bsit, defaultVersion, "PE103", "", "PE103", "Movement Enhancement / PATHFit 1-Movement Competency Training", 2, "First Semester"));
+                items.add(itemCourse(bsit, defaultVersion, "NSTP111", "", "NSTP111", "National Service Training Program 1", 3, "First Semester"));
+                items.add(itemCourse(bsit, defaultVersion, "ENGL031", "", "ENGL031", "Purposive Communication", 3, "First Semester"));
+                items.add(itemCourse(bsit, defaultVersion, "PSYCH031", "", "PSYCH031", "Understanding the Self", 3, "First Semester"));
 
                 // First Year - Second Term
-                items.add(item(bsit, "First Year", "Second Term", "HUM031", "", "HUM031", "Art Appreciation", 3, "Second Semester"));
-                items.add(item(bsit, "First Year", "Second Term", "CSIT112", "CSIT121", "CSIT112", "Discrete Structures 1", 3, "Second Semester"));
-                items.add(item(bsit, "First Year", "Second Term", "PE104", "PE103", "PE104", "Fitness Exercises / PATHFit 2-Exercise-based Fitness Activities", 2, "Second Semester"));
-                items.add(item(bsit, "First Year", "Second Term", "CSIT122", "CSIT121", "CSIT122", "Intermediate Programming", 3, "Second Semester"));
-                items.add(item(bsit, "First Year", "Second Term", "CS132", "CSIT111", "CS132", "Introduction to Computer Systems", 3, "Second Semester"));
-                items.add(item(bsit, "First Year", "Second Term", "NSTP112", "NSTP111", "NSTP112", "National Service Training Program 2", 3, "Second Semester"));
-                items.add(item(bsit, "First Year", "Second Term", "CSIT201", "CSIT121", "CSIT201", "Platform-based Development 2 (Web)", 3, "Second Semester"));
-                items.add(item(bsit, "First Year", "Second Term", "SOCSC1031", "", "SOCSC1031", "Readings in Philippine History", 3, "Second Semester"));
-                items.add(item(bsit, "First Year", "Second Term", "STS031", "", "STS031", "Science, Technology and Society", 3, "Second Semester"));
+                items.add(itemCourse(bsit, defaultVersion, "HUM031", "", "HUM031", "Art Appreciation", 3, "Second Semester"));
+                items.add(itemCourse(bsit, defaultVersion, "CSIT112", "CSIT121", "CSIT112", "Discrete Structures 1", 3, "Second Semester"));
+                items.add(itemCourse(bsit, defaultVersion, "PE104", "PE103", "PE104", "Fitness Exercises / PATHFit 2-Exercise-based Fitness Activities", 2, "Second Semester"));
+                items.add(itemCourse(bsit, defaultVersion, "CSIT122", "CSIT121", "CSIT122", "Intermediate Programming", 3, "Second Semester"));
+                items.add(itemCourse(bsit, defaultVersion, "CS132", "CSIT111", "CS132", "Introduction to Computer Systems", 3, "Second Semester"));
+                items.add(itemCourse(bsit, defaultVersion, "NSTP112", "NSTP111", "NSTP112", "National Service Training Program 2", 3, "Second Semester"));
+                items.add(itemCourse(bsit, defaultVersion, "CSIT201", "CSIT121", "CSIT201", "Platform-based Development 2 (Web)", 3, "Second Semester"));
+                items.add(itemCourse(bsit, defaultVersion, "SOCSC1031", "", "SOCSC1031", "Readings in Philippine History", 3, "Second Semester"));
+                items.add(itemCourse(bsit, defaultVersion, "STS031", "", "STS031", "Science, Technology and Society", 3, "Second Semester"));
 
                 // Second Year - First Term (partial)
-                items.add(item(bsit, "Second Year", "First Term", "CSIT221", "CSIT122", "CSIT221", "Data Structures and Algorithms", 3, "First Semester"));
-                items.add(item(bsit, "Second Year", "First Term", "GE-IT1", "", "SDG031", "General Education Elective 1", 3, "First Semester"));
-                items.add(item(bsit, "Second Year", "First Term", "IT227", "CS132", "IT227", "Networking 1", 3, "First Semester"));
-                items.add(item(bsit, "Second Year", "First Term", "CSIT227", "CSIT122", "CSIT227", "Object-oriented Programming 1", 3, "First Semester"));
-                items.add(item(bsit, "Second Year", "First Term", "PE205", "PE103", "PE205", "PATHFIT 1 / PATHFIT 3-Menu of Sports, Dance, Recreation and Martial Arts", 2, "First Semester"));
-                items.add(item(bsit, "Second Year", "First Term", "CSIT104", "", "CSIT104", "Platform-based Development 1 (Multimedia)", 3, "First Semester"));
-                items.add(item(bsit, "Second Year", "First Term", "CSIT213", "CSIT111", "CSIT213", "Social Issues and Professional Practice", 3, "First Semester"));
-                items.add(item(bsit, "Second Year", "First Term", "SOCSIC032", "", "SOCSIC032", "The Contemporary World", 3, "First Semester"));
+                items.add(itemCourse(bsit, defaultVersion, "CSIT221", "CSIT122", "CSIT221", "Data Structures and Algorithms", 3, "First Semester"));
+                items.add(itemCourse(bsit, defaultVersion, "GE-IT1", "", "SDG031", "General Education Elective 1", 3, "First Semester"));
+                items.add(itemCourse(bsit, defaultVersion, "IT227", "CS132", "IT227", "Networking 1", 3, "First Semester"));
+                items.add(itemCourse(bsit, defaultVersion, "CSIT227", "CSIT122", "CSIT227", "Object-oriented Programming 1", 3, "First Semester"));
+                items.add(itemCourse(bsit, defaultVersion, "PE205", "PE103", "PE205", "PATHFIT 1 / PATHFIT 3-Menu of Sports, Dance, Recreation and Martial Arts", 2, "First Semester"));
+                items.add(itemCourse(bsit, defaultVersion, "CSIT104", "", "CSIT104", "Platform-based Development 1 (Multimedia)", 3, "First Semester"));
+                items.add(itemCourse(bsit, defaultVersion, "CSIT213", "CSIT111", "CSIT213", "Social Issues and Professional Practice", 3, "First Semester"));
+                items.add(itemCourse(bsit, defaultVersion, "SOCSIC032", "", "SOCSIC032", "The Contemporary World", 3, "First Semester"));
 
-                items.forEach(i -> bsit.getCurriculum().add(i));
-                programRepository.save(bsit);
+                courseRepository.saveAll(items);
             } catch (Exception ex) {
                 log.warn("Skipping BSIT curriculum seeding because: {}", ex.getMessage());
             }
@@ -190,10 +204,11 @@ public class DataLoader implements CommandLineRunner {
             // Current behavior: do not overwrite an existing BSIT entry. If you want to force-replace,
             // change this logic to remove and recreate. For now, we ensure programCode/name fields are set
             // on any existing BSIT record.
-            curriculumRepository.findByProgramCode("BSIT").ifPresent(c -> {
-                if (c.getProgramName() == null || c.getProgramName().isBlank()) {
-                    c.setProgramName("Bachelor of Science in Information Technology");
-                    curriculumRepository.save(c);
+            // If BSIT exists, ensure at least one curriculum item exists for it (do nothing otherwise).
+            programRepository.findByName("Bachelor of Science in Information Technology").ifPresent(prog -> {
+                var existing = curriculumRepository.findAllByProgram_Id(prog.getId());
+                if (existing == null || existing.isEmpty()) {
+                    // no curriculum items persisted for BSIT; nothing to auto-create here.
                 }
             });
         }
@@ -268,11 +283,10 @@ public class DataLoader implements CommandLineRunner {
         }
     }
 
-    private CurriculumItem item(Program prog, String year, String term, String code, String prereq, String equiv, String desc, Integer units, String semester) {
-        CurriculumItem it = new CurriculumItem();
+    private Course itemCourse(Program prog, Curriculum version, String code, String prereq, String equiv, String desc, Integer units, String semester) {
+        Course it = new Course();
         it.setProgram(prog);
-        it.setYearLabel(year);
-        it.setTermTitle(term);
+        it.setCurriculum(version);
         it.setSubjectCode(code);
         it.setPrerequisite(prereq);
         it.setEquivSubjectCode(equiv);

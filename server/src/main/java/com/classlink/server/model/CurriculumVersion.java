@@ -4,11 +4,10 @@ import jakarta.persistence.*;
 import lombok.Data;
 
 @Entity
-@Table(name = "curriculum")
+@Table(name = "curriculum_version")
 @Data
-public class Curriculum {
+public class CurriculumVersion {
     @Id
-    @Column(name = "curriculum_id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
