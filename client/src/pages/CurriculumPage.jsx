@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import '../App.css';
 import './CurriculumPage.css';
-import { getCurriculum, getCurriculumByProgramId, createCurriculum, updateCurriculum } from '../services/backend';
+import { getCurriculumByProgramId, createCurriculum, updateCurriculum } from '../services/backend';
 import useDepartments from '../hooks/useDepartments';
 import usePrograms from '../hooks/usePrograms';
 
@@ -11,8 +11,10 @@ const CurriculumPage = ({ role }) => {
   const [selectedDept, setSelectedDept] = useState('');
   const [current, setCurrent] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState(null);
   // removed unused showForm state
   const [selectedDeptId, setSelectedDeptId] = useState('');
+  const [selectedProgramId, setSelectedProgramId] = useState('');
   const { departments: adminDepartments, loading: depsLoading, refresh: refreshDepartments } = useDepartments();
   const { programs: adminPrograms, loading: programsLoading, refresh: refreshPrograms } = usePrograms(selectedDeptId);
   const [viewingCurriculum, setViewingCurriculum] = useState(null);
@@ -41,29 +43,52 @@ const CurriculumPage = ({ role }) => {
     return c;
   });
 
+  // Fetch curriculum for the selected program (student flow)
   useEffect(() => {
-    let mounted = true;
-    setLoading(true);
-    getCurriculum(selectedDept).then(res => {
-      if (!mounted) return;
-      setCurrent(res.data);
-    }).catch(() => {
-      if (!mounted) return;
-      setCurrent(null);
-    }).finally(() => { if (mounted) setLoading(false); });
-    return () => { mounted = false; };
-  }, [selectedDept]);
+    let cancelled = false;
 
-  // when departments load, pick the first by default and set selected state
-  useEffect(() => {
-    if (adminDepartments && adminDepartments.length > 0) {
-      const firstId = adminDepartments[0].id?.toString() || '';
-      if (!selectedDeptId) {
-        setSelectedDeptId(firstId);
-        setSelectedDept(adminDepartments[0].name || '');
-      }
+    if (!selectedProgramId) {
+      setCurrent(null);
+      setLoadError(null);
+      setLoading(false);
+      return () => { cancelled = true; };
     }
-  }, [adminDepartments]);
+
+    setLoading(true);
+    setLoadError(null);
+    getCurriculumByProgramId(selectedProgramId)
+      .then(res => {
+        if (cancelled) return;
+        setCurrent(res.data);
+      })
+      .catch(err => {
+        if (cancelled) return;
+        console.error('Failed to load curriculum for program', selectedProgramId, err);
+        setCurrent(null);
+        setLoadError(err);
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      });
+
+    return () => { cancelled = true; };
+  }, [selectedProgramId]);
+
+  // Reset state when the available programs change (e.g., department cleared)
+  useEffect(() => {
+    if (!adminPrograms || adminPrograms.length === 0) {
+      setSelectedProgramId('');
+    }
+  }, [adminPrograms]);
+
+  // Clear program selection and current curriculum when department changes
+  useEffect(() => {
+    setSelectedProgramId('');
+    setCurrent(null);
+    setLoadError(null);
+  }, [selectedDeptId]);
 
   // If the admin opens the editor but departments haven't loaded yet, fetch them.
   useEffect(() => {
@@ -80,31 +105,41 @@ const CurriculumPage = ({ role }) => {
           <div className="curriculum-controls admin-controls">
             <div className="dept-block">
               <label htmlFor="deptSelect" className="small-label">Department</label>
-              <select
-                id="deptSelect"
-                className="dept-select"
-                value={selectedDeptId}
-                      onChange={(e) => {
-                        const deptId = e.target.value;
-                        setSelectedDeptId(deptId);
-                        const deptObj = adminDepartments.find(d => String(d.id) === String(deptId));
-                        if (deptObj) setSelectedDept(deptObj.name || '');
-                      }}
-              >
-                {adminDepartments.length > 0 ? (
-                  adminDepartments.map(d => (
-                    <option key={d.id} value={d.id}>{d.name}</option>
-                  ))
-                ) : (
-                  <option value="">-- No Departments --</option>
-                )}
-              </select>
+                <select
+                  id="deptSelect"
+                  className="dept-select"
+                  value={selectedDeptId}
+                  onChange={(e) => {
+                    const deptId = e.target.value;
+                    setSelectedDeptId(deptId);
+                    const deptObj = adminDepartments.find(d => String(d.id) === String(deptId));
+                    setSelectedDept(deptObj ? (deptObj.name || '') : '');
+                  }}
+                  disabled={depsLoading}
+                >
+                  <option value="">{
+                    depsLoading
+                      ? 'Loading…'
+                      : adminDepartments.length > 0
+                        ? 'Select Department'
+                        : '-- No Departments --'
+                  }</option>
+                  {!depsLoading && adminDepartments.length > 0 ? (
+                    adminDepartments.map(d => (
+                      <option key={d.id} value={d.id}>{d.name}</option>
+                    ))
+                  ) : null}
+                </select>
             </div>
 
             <div className="programs-list-wrap">
               <h4 className="programs-heading">Programs</h4>
               <div className="programs-panel">
-                {adminPrograms.length === 0 ? (
+                {selectedDeptId === '' ? (
+                  <div className="no-programs">Select a department to view its programs.</div>
+                ) : programsLoading ? (
+                  <div className="no-programs">Loading programs…</div>
+                ) : adminPrograms.length === 0 ? (
                   <div className="no-programs">No programs for selected department.</div>
                 ) : (
                   <div className="admin-program-list">
@@ -144,17 +179,63 @@ const CurriculumPage = ({ role }) => {
               </div>
             </div>
           </div>
-        ) : (
-          <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', gap:12}}>
-            <div className="curriculum-controls">
-              <label htmlFor="deptSelect" className="small-label">Department</label>
-              <select id="deptSelect" className="dept-select" value={selectedDept} onChange={(e) => setSelectedDept(e.target.value)}>
-                {adminDepartments.map(d => (
-                  <option key={d.id} value={d.name}>{d.name}</option>
-                ))}
-              </select>
+          ) : (
+          <div>
+            <div style={{display:'flex', alignItems:'center', gap:12}} className="curriculum-controls">
+              <div style={{display:'flex', flexDirection:'column'}}>
+                <label htmlFor="deptSelect" className="small-label">Department</label>
+                <select
+                  id="deptSelect"
+                  className="dept-select"
+                  value={selectedDeptId}
+                  onChange={(e) => {
+                    const deptId = e.target.value;
+                    setSelectedDeptId(deptId);
+                    const deptObj = adminDepartments.find(d => String(d.id) === String(deptId));
+                    setSelectedDept(deptObj ? (deptObj.name || '') : '');
+                  }}
+                  disabled={depsLoading}
+                >
+                  <option value="">{
+                    depsLoading
+                      ? 'Loading…'
+                      : adminDepartments.length > 0
+                        ? 'Select Department'
+                        : '-- No Departments --'
+                  }</option>
+                  {!depsLoading && adminDepartments.length > 0 ? (
+                    adminDepartments.map(d => (
+                      <option key={d.id} value={d.id}>{d.name}</option>
+                    ))
+                  ) : null}
+                </select>
+              </div>
+
+              <div style={{display:'flex', flexDirection:'column'}}>
+                <label htmlFor="programSelect" className="small-label">Program</label>
+                <select
+                  id="programSelect"
+                  className="dept-select"
+                  value={selectedProgramId}
+                  onChange={(e) => setSelectedProgramId(e.target.value)}
+                  disabled={!selectedDeptId || depsLoading || programsLoading}
+                >
+                  <option value="">{
+                    programsLoading
+                      ? 'Loading…'
+                      : adminPrograms && adminPrograms.length > 0
+                        ? 'Select Program'
+                        : '-- No Programs --'
+                  }</option>
+                  {!programsLoading && adminPrograms && adminPrograms.length > 0 ? (
+                    adminPrograms.map(p => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))
+                  ) : null}
+                </select>
+              </div>
             </div>
-            <div className="curriculum-title">
+            <div className="curriculum-title" style={{marginTop:12}}>
               <h2>{current ? current.programName : 'Curriculum'}</h2>
             </div>
           </div>
@@ -173,6 +254,12 @@ const CurriculumPage = ({ role }) => {
 
       <div className="curriculum-content">
         {loading ? <div>Loading…</div> : null}
+        {!loading && !viewingCurriculum && !editingCurriculum && loadError ? (
+          <div className="no-items-box">Unable to load curriculum for the selected program.</div>
+        ) : null}
+        {!loading && !viewingCurriculum && !editingCurriculum && selectedProgramId && !loadError && !current ? (
+          <div className="no-items-box">No curriculum found for the selected program.</div>
+        ) : null}
         {viewingCurriculum ? (
           // FULL-PAGE READ-ONLY VIEW (replaces modal)
           <div className="curriculum-fullview">
@@ -374,6 +461,11 @@ const CurriculumPage = ({ role }) => {
           // group items by yearLabel then termTitle
           (() => {
             const items = current.items || [];
+            if (items.length === 0) {
+              return (
+                <div className="no-items-box">No curriculum items found for this program.</div>
+              );
+            }
             const byYear = {};
             items.forEach(it => {
               const y = it.yearLabel || 'Unknown Year';

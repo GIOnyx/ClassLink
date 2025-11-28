@@ -1,0 +1,2 @@
+- [ ] Investigate why selected program dropdown isn't populating for students on Curriculum view.
+- [ ] Verify curriculum view renders items once a student selects a department/program.

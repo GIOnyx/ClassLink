@@ -7,8 +7,15 @@ export default function usePrograms(departmentId = null) {
   const [error, setError] = useState(null);
 
   const fetch = useCallback(async (deptId) => {
+    if (!deptId) {
+      setPrograms([]);
+      setError(null);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setError(null);
+    setPrograms([]); // reset list so dropdown reflects current department while loading
     try {
       const res = await getPrograms(deptId);
       setPrograms(res.data || []);
