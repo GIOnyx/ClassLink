@@ -1,6 +1,7 @@
 package com.classlink.server.controller;
 
 import java.net.URI;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -85,6 +86,9 @@ public class AdminController {
 
 		// Admin-created students are automatically APPROVED
 		input.setStatus(StudentStatus.APPROVED);
+		if (input.getAccountId() == null || input.getAccountId().isBlank()) {
+			input.setAccountId(generateAccountId());
+		}
 
 		Student saved = studentRepository.save(input);
 		return ResponseEntity.created(URI.create("/api/admin/students/" + saved.getId())).body(saved);
@@ -108,6 +112,10 @@ public class AdminController {
 			StudentStatus newStatus = StudentStatus.valueOf(statusStr.toUpperCase());
 			StudentStatus previousStatus = student.getStatus();
 			student.setStatus(newStatus);
+
+			if (newStatus == StudentStatus.APPROVED && (student.getAccountId() == null || student.getAccountId().isBlank())) {
+				student.setAccountId(generateAccountId());
+			}
 
 			// ✅ Save rejection reason if present
 			if (body.containsKey("reason")) {
@@ -155,6 +163,27 @@ public class AdminController {
 		entry.setStatus(next);
 		entry.setRemarks(remarks);
 		applicationHistoryRepository.save(entry);
+	}
+
+	private String generateAccountId() {
+		String year = String.valueOf(LocalDate.now().getYear());
+		String prefix = year + "-";
+		Student latest = studentRepository.findTopByAccountIdStartingWithOrderByAccountIdDesc(prefix);
+		int nextNumber = 1;
+		if (latest != null && latest.getAccountId() != null) {
+			String[] parts = latest.getAccountId().split("-");
+			if (parts.length == 2) {
+				try {
+					nextNumber = Integer.parseInt(parts[1]) + 1;
+				} catch (NumberFormatException ignored) {}
+			}
+		}
+		String candidate = String.format("%s-%04d", year, nextNumber);
+		while (studentRepository.existsByAccountId(candidate)) {
+			nextNumber++;
+			candidate = String.format("%s-%04d", year, nextNumber);
+		}
+		return candidate;
 	}
 
 	// Return currently authenticated admin basic profile (excluding password)

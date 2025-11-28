@@ -333,6 +333,15 @@ const EnrollmentPage = () => {
             {status === 'PENDING' && (
               <p className="status-note">Your application has been submitted and is awaiting admin review. Edits will be available only if the application is rejected.</p>
             )}
+            {status === 'APPROVED' && existingApp.accountId && (
+              <div className="account-id-banner">
+                <div>
+                  <p className="account-id-label">Official Account ID</p>
+                  <p className="account-id-value">{existingApp.accountId}</p>
+                </div>
+                <p className="account-id-hint">Use this ID with your password as an alternative login option.</p>
+              </div>
+            )}
             {status === 'REJECTED' && (
               <div className="rejection-alert">
                   <div className="rejection-icon">

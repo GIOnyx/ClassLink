@@ -1,24 +1,17 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import '../App.css';
 import './Login.css';
 import { login } from '../services/backend';
 
 const Login = ({ onLoginSuccess, onClose }) => {
-    const [email, setEmail] = useState('');
+    const [identifier, setIdentifier] = useState('');
     const [password, setPassword] = useState('');
-    const [role, setRole] = useState('student');
-    const [dropdownOpen, setDropdownOpen] = useState(false);
-    const roleRef = useRef(null);
     const [errors, setErrors] = useState({});
 
     const validateForm = () => {
         const newErrors = {};
-        if (!email) newErrors.email = 'Email/Username is required';
-        // Only validate email format for student role
-        if (email && role === 'student' && !/\S+@\S+\.\S+/.test(email)) newErrors.email = 'Email address is invalid';
+        if (!identifier) newErrors.identifier = 'Email or account ID is required';
         if (!password) newErrors.password = 'Password is required';
-        // For admin 'admin' short password allowed per requirement
-        if (password && role === 'student' && password.length < 6) newErrors.password = 'Password must be at least 6 characters';
         return newErrors;
     };
 
@@ -30,7 +23,7 @@ const Login = ({ onLoginSuccess, onClose }) => {
             return;
         }
         try {
-            const res = await login(email, password, role);
+            const res = await login(identifier, password);
             console.log('Logged in:', res.data);
             setErrors({});
             onLoginSuccess?.(res.data);
@@ -51,42 +44,20 @@ const Login = ({ onLoginSuccess, onClose }) => {
                 </h2>
                 
                 <h2>It is our great pleasure to have you on board!</h2>
-                <div className="form-group role-group" ref={roleRef}>
-                    <div className="role-select-wrapper">
-                        <button
-                            type="button"
-                            className="role-button"
-                            aria-haspopup="listbox"
-                            aria-expanded={dropdownOpen}
-                            onClick={() => setDropdownOpen((s) => !s)}
-                            onKeyDown={(e) => { if (e.key === 'Escape') setDropdownOpen(false); }}
-                        >
-                            <span className="role-button-label">{role === 'student' ? 'Student' : 'Admin'}</span>
-                            <span className="role-button-arrow">▾</span>
-                        </button>
-
-                        {dropdownOpen && (
-                            <ul className="role-dropdown" role="listbox" tabIndex={-1}>
-                                <li role="option" onClick={() => { setRole('student'); setDropdownOpen(false); }}>Student</li>
-                                <li role="option" onClick={() => { setRole('admin'); setDropdownOpen(false); }}>Admin</li>
-                            </ul>
-                        )}
-                    </div>
-                </div>
                 
                 <div className="form-group">
                     {/* ✅ Added name, id, and autoComplete attributes here */}
                     <input 
-                        type={role === 'student' ? 'email' : 'text'} 
-                        name="email"
-                        id="email"
+                        type="text" 
+                        name="identifier"
+                        id="identifier"
                         autoComplete="username email"
-                        placeholder={role === 'admin' ? 'Enter admin username' : 'Enter email'} 
-                        value={email} 
-                        onChange={(e) => setEmail(e.target.value)} 
-                        className={errors.email ? 'error-input' : ''} 
+                        placeholder="Enter email or account ID" 
+                        value={identifier} 
+                        onChange={(e) => setIdentifier(e.target.value)} 
+                        className={errors.identifier ? 'error-input' : ''} 
                     />
-                    {errors.email && <p className="error-text">{errors.email}</p>}
+                    {errors.identifier && <p className="error-text">{errors.identifier}</p>}
                 </div>
                 <div className="form-group">
                     {/* ✅ Added name, id, and autoComplete attributes here */}

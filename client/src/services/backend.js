@@ -9,8 +9,8 @@ export const getEnrollments = () => API.get('/enrollments');
 export const postEnrollment = (payload) => API.post('/enrollments', payload);
 
 // Auth/session helpers
-export const login = (email, password, role = 'student') =>
-  API.post('/auth/login', { email, password, role });
+export const login = (identifier, password) =>
+  API.post('/auth/login', { identifier, password });
 
 export const me = () => API.get('/auth/me');
 

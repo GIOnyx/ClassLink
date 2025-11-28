@@ -326,3 +326,28 @@
   margin: 0;
   color: #666;
 }
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  text-transform: capitalize;
+}
+
+.status-pill.approved,
+.status-pill.approved span,
+.status-pill .approved {
+  color: #087f23;
+}
+
+.status-pill.pending {
+  color: #b36b00;
+}
+
+.status-pill.rejected {
+  color: #b00020;
+}
+

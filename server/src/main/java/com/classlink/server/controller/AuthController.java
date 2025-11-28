@@ -30,7 +30,7 @@ public class AuthController {
         this.studentRepository = studentRepository;
     }
 
-    public record LoginRequest(String email, String password, String role) {
+    public record LoginRequest(String identifier, String password) {
     }
 
     public record RegisterRequest(String firstName, String lastName, String email, String password) {
@@ -41,16 +41,14 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest body, HttpSession session) {
-        if (body == null || body.email() == null || body.password() == null) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Email and password are required"));
+        if (body == null || body.identifier() == null || body.password() == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Email/account ID and password are required"));
         }
 
         Map<String, Object> payload = new HashMap<>();
 
-        if ("admin".equalsIgnoreCase(body.role())) {
-            Admin admin = adminRepository.findByEmailAndPassword(body.email(), body.password());
-            if (admin == null)
-                return ResponseEntity.status(401).body(Map.of("error", "Invalid credentials"));
+        Admin admin = adminRepository.findByEmailAndPassword(body.identifier(), body.password());
+        if (admin != null) {
             session.setAttribute("userType", "admin");
             session.setAttribute("role", "ADMIN");
             session.setAttribute("userId", admin.getAdminId());
@@ -62,7 +60,10 @@ public class AuthController {
         }
 
         // default to student
-        Student student = studentRepository.findByEmailAndPassword(body.email(), body.password());
+        Student student = studentRepository.findByEmailAndPassword(body.identifier(), body.password());
+        if (student == null) {
+            student = studentRepository.findByAccountIdAndPassword(body.identifier(), body.password());
+        }
         if (student == null)
             return ResponseEntity.status(401).body(Map.of("error", "Invalid credentials"));
 
