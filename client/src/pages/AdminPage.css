@@ -42,28 +42,12 @@
 }
 
 /* Explicitly set widths for a balanced distribution */
-.admin-table th:nth-child(1), .admin-table td:nth-child(1) { /* Name */
-  width: 16%;
-}
-.admin-table th:nth-child(2), .admin-table td:nth-child(2) { /* Email */
-  width: 16%;
-}
-.admin-table th:nth-child(3), .admin-table td:nth-child(3) { /* Applicant Type */
-  width: 15%;
-}
-.admin-table th:nth-child(4), .admin-table td:nth-child(4) { /* Program */
-  width: 18%;
-}
-.admin-table th:nth-child(5), .admin-table td:nth-child(5) { /* Year */
-  width: 8%;
-}
-.admin-table th:nth-child(6), .admin-table td:nth-child(6) { /* Requirements */
-  width: 12%;
-}
-.admin-table th:nth-child(7), .admin-table td:nth-child(7) { /* Actions */
-  width: 15%;
-  text-align: center;
-}
+.admin-table th:nth-child(1), .admin-table td:nth-child(1) { width: 18%; }
+.admin-table th:nth-child(2), .admin-table td:nth-child(2) { width: 18%; }
+.admin-table th:nth-child(3), .admin-table td:nth-child(3) { width: 16%; }
+.admin-table th:nth-child(4), .admin-table td:nth-child(4) { width: 20%; }
+.admin-table th:nth-child(5), .admin-table td:nth-child(5) { width: 10%; }
+.admin-table th:nth-child(6), .admin-table td:nth-child(6) { width: 18%; text-align: center; }
 
 .admin-table th {
   border-bottom: 2px solid #eee;
@@ -251,21 +235,43 @@
 
 .modal-grid-full { grid-column: 1 / -1; }
 
+.requirements-preview-wrapper {
+  border: 1px solid #e4e4e4;
+  border-radius: 10px;
+  padding: 12px;
+  background: #fdfdfd;
+}
+
+.requirements-preview-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}
+
+.requirements-preview-frame {
+  width: 100%;
+  height: 420px;
+  border: none;
+  border-radius: 8px;
+  background: #fff;
+}
+
 /* FOOTER */
 .modal-footer {
   padding: 16px 28px;
   border-top: 1px solid #eee;
   background-color: #fcfcfc;
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 16px;
+  gap: 12px;
   flex-shrink: 0;
 }
 
 /* Buttons */
 .modal-btn {
-  padding: 12px 24px;
-  font-size: 1rem;
+  padding: 14px 32px;
+  font-size: 1.05rem;
   font-weight: 600;
   border-radius: 8px;
   cursor: pointer;

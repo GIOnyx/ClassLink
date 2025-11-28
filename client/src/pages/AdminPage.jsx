@@ -258,7 +258,6 @@ const AdminPage = () => {
                   <th>Applicant Type</th>
                   <th>Program</th>
                   <th>Year</th>
-                  <th>Requirements</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -271,20 +270,13 @@ const AdminPage = () => {
                     <td>{s.program ? s.program.name : '—'}</td>
                     <td>{s.yearLevel || '—'}</td>
                     <td>
-                      {s.requirementsDocumentUrl ? (
-                        <a href={s.requirementsDocumentUrl} target="_blank" rel="noreferrer" className="doc-link">View PDF</a>
-                      ) : '—'}
-                    </td>
-                    <td>
                       <button className="btn-view" onClick={() => setSelectedStudent(s)}>View</button>
-                      <button className="btn-approve" onClick={() => onApprove(s.id)}>Approve</button>
-                      <button className="btn-reject" onClick={() => initiateReject(s.id)}>Reject</button>
                     </td>
                   </tr>
                 ))}
                 {filteredStudents.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="admin-empty-row">No matching pending registrations</td>
+                    <td colSpan={6} className="admin-empty-row">No matching pending registrations</td>
                   </tr>
                 )}
               </tbody>
@@ -366,13 +358,29 @@ const AdminPage = () => {
                     <label className="modal-label">Applicant Type</label>
                     <div className="modal-value">{getApplicantTypeLabel(selectedStudent.applicantType)}</div>
                   </div>
-                  <div className="modal-field-group">
+                  <div className="modal-field-group modal-grid-full">
                     <label className="modal-label">Requirements PDF</label>
-                    <div className="modal-value">
-                      {selectedStudent.requirementsDocumentUrl ? (
-                        <a href={selectedStudent.requirementsDocumentUrl} target="_blank" rel="noreferrer" className="doc-link">Download PDF</a>
-                      ) : 'Not provided'}
-                    </div>
+                    {selectedStudent.requirementsDocumentUrl ? (
+                      <div className="requirements-preview-wrapper">
+                        <div className="requirements-preview-actions">
+                          <a
+                            href={selectedStudent.requirementsDocumentUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="doc-link"
+                          >
+                            Open in new tab
+                          </a>
+                        </div>
+                        <iframe
+                          src={selectedStudent.requirementsDocumentUrl}
+                          title="Uploaded requirements"
+                          className="requirements-preview-frame"
+                        />
+                      </div>
+                    ) : (
+                      <div className="modal-value">Not provided</div>
+                    )}
                   </div>
                 </div>
               </section>
@@ -462,8 +470,8 @@ const AdminPage = () => {
 
             <div className="modal-footer">
                 {/* Trigger the rejection modal instead of immediate API call */}
-                <button className="modal-btn btn-reject" onClick={() => { setSelectedStudent(null); initiateReject(selectedStudent.id); }}>Reject Application</button>
-                <button className="modal-btn btn-approve" onClick={() => onApprove(selectedStudent.id)}>Approve Application</button>
+                <button className="modal-btn btn-reject" onClick={() => { setSelectedStudent(null); initiateReject(selectedStudent.id); }}>Reject</button>
+                <button className="modal-btn btn-approve" onClick={() => onApprove(selectedStudent.id)}>Approve</button>
             </div>
           </div>
         </div>
