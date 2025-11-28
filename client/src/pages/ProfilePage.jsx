@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 import '../App.css';
 import './ProfilePage.css';
 import { me, getMyStudent, getMyAdmin, submitStudentApplication, uploadMyProfileImage, uploadMyAdminProfileImage, updateMyAdmin, changeMyPassword, getMyApplicationHistory, logout as apiLogout } from '../services/backend';
@@ -23,6 +23,14 @@ const ProfilePage = () => {
     const [historyLoading, setHistoryLoading] = useState(false);
     const [historyError, setHistoryError] = useState('');
     const fileInputRef = useRef(null);
+
+    const outletContext = typeof useOutletContext === 'function' ? useOutletContext() : {};
+    const {
+        notifications: sharedNotifications = [],
+        notificationsLoading = false,
+        refreshNotifications = () => {},
+        markNotificationRead = () => {}
+    } = outletContext || {};
 
     // Helper to resolve image URL (handles relative vs absolute)
     const resolveImageSrc = (url) => {
@@ -82,6 +90,12 @@ const ProfilePage = () => {
             }
         })();
     }, []);
+
+    useEffect(() => {
+        if (activePanel === 'notifications') {
+            refreshNotifications();
+        }
+    }, [activePanel, refreshNotifications]);
 
         useEffect(() => {
             if (activePanel !== 'change-password') {
@@ -213,7 +227,7 @@ const ProfilePage = () => {
     const profileActions = [
         {
             label: 'My Profile',
-            primary: true,
+            panel: 'profile',
             action: () => {
                 setActivePanel('profile');
                 document.querySelector('.profile-main-content')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -275,6 +289,23 @@ const ProfilePage = () => {
         return parsed.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
     };
 
+    const notificationTypeLabels = {
+        APPLICATION_STATUS: 'Application Update',
+        CALENDAR_EVENT: 'Calendar Event',
+        GENERAL: 'Notification'
+    };
+
+    const formatNotificationType = (type) => notificationTypeLabels[type] || 'Notification';
+
+    const formatNotificationTimestamp = (value) => {
+        if (!value) return '—';
+        const parsed = new Date(value);
+        if (Number.isNaN(parsed.getTime())) {
+            return value;
+        }
+        return parsed.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+    };
+
     const approvedHistory = historyEntries.filter((entry) => entry.status === 'APPROVED');
     const deniedHistory = historyEntries.filter((entry) => entry.status === 'REJECTED');
     const heroEntry = approvedHistory[0] || deniedHistory[0] || null;
@@ -322,14 +353,14 @@ const ProfilePage = () => {
                     </div>
                     <nav className="sidebar-nav">
                         <ul>
-                            {profileActions.map(({ label, action, primary }) => (
+                            {profileActions.map(({ label, action, panel }) => (
                                 <li key={label}>
                                     <button
                                         type="button"
-                                        className={`sidebar-link ${primary ? 'active' : ''}`}
+                                        className={`sidebar-link ${activePanel === panel ? 'active' : ''}`}
                                         onClick={() => handleProfileAction(action)}
                                     >
-                                        {primary && <ProfileIcon />}
+                                        {panel === 'profile' && <ProfileIcon />}
                                         <span>{label}</span>
                                         <ChevronRightIcon />
                                     </button>
@@ -353,7 +384,17 @@ const ProfilePage = () => {
                                     </ul>
                                 )}
                             </li>
-                            <li><a href="#"><NotificationIcon /> Notification <span>Allow</span></a></li>
+                            <li>
+                                <button
+                                    type="button"
+                                    className={`sidebar-link ${activePanel === 'notifications' ? 'active' : ''}`}
+                                    onClick={() => handleProfileAction(() => setActivePanel('notifications'))}
+                                >
+                                    <NotificationIcon />
+                                    <span>Notifications</span>
+                                    <ChevronRightIcon />
+                                </button>
+                            </li>
                             <li><a href="#" onClick={async (e) => { e.preventDefault(); try { await apiLogout(); } catch {} window.location.href = '/'; }}><LogoutIcon /> Log Out</a></li>
                         </ul>
                     </nav>
@@ -449,6 +490,50 @@ const ProfilePage = () => {
                                 )}
                             </div>
                         </>
+                    )}
+                    {activePanel === 'notifications' && (
+                        <section className="card-section" id="notifications-card">
+                            <div className="notifications-header">
+                                <div>
+                                    <h3>Notifications</h3>
+                                    <p className="notifications-subtitle">Review every enrollment update and calendar alert you have received.</p>
+                                </div>
+                                <button
+                                    type="button"
+                                    className="notifications-refresh"
+                                    onClick={() => refreshNotifications()}
+                                    disabled={notificationsLoading}
+                                >
+                                    {notificationsLoading ? 'Refreshing…' : 'Refresh'}
+                                </button>
+                            </div>
+                            <div className="notifications-list">
+                                {notificationsLoading ? (
+                                    <p className="notifications-empty">Loading notifications…</p>
+                                ) : sharedNotifications.length === 0 ? (
+                                    <p className="notifications-empty">No notifications yet. We'll keep this updated when something changes.</p>
+                                ) : (
+                                    sharedNotifications.map((entry) => (
+                                        <article key={entry.id} className={`notifications-item ${entry.read ? 'read' : 'unread'}`}>
+                                            <header className="notifications-item-header">
+                                                <span className="notifications-item-type">{formatNotificationType(entry.type)}</span>
+                                                <span className="notifications-item-time">{formatNotificationTimestamp(entry.createdAt)}</span>
+                                            </header>
+                                            <h4 className="notifications-item-title">{entry.title || formatNotificationType(entry.type)}</h4>
+                                            <p className="notifications-item-message">{entry.message || 'No additional details provided.'}</p>
+                                            <div className="notifications-item-actions">
+                                                {!entry.read && (
+                                                    <button type="button" onClick={() => markNotificationRead(entry.id)}>
+                                                        Mark as read
+                                                    </button>
+                                                )}
+                                                {entry.read && <span className="notifications-item-status">Read</span>}
+                                            </div>
+                                        </article>
+                                    ))
+                                )}
+                            </div>
+                        </section>
                     )}
                     {activePanel === 'change-password' && (
                         <section className="card-section" id="change-password-card">

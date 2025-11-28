@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 
 import com.classlink.server.model.Calendar;
 import com.classlink.server.repository.CalendarEventRepository;
+import com.classlink.server.service.NotificationService;
 
 import jakarta.servlet.http.HttpSession;
 
@@ -17,9 +18,11 @@ import jakarta.servlet.http.HttpSession;
 public class CalendarController {
 
     private final CalendarEventRepository calendarEventRepository;
+    private final NotificationService notificationService;
 
-    public CalendarController(CalendarEventRepository calendarEventRepository) {
+    public CalendarController(CalendarEventRepository calendarEventRepository, NotificationService notificationService) {
         this.calendarEventRepository = calendarEventRepository;
+        this.notificationService = notificationService;
     }
 
     // --- GET all events (Sorted by Start Date) ---
@@ -53,7 +56,9 @@ public class CalendarController {
             return ResponseEntity.badRequest().body("End Date cannot be before Start Date");
         }
 
-        return ResponseEntity.ok(calendarEventRepository.save(event));
+        Calendar saved = calendarEventRepository.save(event);
+        notificationService.notifyCalendarEvent(saved);
+        return ResponseEntity.ok(saved);
     }
 
     // --- DELETE an event ---
