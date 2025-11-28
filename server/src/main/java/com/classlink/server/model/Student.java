@@ -30,6 +30,9 @@ public class Student {
     @Column(unique = true)
     private String email;
 
+    @Column(unique = true)
+    private String accountId;
+
     @ManyToOne
     @JoinColumn(name = "program_id")
     private Program program;

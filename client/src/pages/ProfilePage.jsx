@@ -300,6 +300,8 @@ const ProfilePage = () => {
             .filter(Boolean);
     };
 
+    const isApprovedStudent = role !== 'ADMIN' && (profile.status || '').toUpperCase() === 'APPROVED';
+
     return (
         <div className="standard-page-layout">
             <div className="profile-page-wrapper">
@@ -400,7 +402,7 @@ const ProfilePage = () => {
                                     <input
                                         type="text"
                                         value={profile.name}
-                                        disabled={!isEditing}
+                                        disabled={!isEditing || isApprovedStudent}
                                         onChange={(e) => setProfile((p) => ({ ...p, name: e.target.value }))}
                                     />
                                 </div>

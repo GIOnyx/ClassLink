@@ -296,6 +296,39 @@
   margin-left: 10px;
 }
 
+.account-id-banner {
+  margin-top: 16px;
+  padding: 16px 20px;
+  border: 1px solid #d9f1e0;
+  border-radius: 12px;
+  background: #f5fffa;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.account-id-label {
+  margin: 0;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #0f5132;
+}
+
+.account-id-value {
+  margin: 4px 0 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #0a3622;
+}
+
+.account-id-hint {
+  margin: 0;
+  color: #1f2937;
+  font-size: 0.95rem;
+}
+
 .status-approved { color: #087f23; }
 .status-pending { color: #b36b00; }
 .status-rejected { color: #b00020; }
