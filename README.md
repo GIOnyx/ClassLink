@@ -4,21 +4,25 @@ If you just want to run the project locally right now:
 
 1. Create the file `server/src/main/resources/application.properties` (if it doesn't exist) with:
   ```properties
-  # --- Core database connection (adjust password/user) ---
-  spring.datasource.url=jdbc:mysql://localhost:3306/classlink_db
-  spring.datasource.username=root
-  spring.datasource.password=your_mysql_password
-  # Explicit driver is optional (Spring Boot auto-detects), but included for clarity
-  spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+ spring.application.name=server
 
-  # --- JPA / schema management ---
-  spring.jpa.hibernate.ddl-auto=update   # create/alter tables
-  # The following two lines are OPTIONAL (show SQL in console & pretty format)
-  spring.jpa.show-sql=true
-  spring.jpa.properties.hibernate.format_sql=true
+# --- Database Connection ---
+# Ensure this line starts exactly with 'jdbc:'
+spring.datasource.url=jdbc:mysql://classlink-gregoryivanonyx-ac5e.e.aivencloud.com:11340/defaultdb?sslMode=REQUIRED
 
-  # --- CORS: frontend dev origin ---
-  app.cors.allowed-origin=http://localhost:5173
+# Credentials
+spring.datasource.username=avnadmin
+spring.datasource.password=AVNS_2-tkPLlZ1doOPWWPz5g
+
+# --- JPA / Hibernate ---
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.open-in-view=false
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQLDialect
+
+# --- App Configuration ---
+app.cors.allowed-origin=http://localhost:5173
+server.servlet.session.cookie.same-site=Lax
+server.servlet.session.cookie.secure=false
   ```
   (Adjust username/password if your MySQL differs.)
 2. Ensure MySQL is running and the database exists:
