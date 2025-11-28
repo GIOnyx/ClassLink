@@ -29,6 +29,7 @@ import com.classlink.server.repository.ApplicationHistoryRepository;
 import com.classlink.server.repository.AdminRepository;
 import com.classlink.server.repository.StudentRepository;
 import com.classlink.server.service.AdminAccountsFileService;
+import com.classlink.server.service.NotificationService;
 import jakarta.servlet.http.HttpSession;
 
 @RestController
@@ -39,14 +40,17 @@ public class AdminController {
 	private final AdminRepository adminRepository;
 	private final ApplicationHistoryRepository applicationHistoryRepository;
 	private final AdminAccountsFileService adminAccountsFileService;
+	private final NotificationService notificationService;
 
 	public AdminController(StudentRepository studentRepository, AdminRepository adminRepository,
 			ApplicationHistoryRepository applicationHistoryRepository,
-			AdminAccountsFileService adminAccountsFileService) {
+			AdminAccountsFileService adminAccountsFileService,
+			NotificationService notificationService) {
 		this.studentRepository = studentRepository;
 		this.adminRepository = adminRepository;
 		this.applicationHistoryRepository = applicationHistoryRepository;
 		this.adminAccountsFileService = adminAccountsFileService;
+		this.notificationService = notificationService;
 	}
 
 	// List students, optionally filtered by status e.g.,
@@ -124,6 +128,7 @@ public class AdminController {
 
 			Student saved = studentRepository.save(student);
 			recordStatusChange(saved, previousStatus, newStatus, body.get("reason"));
+			notificationService.notifyApplicationStatusChange(saved, newStatus, body.get("reason"));
 			return ResponseEntity.ok(saved);
 		} catch (IllegalArgumentException ex) {
 			return ResponseEntity.badRequest().body("Invalid status value");
