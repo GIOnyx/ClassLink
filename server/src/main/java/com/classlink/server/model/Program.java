@@ -20,5 +20,5 @@ public class Program {
 
     @OneToMany(mappedBy = "program", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
-    private java.util.List<com.classlink.server.model.CurriculumItem> curriculum = new java.util.ArrayList<>();
+    private java.util.List<com.classlink.server.model.Curriculum> curriculum = new java.util.ArrayList<>();
 }
