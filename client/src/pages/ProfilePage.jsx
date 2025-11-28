@@ -387,7 +387,7 @@ const ProfilePage = () => {
                             <li>
                                 <button
                                     type="button"
-                                    className={`sidebar-link ${activePanel === 'notifications' ? 'active' : ''}`}
+                                    className={`sidebar-link notifications-link ${activePanel === 'notifications' ? 'active' : ''}`}
                                     onClick={() => handleProfileAction(() => setActivePanel('notifications'))}
                                 >
                                     <NotificationIcon />
