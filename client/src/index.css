@@ -66,3 +66,29 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
+/* Force readable black text even if browser/enforced dark mode flips colors.
+   This keeps text dark on white backgrounds when the system/browser forces
+   UI into a dark color scheme. It's intentionally minimal and only sets
+   `color` (not backgrounds) so existing layout/bg stays unchanged. */
+html, body, #root, .app-container, .main-content, .standard-page-layout,
+.curriculum-root, .programs-panel, .program-row, .programs-list-wrap,
+.program-name, .program-actions, .curriculum-content,
+.curriculum-table, .curriculum-table th, .curriculum-table td {
+  color: #111 !important;
+}
+
+/* Ensure form controls (except buttons) keep black text. Buttons are
+   intentionally excluded so their existing text color (often light on
+   dark buttons) is preserved. */
+input, textarea, select, .dept-select, .table-input, .curriculum-table input,
+.program-meta-input, .modal-content {
+  color: #111 !important;
+}
+
+/* Keep the students search input white inside even when browser forces dark mode */
+.students-search {
+  background: #ffffff !important;
+  color: #111 !important;
+  border: 1px solid #d9d9d9 !important;
+}
