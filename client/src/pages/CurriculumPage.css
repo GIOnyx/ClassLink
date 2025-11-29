@@ -129,15 +129,36 @@
 .admin-program-list { display:flex; flex-direction:column; gap:8px; flex:1 1 auto; overflow:auto; max-height: none; }
 .program-row { display:flex; align-items:center; justify-content:space-between; background:#fff; border:1px solid #eee; padding:10px 12px; border-radius:8px; }
 .program-name { font-size:0.95rem; color:#111; }
-.program-actions button { margin-left:8px; color: #fff; font-weight:600; padding:6px 10px; border-radius:6px; border:none; cursor:pointer; }
-.btn-edit { background:#fb8c00; }
-.btn-edit:hover { background:#ef6c00; }
-.btn-delete { background:#d32f2f; }
-.btn-delete:hover { background:#c62828; }
+.program-actions {
+  display:flex;
+  gap:16px;
+  align-items:center;
+}
+.program-actions button {
+  margin:0;
+  border:none;
+  background:none;
+  padding:0;
+  cursor:pointer;
+  font-weight:700;
+  text-decoration:underline;
+  color: #111;
+}
+.program-actions button:hover { opacity:0.85; }
 
-/* view/edit button styling */
-.btn-view { background:#1976d2; }
-.btn-view:hover { background:#1565c0; }
+/* Ensure any previous color rules are overridden for these actions */
+.program-actions .btn-view,
+.program-actions .btn-edit,
+.program-actions .btn-delete { color: #111 !important; }
+
+/* remove any residual hover/focus background or shadow (browser/previous rules) */
+.program-actions button:hover,
+.program-actions button:focus,
+.program-actions button:active {
+  background: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
 
 /* Save Curriculum floating button (lower-right) */
 .save-curriculum-btn {
@@ -215,20 +236,23 @@
 .modal-close-btn { border:none; background:transparent; font-size:20px; cursor:pointer; }
 .modal-scroll-body { padding: 12px 0; max-height: 60vh; overflow:auto; }
 .modal-footer { display:flex; justify-content:flex-end; gap:8px; padding-top:12px; }
-.modal-btn { padding:8px 12px; border-radius:6px; border: none; cursor:pointer; }
+
+.modal-btn { padding:0; border-radius:0; border:none; background:none; color:#111; text-decoration:underline; cursor:pointer; font-weight:700; }
 
 /* smaller variant for inline action buttons */
 .inline-action {
-  padding:6px 10px;
+  padding:0;
   font-size:0.9rem;
-  background:#111;
-  color:#fff;
-  border-radius:6px;
+  background:none;
+  color:#111;
   border:none;
+  border-radius:0;
+  text-decoration:underline;
   cursor:pointer;
+  font-weight:700;
 }
 
-.inline-action:hover { opacity:0.95; }
+.inline-action:hover { opacity:0.8; }
 .modal-save { background:#8b3a3a; color:#fff; }
 
 /* make year/title text darker to avoid white-on-white issues */
