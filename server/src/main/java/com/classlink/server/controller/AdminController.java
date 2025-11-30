@@ -176,24 +176,40 @@ public class AdminController {
 	}
 
 	private String generateAccountId() {
-		String year = String.valueOf(LocalDate.now().getYear());
-		String prefix = year + "-";
-		Student latest = studentRepository.findTopByAccountIdStartingWithOrderByAccountIdDesc(prefix);
-		int nextNumber = 1;
-		if (latest != null && latest.getAccountId() != null) {
-			String[] parts = latest.getAccountId().split("-");
-			if (parts.length == 2) {
-				try {
-					nextNumber = Integer.parseInt(parts[1]) + 1;
-				} catch (NumberFormatException ignored) {}
+		LocalDate today = LocalDate.now();
+		String yearSuffix = String.format("%02d", today.getYear() % 100);
+		int sequential = determineNextSequential(yearSuffix);
+		while (true) {
+			String sequentialPart = String.format("%04d", sequential);
+			int checksum = computeChecksum(today.getYear(), sequential);
+			String candidate = String.format("%s-%s-%03d", yearSuffix, sequentialPart, checksum);
+			if (!studentRepository.existsByAccountId(candidate)) {
+				return candidate;
 			}
+			sequential++;
 		}
-		String candidate = String.format("%s-%04d", year, nextNumber);
-		while (studentRepository.existsByAccountId(candidate)) {
-			nextNumber++;
-			candidate = String.format("%s-%04d", year, nextNumber);
+	}
+
+	private int determineNextSequential(String yearSuffix) {
+		String prefix = yearSuffix + "-";
+		Student latest = studentRepository.findTopByAccountIdStartingWithOrderByAccountIdDesc(prefix);
+		if (latest == null || latest.getAccountId() == null) {
+			return 1;
 		}
-		return candidate;
+		String[] parts = latest.getAccountId().split("-");
+		if (parts.length < 2 || !yearSuffix.equals(parts[0])) {
+			return 1;
+		}
+		try {
+			return Integer.parseInt(parts[1]) + 1;
+		} catch (NumberFormatException ex) {
+			return 1;
+		}
+	}
+
+	private int computeChecksum(int year, int sequential) {
+		int base = ((year % 100) * 10000) + sequential;
+		return Math.floorMod(base, 1000);
 	}
 
 	// Return currently authenticated admin basic profile (excluding password)
