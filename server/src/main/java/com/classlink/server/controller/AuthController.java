@@ -61,6 +61,11 @@ public class AuthController {
 
         // default to student
         Student student = studentRepository.findByEmailAndPassword(body.identifier(), body.password());
+        if (student != null && student.getStatus() == StudentStatus.APPROVED) {
+            return ResponseEntity.status(400)
+                    .body(Map.of("error",
+                            "Your application is approved. Please use your Student ID (e.g., 25-0001-123) to sign in."));
+        }
         if (student == null) {
             student = studentRepository.findByAccountIdAndPassword(body.identifier(), body.password());
         }

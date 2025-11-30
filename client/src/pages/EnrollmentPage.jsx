@@ -344,7 +344,7 @@ const EnrollmentPage = () => {
                   <p className="account-id-label">Official Account ID</p>
                   <p className="account-id-value">{existingApp.accountId}</p>
                 </div>
-                <p className="account-id-hint">Use this ID with your password as an alternative login option.</p>
+                <p className="account-id-hint">Use this ID with your password to login.</p>
               </div>
             )}
             {status === 'REJECTED' && (
