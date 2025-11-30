@@ -22,6 +22,8 @@ import jakarta.servlet.http.HttpSession;
 @RequestMapping("/api/auth")
 public class AuthController {
 
+    private static final String SESSION_EMAIL_LOGIN_KEY = "allowEmailLoginForEmail";
+
     private final AdminRepository adminRepository;
     private final StudentRepository studentRepository;
 
@@ -45,9 +47,14 @@ public class AuthController {
             return ResponseEntity.badRequest().body(Map.of("error", "Email/account ID and password are required"));
         }
 
+        String identifier = body.identifier().trim();
+        if (identifier.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Email/account ID and password are required"));
+        }
+
         Map<String, Object> payload = new HashMap<>();
 
-        Admin admin = adminRepository.findByEmailAndPassword(body.identifier(), body.password());
+        Admin admin = adminRepository.findByEmailAndPassword(identifier, body.password());
         if (admin != null) {
             session.setAttribute("userType", "admin");
             session.setAttribute("role", "ADMIN");
@@ -60,17 +67,21 @@ public class AuthController {
         }
 
         // default to student
-        Student student = studentRepository.findByEmailAndPassword(body.identifier(), body.password());
-        if (student != null && student.getStatus() == StudentStatus.APPROVED) {
+        boolean emailAllowed = isEmailLoginAllowed(session, identifier);
+        Student student = studentRepository.findByEmailAndPassword(identifier, body.password());
+        if (student != null && student.getStatus() == StudentStatus.APPROVED && !emailAllowed) {
             return ResponseEntity.status(400)
                     .body(Map.of("error",
                             "Your application is approved. Please use your Student ID (e.g., 25-0001-123) to sign in."));
         }
         if (student == null) {
-            student = studentRepository.findByAccountIdAndPassword(body.identifier(), body.password());
+            student = studentRepository.findByAccountIdAndPassword(identifier, body.password());
         }
         if (student == null)
             return ResponseEntity.status(401).body(Map.of("error", "Invalid credentials"));
+        if (emailAllowed && student.getEmail() != null && student.getEmail().equalsIgnoreCase(identifier)) {
+            clearEmailLoginAllowance(session);
+        }
 
         if (student.getStatus() == StudentStatus.INACTIVE) {
             return ResponseEntity.status(403).body(Map.of("error", "Account is inactive"));
@@ -85,6 +96,25 @@ public class AuthController {
         payload.put("firstName", student.getFirstName());
         payload.put("lastName", student.getLastName());
         return ResponseEntity.ok(payload);
+    }
+
+    @PostMapping("/forgot-id")
+    public ResponseEntity<?> forgotStudentId(@RequestBody Map<String, String> body, HttpSession session) {
+        if (body == null || body.get("email") == null || body.get("email").isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Email is required"));
+        }
+        String email = body.get("email").trim();
+        Student student = studentRepository.findByEmail(email);
+        if (student == null) {
+            return ResponseEntity.status(404).body(Map.of("error", "No account found for that email"));
+        }
+        if (student.getStatus() != StudentStatus.APPROVED) {
+            return ResponseEntity.status(400)
+                    .body(Map.of("error", "Forgot ID is only available once your application is approved"));
+        }
+        allowEmailLogin(session, email);
+        return ResponseEntity.ok(Map.of("message",
+                "Email login is temporarily enabled. Use your email and password once, then continue signing in with your Student ID."));
     }
 
     @GetMapping("/me")
@@ -196,5 +226,27 @@ public class AuthController {
             }
         }
         return null;
+    }
+
+    private boolean isEmailLoginAllowed(HttpSession session, String identifier) {
+        if (identifier == null || identifier.isBlank()) {
+            return false;
+        }
+        Object stored = session.getAttribute(SESSION_EMAIL_LOGIN_KEY);
+        if (!(stored instanceof String)) {
+            return false;
+        }
+        return ((String) stored).equalsIgnoreCase(identifier.trim());
+    }
+
+    private void allowEmailLogin(HttpSession session, String email) {
+        if (email == null || email.isBlank()) {
+            return;
+        }
+        session.setAttribute(SESSION_EMAIL_LOGIN_KEY, email.trim().toLowerCase());
+    }
+
+    private void clearEmailLoginAllowance(HttpSession session) {
+        session.removeAttribute(SESSION_EMAIL_LOGIN_KEY);
     }
 }

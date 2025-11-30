@@ -12,6 +12,9 @@ export const postEnrollment = (payload) => API.post('/enrollments', payload);
 export const login = (identifier, password) =>
   API.post('/auth/login', { identifier, password });
 
+export const requestForgotId = (email) =>
+  API.post('/auth/forgot-id', { email });
+
 export const me = () => API.get('/auth/me');
 
 export const logout = () => API.post('/auth/logout');

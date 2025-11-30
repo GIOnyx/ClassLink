@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
 import '../App.css';
 import './Login.css';
-import { login } from '../services/backend';
+import { login, requestForgotId } from '../services/backend';
 
 const Login = ({ onLoginSuccess, onClose }) => {
     const [identifier, setIdentifier] = useState('');
     const [password, setPassword] = useState('');
     const [errors, setErrors] = useState({});
+    const [showForgotForm, setShowForgotForm] = useState(false);
+    const [forgotEmail, setForgotEmail] = useState('');
+    const [forgotFeedback, setForgotFeedback] = useState(null);
 
     const validateForm = () => {
         const newErrors = {};
@@ -35,47 +38,101 @@ const Login = ({ onLoginSuccess, onClose }) => {
         }
     };
 
+    const toggleForgotForm = (event) => {
+        event?.preventDefault();
+        setShowForgotForm((prev) => !prev);
+        setForgotFeedback(null);
+        setForgotEmail('');
+    };
+
+    const handleForgotSubmit = async (event) => {
+        event.preventDefault();
+        if (!forgotEmail.trim()) {
+            setForgotFeedback({ type: 'error', message: 'Please enter your registered email address.' });
+            return;
+        }
+        try {
+            const res = await requestForgotId(forgotEmail.trim());
+            setForgotFeedback({
+                type: 'success',
+                message:
+                    res?.data?.message ||
+                    'Email login enabled for this session. Sign in with email once, then continue using your Student ID.'
+            });
+        } catch (err) {
+            console.error('Forgot ID request failed:', err);
+            const msg = err?.response?.data?.error || 'Unable to enable email login right now.';
+            setForgotFeedback({ type: 'error', message: msg });
+        }
+    };
+
     return (
         <div className="login-modal-overlay" onClick={onClose}>
-            <form onSubmit={handleSubmit} className="login-form" onClick={(e) => e.stopPropagation()}>
-                
-                <h2 className="login-title">
-                    Welcome to <span className="class-text">Class</span><span className="link-text">Link</span>
-                </h2>
-                
-                <h2>It is our great pleasure to have you on board!</h2>
-                
-                <div className="form-group">
-                    {/* ✅ Added name, id, and autoComplete attributes here */}
-                    <input 
-                        type="text" 
-                        name="identifier"
-                        id="identifier"
-                        autoComplete="username email"
-                        placeholder="Enter email or account ID" 
-                        value={identifier} 
-                        onChange={(e) => setIdentifier(e.target.value)} 
-                        className={errors.identifier ? 'error-input' : ''} 
-                    />
-                    {errors.identifier && <p className="error-text">{errors.identifier}</p>}
+            <div className="login-form" onClick={(e) => e.stopPropagation()}>
+                <form onSubmit={handleSubmit}>
+                    <h2 className="login-title">
+                        Welcome to <span className="class-text">Class</span><span className="link-text">Link</span>
+                    </h2>
+                    <h2>It is our great pleasure to have you on board!</h2>
+                    <div className="form-group">
+                        {/* ✅ Added name, id, and autoComplete attributes here */}
+                        <input 
+                            type="text" 
+                            name="identifier"
+                            id="identifier"
+                            autoComplete="username email"
+                            placeholder="Enter email or account ID" 
+                            value={identifier} 
+                            onChange={(e) => setIdentifier(e.target.value)} 
+                            className={errors.identifier ? 'error-input' : ''} 
+                        />
+                        {errors.identifier && <p className="error-text">{errors.identifier}</p>}
+                    </div>
+                    <div className="form-group">
+                        {/* ✅ Added name, id, and autoComplete attributes here */}
+                        <input 
+                            type="password" 
+                            name="password"
+                            id="password"
+                            autoComplete="current-password"
+                            placeholder="Enter Password" 
+                            value={password} 
+                            onChange={(e) => setPassword(e.target.value)} 
+                            className={errors.password ? 'error-input' : ''} 
+                        />
+                        {errors.password && <p className="error-text">{errors.password}</p>}
+                    </div>
+                    {errors.form && <p className="error-text">{errors.form}</p>}
+                    <button type="submit" className="signin-button">Sign In</button>
+                </form>
+                <div className="forgot-id-section">
+                    <button type="button" className="forgot-id-link" onClick={toggleForgotForm}>
+                        Forgot Student ID?
+                    </button>
+                    {showForgotForm && (
+                        <form className="forgot-id-form" onSubmit={handleForgotSubmit}>
+                            <div className="form-group">
+                                <input
+                                    type="email"
+                                    name="forgotEmail"
+                                    id="forgotEmail"
+                                    placeholder="Enter your registered email"
+                                    value={forgotEmail}
+                                    onChange={(e) => setForgotEmail(e.target.value)}
+                                />
+                            </div>
+                            <button type="submit" className="forgot-submit-button">
+                                Enable Email Login
+                            </button>
+                            {forgotFeedback && (
+                                <p className={forgotFeedback.type === 'error' ? 'error-text' : 'success-text'}>
+                                    {forgotFeedback.message}
+                                </p>
+                            )}
+                        </form>
+                    )}
                 </div>
-                <div className="form-group">
-                    {/* ✅ Added name, id, and autoComplete attributes here */}
-                    <input 
-                        type="password" 
-                        name="password"
-                        id="password"
-                        autoComplete="current-password"
-                        placeholder="Enter Password" 
-                        value={password} 
-                        onChange={(e) => setPassword(e.target.value)} 
-                        className={errors.password ? 'error-input' : ''} 
-                    />
-                    {errors.password && <p className="error-text">{errors.password}</p>}
-                </div>
-                {errors.form && <p className="error-text">{errors.form}</p>}
-                <button type="submit" className="signin-button">Sign In</button>
-            </form>
+            </div>
         </div>
     );
 };
