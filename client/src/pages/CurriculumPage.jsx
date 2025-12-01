@@ -5,6 +5,58 @@ import { getCurriculumByProgramId, createCurriculum, updateCurriculum } from '..
 import useDepartments from '../hooks/useDepartments';
 import usePrograms from '../hooks/usePrograms';
 
+const YEAR_LABELS = [
+  'First Year',
+  'Second Year',
+  'Third Year',
+  'Fourth Year',
+  'Fifth Year',
+  'Sixth Year'
+];
+
+const ordinalSuffix = (value) => {
+  const normalized = Number(value);
+  if (!Number.isFinite(normalized)) return `${value}th`;
+  const mod100 = normalized % 100;
+  if (mod100 >= 11 && mod100 <= 13) return `${normalized}th`;
+  switch (normalized % 10) {
+    case 1:
+      return `${normalized}st`;
+    case 2:
+      return `${normalized}nd`;
+    case 3:
+      return `${normalized}rd`;
+    default:
+      return `${normalized}th`;
+  }
+};
+
+const yearLabelFor = (year) => YEAR_LABELS[year - 1] || `${ordinalSuffix(year)} Year`;
+
+const parseYearLabelToNumber = (label) => {
+  if (!label) return null;
+  const raw = String(label).trim().toLowerCase();
+  if (!raw) return null;
+  const matchIndex = YEAR_LABELS.findIndex((candidate) => {
+    const normalized = candidate.toLowerCase();
+    return raw === normalized || raw.includes(normalized);
+  });
+  if (matchIndex >= 0) return matchIndex + 1;
+  const digitMatch = raw.match(/(\d+)/);
+  return digitMatch ? Number.parseInt(digitMatch[1], 10) : null;
+};
+
+const getYearNumberFromItem = (item) => {
+  if (!item) return null;
+  if (item.year !== undefined && item.year !== null) {
+    const numeric = Number(item.year);
+    if (Number.isFinite(numeric) && numeric > 0) {
+      return Math.trunc(numeric);
+    }
+  }
+  return parseYearLabelToNumber(item.yearLabel);
+};
+
 // when curriculum data comes from the server, it will be a flat list of items with yearLabel and termTitle
 
 const CurriculumPage = ({ role }) => {
@@ -42,6 +94,65 @@ const CurriculumPage = ({ role }) => {
     if (Object.keys(itemsCopy).length === 0) delete c.items; else c.items = itemsCopy;
     return c;
   });
+
+  const handleDurationChange = (rawValue) => {
+    clearFieldError('durationInYears');
+    const parsed = rawValue === '' ? null : Number.parseInt(rawValue, 10);
+
+    setEditingCurriculum(prev => {
+      if (!prev) return prev;
+
+      const nextDuration = parsed !== null && Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+      const prevItems = Array.isArray(prev.items) ? [...prev.items] : [];
+
+      if (!nextDuration) {
+        return { ...prev, durationInYears: nextDuration };
+      }
+
+      const numericYears = prevItems
+        .map(getYearNumberFromItem)
+        .filter(year => year !== null && Number.isFinite(year));
+      const currentMaxYear = numericYears.length ? Math.max(...numericYears) : 0;
+      const priorDuration = Number.isInteger(prev.durationInYears) && prev.durationInYears > 0
+        ? prev.durationInYears
+        : currentMaxYear;
+      const baseline = Math.max(priorDuration, currentMaxYear);
+
+      let items = prevItems;
+
+      if (nextDuration < baseline) {
+        items = prevItems.filter(item => {
+          const yearNumber = getYearNumberFromItem(item);
+          return yearNumber === null || yearNumber <= nextDuration;
+        });
+      } else if (nextDuration > baseline) {
+        items = [...prevItems];
+        const existingYears = new Set(numericYears);
+        for (let year = baseline + 1; year <= nextDuration; year += 1) {
+          if (!existingYears.has(year)) {
+            items.push({
+              year,
+              yearLabel: yearLabelFor(year),
+              semester: 'First Term',
+              termTitle: 'First Term',
+              subjectCode: '',
+              prerequisite: '',
+              equivSubjectCode: '',
+              description: '',
+              units: ''
+            });
+            existingYears.add(year);
+          }
+        }
+      }
+
+      return {
+        ...prev,
+        durationInYears: nextDuration,
+        items
+      };
+    });
+  };
 
   // Fetch curriculum for the selected program (student flow)
   useEffect(() => {
@@ -353,21 +464,13 @@ const CurriculumPage = ({ role }) => {
                       </div>
                       <div className="editor-col flex-1">
                         <label className="label-block">Duration (years)</label>
-                        <input type="number" min={1} className={`program-meta-input input-full`} value={cur.durationInYears || ''} onChange={(e) => {
-                          const v = e.target.value ? Number(e.target.value) : null;
-                          setEditingCurriculum(prev => ({ ...prev, durationInYears: v }));
-                          // if creating new curriculum, auto-populate years
-                          if (cur.isNew && v && Number.isInteger(v) && v > 0) {
-                            // build items: for each year add first term with one blank subject
-                            const newItems = [];
-                            for (let yi = 1; yi <= v; yi++) {
-                              const yearLabel = (['First','Second','Third','Fourth','Fifth','Sixth'][yi-1] || (yi + 'th')) + ' Year';
-                              // start each year with one 'First Term' placeholder (stored in `semester`)
-                              newItems.push({ yearLabel, semester: 'First Term', subjectCode:'', prerequisite:'', equivSubjectCode:'', description:'', units: '' });
-                            }
-                            setEditingCurriculum(prev => ({ ...prev, items: newItems, durationInYears: v }));
-                          }
-                        }} />
+                        <input
+                          type="number"
+                          min={1}
+                          className={`program-meta-input input-full`}
+                          value={cur.durationInYears || ''}
+                          onChange={(e) => handleDurationChange(e.target.value)}
+                        />
                       </div>
                       <div className="editor-col flex-2">
                         <label className="label-block">Department</label>
