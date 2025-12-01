@@ -283,51 +283,100 @@ public class CurriculumController {
 
     @PutMapping("/{id}")
     public ResponseEntity<?> update(@PathVariable Long id, @RequestBody Map<String,Object> payload) {
-        // For updates, map the incoming payload into Program and upsert program by name.
+        Optional<Curriculum> maybeCurriculum = curriculumRepository.findById(id);
+        if (maybeCurriculum.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Curriculum curriculum = maybeCurriculum.get();
+        Program program = curriculum.getProgram();
+
+        Long payloadProgramId = null;
+        Object programIdObj = payload.get("programId");
+        if (programIdObj != null) {
+            try {
+                payloadProgramId = Long.valueOf(String.valueOf(programIdObj));
+            } catch (Exception ignore) {
+                payloadProgramId = null;
+            }
+        }
+
+        if (payloadProgramId != null && (program == null || !payloadProgramId.equals(program.getId()))) {
+            program = programRepository.findById(payloadProgramId).orElse(program);
+            if (program == null) {
+                return ResponseEntity.badRequest().body(java.util.Map.of("error", "Program not found for the provided programId."));
+            }
+            curriculum.setProgram(program);
+        }
+
+        if (program == null) {
+            return ResponseEntity.badRequest().body(java.util.Map.of("error", "Curriculum is not linked to a program."));
+        }
+
         String programName = payload.get("programName") == null ? null : String.valueOf(payload.get("programName"));
         String programCode = payload.get("programCode") == null ? null : String.valueOf(payload.get("programCode"));
         String desiredName = (programName != null && !programName.isBlank()) ? programName : programCode;
-        if (desiredName == null || desiredName.isBlank()) return ResponseEntity.badRequest().body(java.util.Map.of("error", "programName or programCode required"));
+        if (desiredName == null || desiredName.isBlank()) {
+            return ResponseEntity.badRequest().body(java.util.Map.of("error", "programName or programCode required"));
+        }
 
-        Program program = programRepository.findByName(desiredName).orElseGet(() -> new Program());
         program.setName(desiredName);
+
         Object durObj2 = payload.get("durationInYears");
         if (durObj2 != null) {
-            try { program.setDurationInYears(Integer.valueOf(String.valueOf(durObj2))); } catch (Exception ignore) {}
+            try {
+                Integer duration = Integer.valueOf(String.valueOf(durObj2));
+                program.setDurationInYears(duration);
+                curriculum.setDurationInYears(duration);
+            } catch (Exception ignore) {
+                // keep previous duration when conversion fails
+            }
         }
+
+        Department department = program.getDepartment();
         try {
             Object deptObj = payload.get("department");
-            if (deptObj instanceof Map) {
-                Object didObj = ((Map<?,?>)deptObj).get("id");
+            if (deptObj instanceof Map<?,?> deptMap) {
+                Object didObj = deptMap.get("id");
                 if (didObj != null) {
                     Long did = Long.valueOf(String.valueOf(didObj));
-                    Department d = departmentRepository.findById(did).orElse(null);
-                    program.setDepartment(d);
+                    department = departmentRepository.findById(did).orElse(null);
                 }
             }
-        } catch (Exception ignore) {}
+        } catch (Exception ignore) {
+            department = null;
+        }
+        program.setDepartment(department);
 
         Program savedProgram = programRepository.save(program);
-        Object itemsObj2 = payload.get("items");
-        if (itemsObj2 instanceof List) {
-            var existing = courseRepository.findAllByProgram_Id(savedProgram.getId());
-            if (existing != null && !existing.isEmpty()) courseRepository.deleteAll(existing);
+        curriculum.setProgram(savedProgram);
+        if (curriculum.getDurationInYears() == null && savedProgram.getDurationInYears() != null) {
+            curriculum.setDurationInYears(savedProgram.getDurationInYears());
+        }
+        curriculumRepository.save(curriculum);
 
-            java.util.List<Curriculum> versions = curriculumRepository.findAllByProgram_Id(savedProgram.getId());
-            Curriculum version = versions.isEmpty() ? null : versions.get(0);
-            if (version == null) {
-                version = new Curriculum();
-                version.setProgram(savedProgram);
-                version.setVersionName("Imported - initial");
-                version.setEffectivityYear(java.time.LocalDate.now().getYear());
-                version.setDurationInYears(savedProgram.getDurationInYears());
-                version = curriculumRepository.save(version);
+        Object itemsObj2 = payload.get("items");
+        if (itemsObj2 instanceof List<?>) {
+            var existing = courseRepository.findAllByProgram_Id(savedProgram.getId());
+            if (existing != null && !existing.isEmpty()) {
+                courseRepository.deleteAll(existing);
             }
 
+            Curriculum version = curriculum;
+            if (version.getVersionName() == null) {
+                version.setVersionName("Imported - initial");
+            }
+            if (version.getEffectivityYear() == null) {
+                version.setEffectivityYear(java.time.LocalDate.now().getYear());
+            }
+            if (version.getDurationInYears() == null) {
+                version.setDurationInYears(savedProgram.getDurationInYears());
+            }
+            curriculumRepository.save(version);
+
             List<Course> toSave = new java.util.ArrayList<>();
-            for (Object itemObj : (List<?>)itemsObj2) {
-                if (!(itemObj instanceof Map)) continue;
-                Map<?,?> it = (Map<?,?>) itemObj;
+            for (Object itemObj : (List<?>) itemsObj2) {
+                if (!(itemObj instanceof Map<?,?> it)) continue;
                 String semester = it.get("semester") == null ? null : String.valueOf(it.get("semester"));
                 String termTitle = it.get("termTitle") == null ? null : String.valueOf(it.get("termTitle"));
                 if ((semester == null || semester.isBlank()) && termTitle != null) semester = termTitle;
@@ -349,11 +398,12 @@ public class CurriculumController {
                 newIt.setCurriculum(version);
                 toSave.add(newIt);
             }
-            if (!toSave.isEmpty()) courseRepository.saveAll(toSave);
+            if (!toSave.isEmpty()) {
+                courseRepository.saveAll(toSave);
+            }
         }
 
-        Program saved = savedProgram;
-        return ResponseEntity.ok(saved);
+        return ResponseEntity.ok(savedProgram);
     }
 
     @DeleteMapping("/{id}")
