@@ -26,6 +26,35 @@ const getSchoolYear = (date) => {
     }
 };
 
+const EVENT_TYPE_DETAILS = {
+    EVENT: { label: 'Campus Events', accent: '#1976d2', helper: 'Community & school-wide happenings.' },
+    EXAM: { label: 'Examinations', accent: '#d32f2f', helper: 'Major testing windows and boards.' },
+    HOLIDAY: { label: 'Holidays', accent: '#2e7d32', helper: 'Official breaks and closures.' },
+    SEMESTER_END: { label: 'Semestral Milestones', accent: '#f57c00', helper: 'Term endings and transitions.' }
+};
+
+const resolveTypeKey = (type) => (type && EVENT_TYPE_DETAILS[type]) ? type : 'EVENT';
+
+const formatFullDate = (date) => {
+    if (!date) return '';
+    return new Date(date).toLocaleDateString('en-US', {
+        weekday: 'long',
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric'
+    });
+};
+
+const formatTimelineRange = (start, end) => {
+    if (!start) return '';
+    if (start === end || !end) {
+        return new Date(start).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }
+    const startFormat = new Date(start).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const endFormat = new Date(end).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return `${startFormat} – ${endFormat}`;
+};
+
 const CalendarPage = () => {
     // Access role passed from MainLayout
     const { role } = useOutletContext(); 
@@ -49,6 +78,31 @@ const CalendarPage = () => {
         type: 'EVENT', // Default
         description: ''
     });
+
+    const typeCounts = useMemo(() => {
+        const counts = Object.keys(EVENT_TYPE_DETAILS).reduce((acc, key) => ({ ...acc, [key]: 0 }), {});
+        events.forEach(evt => {
+            const key = resolveTypeKey(evt.type);
+            counts[key] = (counts[key] || 0) + 1;
+        });
+        return counts;
+    }, [events]);
+
+    const upcomingEvents = useMemo(() => {
+        const now = new Date();
+        now.setHours(0, 0, 0, 0);
+        return [...events]
+            .filter(evt => {
+                const eventEnd = dateStringToDate(evt.endDate || evt.startDate);
+                return eventEnd && eventEnd >= now;
+            })
+            .sort((a, b) => dateStringToDate(a.startDate) - dateStringToDate(b.startDate));
+    }, [events]);
+
+    const nextEvent = upcomingEvents[0];
+    const heroSubtitle = isAdmin
+        ? 'Publish key milestones, exams, and breaks with a single source of truth for your campus.'
+        : 'Stay in sync with every approved milestone, from enrolment to breaks and examinations.';
 
     useEffect(() => {
         loadEvents();
@@ -179,7 +233,7 @@ const CalendarPage = () => {
     // Function to group and sort events by type
     const groupedEvents = useMemo(() => {
         return events.reduce((acc, event) => {
-            const type = event.type || 'EVENT'; // Default to EVENT if type is missing
+            const type = resolveTypeKey(event.type); // Default to EVENT if type is missing
             if (!acc[type]) {
                 acc[type] = [];
             }
@@ -189,54 +243,51 @@ const CalendarPage = () => {
     }, [events]);
 
     const renderSummaryView = () => (
-        <div className="summary-list-container" style={{padding: '24px', backgroundColor: '#fff', borderRadius: '12px', border: '1px solid #eee'}}>
-            <h2 style={{color: '#800000', marginBottom: '30px'}}>Academic Calendar {currentSchoolYear} Summary</h2>
-            
-            {loading && <p>Loading summary...</p>}
-            
+        <div className="summary-list-container">
+            <div className="summary-header">
+                <div>
+                    <p className="summary-eyebrow">Academic Calendar {currentSchoolYear}</p>
+                    <h2>High-level Overview</h2>
+                </div>
+                <span className="summary-chip">{events.length} scheduled items</span>
+            </div>
+
+            {loading && <p className="summary-empty">Loading summary...</p>}
+
             {!loading && Object.keys(eventTypeTitles).map(typeKey => (
-                <div key={typeKey} style={{marginBottom: '40px'}}>
-                    <h3 style={{borderBottom: '2px solid #f0f0f0', paddingBottom: '10px', marginBottom: '15px', color: '#333'}}>
-                        {eventTypeTitles[typeKey]}
-                    </h3>
-                    
+                <div key={typeKey} className="summary-section">
+                    <div className="summary-section__title">
+                        <span className="summary-index">{eventTypeTitles[typeKey]}</span>
+                    </div>
+
                     {groupedEvents[typeKey] && groupedEvents[typeKey].length > 0 ? (
-                        <ul style={{listStyle: 'none', paddingLeft: '0'}}>
+                        <ul className="summary-events">
                             {groupedEvents[typeKey].map(event => (
-                                <li key={event.id} style={{marginBottom: '10px', padding: '10px', borderLeft: `5px solid ${getEventColor(typeKey)}`, backgroundColor: '#fafafa', borderRadius: '4px'}}>
-                                    
-                                    {/* 1. Display Date Range (in red/maroon) */}
-                                    <strong style={{marginRight: '10px', color: '#800000'}}>
-                                        {formatDateRange(event.startDate, event.endDate)}
-                                    </strong>
-                                    
-                                    {/* 2. COMPLETELY REMOVE TITLE if description exists; otherwise, use title */}
-                                    <span style={{color: '#333'}}>
-                                        {event.description
-                                            ? `— ${event.description}`
-                                            : `— ${event.title}`
-                                        }
-                                    </span>
-                                    
+                                <li key={event.id} className="summary-event" style={{ borderColor: getEventColor(typeKey) }}>
+                                    <div className="summary-event__date">{formatDateRange(event.startDate, event.endDate)}</div>
+                                    <div className="summary-event__details">
+                                        {event.description ? event.description : event.title}
+                                    </div>
                                     {isAdmin && (
-                                        <span 
-                                            className="delete-event" 
-                                            onClick={() => handleDeleteEvent(event.id)} 
-                                            style={{marginLeft: '15px', fontWeight: 'normal', color: '#999', cursor: 'pointer'}}>
-                                            [Delete]
-                                        </span>
+                                        <button 
+                                            type="button"
+                                            className="summary-delete"
+                                            onClick={() => handleDeleteEvent(event.id)}
+                                        >
+                                            Remove
+                                        </button>
                                     )}
                                 </li>
                             ))}
                         </ul>
                     ) : (
-                        <p style={{color: '#999'}}>No {typeKey} events scheduled yet.</p>
+                        <p className="summary-empty">No {typeKey.toLowerCase()} entries yet.</p>
                     )}
                 </div>
             ))}
-            
+
             {!loading && events.length === 0 && (
-                <p>The academic calendar is currently empty.</p>
+                <p className="summary-empty">The academic calendar is currently empty.</p>
             )}
         </div>
     );
@@ -268,10 +319,68 @@ const CalendarPage = () => {
 
     return (
         <div className="standard-page-layout calendar-page-container">
-            {/* Admin Form Section */}
+            <section className="calendar-hero-card">
+                <div className="calendar-hero__text">
+                    <p className="calendar-pill">Academic Calendar • {currentSchoolYear}</p>
+                    <h1>Command the school-year timeline</h1>
+                    <p className="calendar-hero__subtitle">{heroSubtitle}</p>
+                    <div className="calendar-hero__meta">
+                        <div>
+                            <span>Scheduled items</span>
+                            <strong>{events.length}</strong>
+                        </div>
+                        <div>
+                            <span>Next milestone</span>
+                            <strong>{nextEvent ? nextEvent.title : 'No upcoming events'}</strong>
+                            <small>{nextEvent ? formatFullDate(nextEvent.startDate) : 'Add events to populate the queue.'}</small>
+                        </div>
+                    </div>
+                </div>
+                <div className="calendar-hero__actions">
+                    <div className="calendar-view-toggle">
+                        <button
+                            type="button"
+                            className={!isSummaryView ? 'active' : ''}
+                            onClick={() => setIsSummaryView(false)}
+                        >
+                            Calendar Grid
+                        </button>
+                        <button
+                            type="button"
+                            className={isSummaryView ? 'active' : ''}
+                            onClick={() => setIsSummaryView(true)}
+                        >
+                            Summary List
+                        </button>
+                    </div>
+                    {isAdmin && <span className="calendar-admin-chip">Admin Mode</span>}
+                </div>
+            </section>
+
+            <section className="calendar-overview-grid">
+                {Object.keys(EVENT_TYPE_DETAILS).map((typeKey) => (
+                    <div key={typeKey} className="calendar-metric-card">
+                        <span className="metric-label">{EVENT_TYPE_DETAILS[typeKey].label}</span>
+                        <strong style={{ color: EVENT_TYPE_DETAILS[typeKey].accent }}>{typeCounts[typeKey] || 0}</strong>
+                        <p>{EVENT_TYPE_DETAILS[typeKey].helper}</p>
+                    </div>
+                ))}
+                <div className="calendar-metric-card highlight">
+                    <span className="metric-label">Next milestone</span>
+                    <h3>{nextEvent ? nextEvent.title : 'Awaiting new schedule'}</h3>
+                    <p>{nextEvent ? formatFullDate(nextEvent.startDate) : 'Once events are added, the next milestone appears here.'}</p>
+                </div>
+            </section>
+
             {isAdmin && (
-                <div className="admin-calendar-form">
-                    <h3 className="form-header">Manage Academic Calendar</h3>
+                <section className="admin-calendar-form">
+                    <div className="form-header-row">
+                        <div>
+                            <p className="form-eyebrow">Admin tools</p>
+                            <h3 className="form-header">Manage Academic Calendar</h3>
+                        </div>
+                        <span className="form-helper">Create, adjust, and publish timeline updates.</span>
+                    </div>
                     <form onSubmit={handleAddEvent} className="calendar-form-grid">
                         <div>
                             <label>Event Title</label>
@@ -333,43 +442,25 @@ const CalendarPage = () => {
                         
                         <button type="submit" className="btn-add-event">Add Event</button>
                     </form>
-                </div>
+                </section>
             )}
 
-            {/* Calendar View Container */}
-            <div className="calendar-container">
-                <div className="calendar-header">
-                    {/* Month Navigation */}
-                    {!isSummaryView && (
-                        <>
+            {isSummaryView ? (
+                <section className="calendar-summary-panel">
+                    {renderSummaryView()}
+                </section>
+            ) : (
+                <section className="calendar-main-grid">
+                    <div className="calendar-container">
+                        <div className="calendar-header">
                             <button className="calendar-nav-btn" onClick={() => changeMonth(-1)}>← Prev</button>
-                            <h2 className="calendar-title">{monthNames[month]} {year}</h2>
+                            <div className="calendar-title-group">
+                                <span className="calendar-month">{monthNames[month]}</span>
+                                <span className="calendar-year">{year}</span>
+                            </div>
                             <button className="calendar-nav-btn" onClick={() => changeMonth(1)}>Next →</button>
-                        </>
-                    )}
-                    
-                    {/* Summary View Title */}
-                    {isSummaryView && (
-                        <h2 className="calendar-title">Academic Calendar Overview</h2>
-                    )}
-                    
-                    {/* Summary Button (Visible to all users) */}
-                    <button 
-                        className="calendar-nav-btn" 
-                        onClick={() => setIsSummaryView(!isSummaryView)}
-                        style={{marginLeft: 'auto', backgroundColor: isSummaryView ? '#800000' : '#fff', color: isSummaryView ? 'white' : '#333'}}
-                    >
-                        {isSummaryView ? 'Back to Calendar Grid' : 'View Summary List'}
-                    </button>
-                </div>
-                
-                {/* Conditional Rendering of Grid vs. Summary */}
-                {isSummaryView ? (
-                    // 1. Summary List View
-                    renderSummaryView()
-                ) : (
-                    // 2. Calendar Grid View
-                    <>
+                        </div>
+
                         <div className="calendar-weekdays">
                             <div>Sun</div>
                             <div>Mon</div>
@@ -382,31 +473,58 @@ const CalendarPage = () => {
 
                         <div className="calendar-days">
                             {loading ? (
-                                <div style={{gridColumn: '1 / span 7', padding: '20px', textAlign: 'center'}}>Loading events...</div>
+                                <div className="calendar-loading">Loading events...</div>
                             ) : (
                                 renderCalendarCells()
                             )}
                         </div>
-                    </>
-                )}
-            </div>
-            
-            {/* Legend - Only show in Calendar Grid View */}
-            {!isSummaryView && (
-                <div style={{display: 'flex', gap: '15px', fontSize: '0.9rem', color: '#333', paddingLeft: '5px'}}>
-                    <div style={{display:'flex', alignItems:'center', gap:'5px'}}>
-                        <div style={{width:'12px', height:'12px', backgroundColor:'#d32f2f', borderRadius:'2px'}}></div> Exams
                     </div>
-                    <div style={{display:'flex', alignItems:'center', gap:'5px'}}>
-                        <div style={{width:'12px', height:'12px', backgroundColor:'#2e7d32', borderRadius:'2px'}}></div> Holidays
-                    </div>
-                    <div style={{display:'flex', alignItems:'center', gap:'5px'}}>
-                        <div style={{width:'12px', height:'12px', backgroundColor:'#1976d2', borderRadius:'2px'}}></div> Events
-                    </div>
-                    <div style={{display:'flex', alignItems:'center', gap:'5px'}}>
-                        <div style={{width:'12px', height:'12px', backgroundColor:'#f57c00', borderRadius:'2px'}}></div> Semester End
-                    </div>
-                </div>
+
+                    <aside className="calendar-side-panel">
+                        <div className="calendar-upcoming-card">
+                            <div className="card-heading">
+                                <p className="card-eyebrow">Timeline</p>
+                                <h3>Upcoming milestones</h3>
+                            </div>
+                            <div className="calendar-upcoming-list">
+                                {upcomingEvents.length ? (
+                                    upcomingEvents.slice(0, 4).map(event => {
+                                        const eventTypeKey = resolveTypeKey(event.type);
+                                        const eventType = EVENT_TYPE_DETAILS[eventTypeKey];
+                                        return (
+                                            <div key={event.id} className="upcoming-item">
+                                                <span className="upcoming-type" style={{ color: eventType.accent }}>
+                                                    {eventType.label}
+                                                </span>
+                                                <strong>{event.description || event.title}</strong>
+                                                <small>{formatTimelineRange(event.startDate, event.endDate)}</small>
+                                                {isAdmin && (
+                                                    <button type="button" className="upcoming-delete" onClick={() => handleDeleteEvent(event.id)}>
+                                                        Remove
+                                                    </button>
+                                                )}
+                                            </div>
+                                        );
+                                    })
+                                ) : (
+                                    <p className="calendar-empty-state">No upcoming milestones. Add events to populate this list.</p>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="calendar-legend-card">
+                            <h4>Legend</h4>
+                            <ul>
+                                {Object.keys(EVENT_TYPE_DETAILS).map((typeKey) => (
+                                    <li key={typeKey}>
+                                        <span style={{ backgroundColor: EVENT_TYPE_DETAILS[typeKey].accent }}></span>
+                                        {EVENT_TYPE_DETAILS[typeKey].label}
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    </aside>
+                </section>
             )}
         </div>
     );
