@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import '../App.css';
+import './AuthModal.css';
+import './Login.css';
 import './Register.css';
 import { register as apiRegister } from '../services/backend';
 
@@ -46,32 +48,101 @@ const Register = ({ onRegisterSuccess, onClose }) => {
   };
 
   return (
-    <div className="login-modal-overlay" onClick={onClose}>
-      <form className="login-form" onClick={(e) => e.stopPropagation()} onSubmit={onSubmit}>
-        <h2 className="login-title">Create your account</h2>
-        {errors.form && <p className="error-text">{errors.form}</p>}
-        <div className="form-group">
-          <input name="firstName" placeholder="First name" value={form.firstName} onChange={onChange} className={errors.firstName ? 'error-input' : ''} />
-          {errors.firstName && <p className="error-text">{errors.firstName}</p>}
+    <div className="login-modal-overlay">
+      <div className="auth-card auth-card--register">
+        <button type="button" className="auth-close" onClick={onClose} aria-label="Close registration modal">
+          ×
+        </button>
+
+        <div className="auth-body auth-body--wide" aria-label="Registration form">
+          <div className="auth-brand">
+            <div className="auth-brand__mark" aria-hidden="true" />
+            <div className="auth-brand__text">
+              <span className="auth-brand__name">ClassLink</span>
+              <span className="auth-brand__tag">Admissions</span>
+            </div>
+          </div>
+          <p className="auth-eyebrow">Admissions onboarding</p>
+          <h1 className="auth-headline">Create your ClassLink ID</h1>
+          <p className="auth-subhead">
+            Activate your admissions workspace to upload credentials, reserve slots, and monitor scholarship screening in one secure tracker.
+          </p>
+
+          <ul className="auth-bullets">
+            <li>Digital checklist for requirements & IDs</li>
+            <li>Automated nudges for pending submissions</li>
+            <li>Real-time updates from Registrars and Scholarships</li>
+          </ul>
+
+          <p className="auth-step">Step 1 of 2 · Account setup</p>
+          {errors.form && <p className="error-text">{errors.form}</p>}
+
+          <form className="auth-fields" onSubmit={onSubmit}>
+            <div className="auth-field-row">
+              <div className="form-group">
+                <input
+                  name="firstName"
+                  placeholder="First name"
+                  value={form.firstName}
+                  onChange={onChange}
+                  className={errors.firstName ? 'error-input' : ''}
+                />
+                {errors.firstName && <p className="error-text">{errors.firstName}</p>}
+              </div>
+              <div className="form-group">
+                <input
+                  name="lastName"
+                  placeholder="Last name"
+                  value={form.lastName}
+                  onChange={onChange}
+                  className={errors.lastName ? 'error-input' : ''}
+                />
+                {errors.lastName && <p className="error-text">{errors.lastName}</p>}
+              </div>
+            </div>
+            <div className="form-group">
+              <input
+                type="email"
+                name="email"
+                placeholder="Admissions email"
+                autoComplete="email"
+                value={form.email}
+                onChange={onChange}
+                className={errors.email ? 'error-input' : ''}
+              />
+              {errors.email && <p className="error-text">{errors.email}</p>}
+            </div>
+            <div className="auth-field-row">
+              <div className="form-group">
+                <input
+                  type="password"
+                  name="password"
+                  placeholder="Create password"
+                  autoComplete="new-password"
+                  value={form.password}
+                  onChange={onChange}
+                  className={errors.password ? 'error-input' : ''}
+                />
+                {errors.password && <p className="error-text">{errors.password}</p>}
+              </div>
+              <div className="form-group">
+                <input
+                  type="password"
+                  name="confirmPassword"
+                  placeholder="Confirm password"
+                  autoComplete="new-password"
+                  value={form.confirmPassword}
+                  onChange={onChange}
+                  className={errors.confirmPassword ? 'error-input' : ''}
+                />
+                {errors.confirmPassword && <p className="error-text">{errors.confirmPassword}</p>}
+              </div>
+            </div>
+            <button type="submit" className="signin-button">Create Account</button>
+          </form>
+
         </div>
-        <div className="form-group">
-          <input name="lastName" placeholder="Last name" value={form.lastName} onChange={onChange} className={errors.lastName ? 'error-input' : ''} />
-          {errors.lastName && <p className="error-text">{errors.lastName}</p>}
-        </div>
-        <div className="form-group">
-          <input type="email" name="email" placeholder="Email" value={form.email} onChange={onChange} className={errors.email ? 'error-input' : ''} />
-          {errors.email && <p className="error-text">{errors.email}</p>}
-        </div>
-        <div className="form-group">
-          <input type="password" name="password" placeholder="Password" value={form.password} onChange={onChange} className={errors.password ? 'error-input' : ''} />
-          {errors.password && <p className="error-text">{errors.password}</p>}
-        </div>
-        <div className="form-group">
-          <input type="password" name="confirmPassword" placeholder="Confirm password" value={form.confirmPassword} onChange={onChange} className={errors.confirmPassword ? 'error-input' : ''} />
-          {errors.confirmPassword && <p className="error-text">{errors.confirmPassword}</p>}
-        </div>
-        <button type="submit" className="signin-button">Create Account</button>
-      </form>
+      </div>
     </div>
   );
 };
