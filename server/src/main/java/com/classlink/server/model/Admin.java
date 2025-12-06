@@ -2,6 +2,8 @@ package com.classlink.server.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import java.time.LocalDateTime;
+
 @Entity
 @Data
 public class Admin {
@@ -18,5 +20,14 @@ public class Admin {
     private boolean isActive = true;
     @Column(name = "removed_by")
     private String removedBy;
+    @Column(name = "created_at", nullable = false, updatable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+    private LocalDateTime createdAt;
+
+    @PrePersist
+    public void onCreate() {
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+    }
 
 }

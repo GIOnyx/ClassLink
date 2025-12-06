@@ -1,10 +1,13 @@
 package com.classlink.server.dto;
 
+import java.time.LocalDateTime;
+
 public class AdminAccountDto {
     private Long id;
     private String email;
     private String password;
     private String name;
+    private LocalDateTime createdAt;
 
     public AdminAccountDto() {
     }
@@ -14,6 +17,14 @@ public class AdminAccountDto {
         this.email = email;
         this.password = password;
         this.name = name;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 
     public Long getId() {

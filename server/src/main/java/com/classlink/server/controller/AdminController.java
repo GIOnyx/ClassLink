@@ -2,6 +2,7 @@ package com.classlink.server.controller;
 
 import java.net.URI;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -366,6 +367,9 @@ public class AdminController {
 				}
 			}
 			dto.setId(admin.getAdminId());
+			if (dto.getCreatedAt() == null && admin.getCreatedAt() != null) {
+				dto.setCreatedAt(admin.getCreatedAt());
+			}
 		}
 		return ResponseEntity.ok(new ArrayList<>(merged.values()));
 	}
@@ -394,8 +398,12 @@ public class AdminController {
 		admin.setRole("ADMIN");
 		admin.setActive(true);
 		admin.setRemovedBy(null);
+		if (admin.getCreatedAt() == null) {
+			admin.setCreatedAt(LocalDateTime.now());
+		}
 		Admin saved = adminRepository.save(admin);
 		AdminAccountDto response = new AdminAccountDto(saved.getAdminId(), saved.getEmail(), saved.getPassword(), saved.getName());
+		response.setCreatedAt(saved.getCreatedAt());
 		adminAccountsFileService.appendAccount(response);
 		return ResponseEntity.status(HttpStatus.CREATED).body(response);
 	}

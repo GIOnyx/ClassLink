@@ -291,7 +291,7 @@
   font-size: 0.8rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #98a2b3;
+  color: #101828;
   background: #faf6f4;
 }
 
@@ -341,9 +341,14 @@
   color: #98a2b3;
 }
 
-.admin-password-cell {
-  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+.admin-joined {
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.admin-joined-col {
   font-size: 0.9rem;
+  color: #475467;
 }
 
 .admin-loading-state {

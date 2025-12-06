@@ -108,6 +108,21 @@ const StudentPage = () => {
     });
   }, [accounts, searchQuery]);
 
+  const formatJoinedDate = (value) => {
+    if (!value) {
+      return null;
+    }
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return null;
+    }
+    return date.toLocaleDateString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
+  };
+
   const rosterInsights = useMemo(() => {
     const credentialReady = accounts.filter((account) => Boolean(account.password && account.password.trim())).length;
     const credentialStat = accounts.length ? `${credentialReady}/${accounts.length}` : '0/0';
@@ -258,32 +273,37 @@ const StudentPage = () => {
                       <tr>
                         <th>Name</th>
                         <th>Email</th>
-                        <th>Password</th>
+                        <th>Joined</th>
                         <th aria-label="Remove admin"></th>
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredAccounts.map((account) => (
-                        <tr key={account.id || account.email}>
-                          <td>
-                            <div className="admin-identity">
-                              <p className="admin-name">{account.name || account.email}</p>
-                              <span className="admin-id-label">{account.id || 'CSV import'}</span>
-                            </div>
-                          </td>
-                          <td>{account.email}</td>
-                          <td className="admin-password-cell">{account.password || 'Hidden'}</td>
-                          <td className="admin-remove-cell">
-                            <button
-                              type="button"
-                              className="admin-remove-link"
-                              onClick={() => openRemovalModal(account)}
-                            >
-                              REMOVE
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
+                      {filteredAccounts.map((account) => {
+                        const joinedLabel = formatJoinedDate(account.createdAt);
+                        return (
+                          <tr key={account.id || account.email}>
+                            <td>
+                              <div className="admin-identity">
+                                <p className="admin-name">{account.name || account.email}</p>
+                                <span className="admin-id-label">{account.id || 'CSV import'}</span>
+                              </div>
+                            </td>
+                            <td>{account.email}</td>
+                            <td className="admin-joined-col">
+                              {joinedLabel ? `${joinedLabel}` : '—'}
+                            </td>
+                            <td className="admin-remove-cell">
+                              <button
+                                type="button"
+                                className="admin-remove-link"
+                                onClick={() => openRemovalModal(account)}
+                              >
+                                REMOVE
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 )}
