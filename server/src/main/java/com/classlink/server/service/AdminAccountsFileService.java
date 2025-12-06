@@ -10,6 +10,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,10 +77,36 @@ public class AdminAccountsFileService {
             if (parent != null) {
                 Files.createDirectories(parent);
             }
-            String line = String.format("%s,%s,%s%s", dto.getEmail().trim(), dto.getPassword().trim(), dto.getName().trim(), System.lineSeparator());
+            String line = formatLine(dto) + System.lineSeparator();
             Files.write(path, line.getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE, StandardOpenOption.APPEND);
         } catch (IOException e) {
             log.warn("Failed to append admin account to file {}", path, e);
+        }
+    }
+
+    public void removeAccount(String email) {
+        if (email == null || email.isBlank()) {
+            return;
+        }
+        Path path = resolvePath();
+        if (path == null || !Files.exists(path)) {
+            return;
+        }
+        List<AdminAccountDto> remaining = readAccounts().stream()
+                .filter(dto -> !dto.getEmail().equalsIgnoreCase(email.trim()))
+                .collect(Collectors.toList());
+        try {
+            if (remaining.isEmpty()) {
+                Files.write(path, new byte[0], StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+                return;
+            }
+            String content = remaining.stream()
+                    .map(this::formatLine)
+                    .collect(Collectors.joining(System.lineSeparator()));
+            Files.write(path, (content + System.lineSeparator()).getBytes(StandardCharsets.UTF_8),
+                    StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+        } catch (IOException e) {
+            log.warn("Failed to rewrite admin accounts file {}", path, e);
         }
     }
 
@@ -104,5 +131,12 @@ public class AdminAccountsFileService {
     private boolean hasExistingParent(Path candidate) {
         Path parent = candidate.getParent();
         return parent != null && Files.exists(parent);
+    }
+
+    private String formatLine(AdminAccountDto dto) {
+        String email = dto.getEmail() != null ? dto.getEmail().trim() : "";
+        String password = dto.getPassword() != null ? dto.getPassword().trim() : "";
+        String name = dto.getName() != null ? dto.getName().trim() : "";
+        return String.join(",", email, password, name);
     }
 }

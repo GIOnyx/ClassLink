@@ -31,6 +31,7 @@ export const approveStudent = (id) => API.post(`/admin/students/${id}/approve`);
 export const rejectStudent = (id, reason) => API.post(`/admin/students/${id}/reject`, { reason });
 export const getAdminAccounts = () => API.get('/admin/accounts');
 export const createAdminAccount = (payload) => API.post('/admin/accounts', payload);
+export const removeAdminAccount = (payload) => API.delete('/admin/accounts', { data: payload });
 // Admin self profile
 export const getMyAdmin = () => API.get('/admin/me');
 export const uploadMyAdminProfileImage = (file) => {

@@ -10,6 +10,7 @@ import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -52,6 +53,8 @@ public class AdminController {
 		this.adminAccountsFileService = adminAccountsFileService;
 		this.notificationService = notificationService;
 	}
+
+	public record RemoveAdminAccountRequest(String email, String password) {}
 
 	// List students, optionally filtered by status e.g.,
 	// /api/admin/students?status=PENDING
@@ -392,6 +395,40 @@ public class AdminController {
 		return ResponseEntity.status(HttpStatus.CREATED).body(response);
 	}
 
+	@DeleteMapping("/accounts")
+	public ResponseEntity<?> removeAdminAccount(@RequestBody RemoveAdminAccountRequest request, HttpSession session) {
+		if (!isAdmin(session)) {
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Admin role required");
+		}
+		if (request == null || request.email() == null || request.password() == null) {
+			return ResponseEntity.badRequest().body("Email and password are required");
+		}
+		String email = request.email().trim();
+		String password = request.password().trim();
+		if (email.isEmpty() || password.isEmpty()) {
+			return ResponseEntity.badRequest().body("Email and password are required");
+		}
+		Long currentId = getSessionAdminId(session);
+		if (currentId == null) {
+			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Not authenticated");
+		}
+		Admin currentAdmin = adminRepository.findById(currentId).orElse(null);
+		if (currentAdmin == null) {
+			return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Current admin record not found");
+		}
+		if (!password.equals(currentAdmin.getPassword())) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Password is incorrect");
+		}
+		Admin target = adminRepository.findByEmail(email);
+		boolean deletedFromDb = false;
+		if (target != null) {
+			adminRepository.delete(target);
+			deletedFromDb = true;
+		}
+		adminAccountsFileService.removeAccount(email);
+		return ResponseEntity.ok(Map.of("removedFromDb", deletedFromDb));
+	}
+
 	private String capitalizeFirstLetter(String value) {
 		if (value == null) {
 			return null;
@@ -401,5 +438,19 @@ public class AdminController {
 			return value;
 		}
 		return trimmed.substring(0, 1).toUpperCase() + trimmed.substring(1);
+	}
+
+	private Long getSessionAdminId(HttpSession session) {
+		Object userIdObj = session.getAttribute("userId");
+		if (userIdObj instanceof Number number) {
+			return number.longValue();
+		}
+		if (userIdObj instanceof String str && !str.isBlank()) {
+			try {
+				return Long.parseLong(str);
+			} catch (NumberFormatException ignored) {
+			}
+		}
+		return null;
 	}
 }

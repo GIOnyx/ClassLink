@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import '../App.css';
 import './StudentPage.css';
-import { me, getAdminAccounts, createAdminAccount } from '../services/backend';
+import { me, getAdminAccounts, createAdminAccount, removeAdminAccount } from '../services/backend';
 
 const StudentPage = () => {
   const [info, setInfo] = useState(null);
@@ -14,6 +14,10 @@ const StudentPage = () => {
   const [formFeedback, setFormFeedback] = useState({ error: '', success: '' });
   const [savingAdmin, setSavingAdmin] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [removalTarget, setRemovalTarget] = useState(null);
+  const [removalPassword, setRemovalPassword] = useState('');
+  const [removalError, setRemovalError] = useState('');
+  const [removalLoading, setRemovalLoading] = useState(false);
   const [lastSynced, setLastSynced] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -122,6 +126,42 @@ const StudentPage = () => {
 
   const closeAddModal = () => setShowAddModal(false);
 
+  const openRemovalModal = (account) => {
+    setRemovalTarget(account);
+    setRemovalPassword('');
+    setRemovalError('');
+  };
+
+  const closeRemovalModal = () => {
+    setRemovalTarget(null);
+    setRemovalPassword('');
+    setRemovalError('');
+    setRemovalLoading(false);
+  };
+
+  const handleConfirmRemove = async (event) => {
+    event.preventDefault();
+    if (!removalTarget) {
+      return;
+    }
+    if (!removalPassword.trim()) {
+      setRemovalError('Please enter your password to confirm the removal.');
+      return;
+    }
+    setRemovalLoading(true);
+    setRemovalError('');
+    try {
+      await removeAdminAccount({ email: removalTarget.email, password: removalPassword.trim() });
+      await fetchAdminAccounts();
+      closeRemovalModal();
+    } catch (err) {
+      const message = err?.response?.data || 'Unable to remove administrator right now.';
+      setRemovalError(typeof message === 'string' ? message : 'Unable to remove administrator right now.');
+    } finally {
+      setRemovalLoading(false);
+    }
+  };
+
   const heroStatusClass = accountsLoading ? 'status-chip syncing' : 'status-chip live';
   const heroStatusLabel = accountsLoading ? 'Syncing roster...' : 'Roster current';
 
@@ -219,6 +259,7 @@ const StudentPage = () => {
                         <th>Name</th>
                         <th>Email</th>
                         <th>Password</th>
+                        <th aria-label="Remove admin"></th>
                       </tr>
                     </thead>
                     <tbody>
@@ -232,6 +273,15 @@ const StudentPage = () => {
                           </td>
                           <td>{account.email}</td>
                           <td className="admin-password-cell">{account.password || 'Hidden'}</td>
+                          <td className="admin-remove-cell">
+                            <button
+                              type="button"
+                              className="admin-remove-link"
+                              onClick={() => openRemovalModal(account)}
+                            >
+                              REMOVE
+                            </button>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -240,24 +290,6 @@ const StudentPage = () => {
               </div>
             </article>
 
-            <aside className="guidance-panel">
-              <div className="panel-header">
-                <div>
-                  <p className="panel-kicker">Policies</p>
-                  <h3>Access checklist</h3>
-                </div>
-              </div>
-              <p className="panel-subtitle">Use this panel to keep the roster aligned with security policy.</p>
-              <ul className="guidance-list">
-                <li>Review the roster after every enrollment cycle and remove inactive accounts.</li>
-                <li>Store temporary passwords only when needed and rotate them after hand off.</li>
-                <li>Confirm each admin has multi factor authentication enabled with IT.</li>
-                <li>Share CSV exports only inside secure internal channels.</li>
-              </ul>
-              <button type="button" className="admin-primary-btn full" onClick={openAddModal}>
-                Invite another admin
-              </button>
-            </aside>
           </section>
         </>
       )}
@@ -291,6 +323,43 @@ const StudentPage = () => {
               {formFeedback.success && <p className="admin-success">{formFeedback.success}</p>}
               <button type="submit" className="admin-submit" disabled={savingAdmin}>
                 {savingAdmin ? 'Saving...' : 'Add Admin'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+      {removalTarget && (
+        <div className="admin-modal-overlay" onClick={closeRemovalModal}>
+          <div className="admin-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="admin-modal-header">
+              <div>
+                <h3>Confirm admin removal</h3>
+                <p className="panel-subtitle">
+                  Removing {removalTarget.name || removalTarget.email} will revoke their admin access immediately.
+                </p>
+              </div>
+              <button type="button" className="admin-close-button" onClick={closeRemovalModal} aria-label="Close">
+                x
+              </button>
+            </div>
+            <p className="admin-remove-description">
+              Enter your password to confirm this change. This action cannot be undone and removes the account from
+              both the live database and the CSV source.
+            </p>
+            <form className="admin-remove-form" onSubmit={handleConfirmRemove}>
+              <label>
+                Current password
+                <input
+                  type="password"
+                  value={removalPassword}
+                  onChange={(e) => setRemovalPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  disabled={removalLoading}
+                />
+              </label>
+              {removalError && <p className="admin-error">{removalError}</p>}
+              <button type="submit" className="admin-submit" disabled={removalLoading}>
+                {removalLoading ? 'Removing...' : 'Confirm removal'}
               </button>
             </form>
           </div>
