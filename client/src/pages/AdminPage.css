@@ -64,47 +64,41 @@
 }
 
 /* Action Buttons in Table */
-.btn-view, .btn-approve, .btn-reject {
-  /* Set common properties for uniform sizing and style */
-  display: inline-block;
-  text-align: center;
-  width: 85px; /* Fixed width to ensure same size regardless of text length */
-  padding: 6px 0; /* Vertical padding kept, horizontal padding removed */
-  border-radius: 6px;
+.btn-view,
+.btn-approve,
+.btn-reject {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  padding: 6px 0;
+  min-width: 70px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #111;
   cursor: pointer;
-  font-weight: 500;
-  transition: all 0.2s;
-  font-size: 1rem;
+  transition: color 0.15s ease;
 }
 
-.btn-view { 
-  margin-right: 8px; 
-  background-color: #333; 
-  border: 1px solid #ccc; 
-  color: white; 
+.btn-view {
+  margin-right: 8px;
 }
-.btn-view:hover { 
-  background-color: #444; 
-  border-color: #bbb; 
+
+.btn-view:hover {
+  color: #7b111c;
 }
 
 .btn-approve {
   margin-right: 8px;
-  background-color: #087f23;
-  color: white;
-  border: none;
-}
-.btn-approve:hover { 
-  background-color: #06601a; 
 }
 
-.btn-reject {
-  background-color: #b00020;
-  color: white;
-  border: none;
+.btn-approve:hover {
+  color: #0f8a3b;
 }
-.btn-reject:hover { 
-  background-color: #8a0019; 
+
+.btn-reject:hover {
+  color: #c21732;
 }
 
 .doc-link {
@@ -276,9 +270,54 @@
   border-radius: 8px;
   cursor: pointer;
   border: none;
-  transition: transform 0.1s;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  text-decoration: none;
+}
+.modal-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 18px 30px rgba(15, 23, 42, 0.18);
 }
 .modal-btn:active { transform: scale(0.98); }
+
+.modal-btn.btn-approve,
+.modal-btn.btn-reject {
+  background: none;
+  color: #111;
+  padding: 8px 0;
+  border-radius: 0;
+  box-shadow: none;
+  transition: color 0.15s ease;
+}
+
+.modal-btn.btn-approve:hover,
+.modal-btn.btn-reject:hover {
+  color: inherit;
+}
+
+.modal-btn.btn-approve {
+  color: #111;
+}
+
+.modal-btn.btn-reject {
+  color: #111;
+}
+
+.modal-btn.btn-approve:hover {
+  color: #0f8a3b;
+  transform: none;
+  box-shadow: none;
+}
+
+.modal-btn.btn-reject:hover {
+  color: #c21732;
+  transform: none;
+  box-shadow: none;
+}
+
+.modal-btn.btn-approve:active,
+.modal-btn.btn-reject:active {
+  transform: none;
+}
 
 /* REJECTION MODAL */
 .rejection-modal-title {

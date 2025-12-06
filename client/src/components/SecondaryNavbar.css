@@ -2,7 +2,7 @@
 
 .secondary-navbar {
     position: fixed;
-    top: 100px; /* Starts below the main header */
+    top: var(--navbar-height); /* Starts below the main header */
     left: 0;
     bottom: 0;
     width: 260px; /* Fixed width for the sidebar */

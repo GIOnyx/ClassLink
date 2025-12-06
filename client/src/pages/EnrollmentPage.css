@@ -1,18 +1,197 @@
 /* Styles for EnrollmentPage */
 
-/* Main Form Container */
+/* Main Containers */
+.enrollment-card,
 .enrollment-form-container {
-  padding: 40px;
+  padding: 32px;
   width: 100%;
   background-color: #fff;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-  border: 1px solid #eee;
+  border-radius: 20px;
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.08);
+  border: 1px solid rgba(15, 23, 42, 0.08);
 }
 
 .enrollment-form-container.with-margin {
   margin-bottom: 20px;
-  padding: 20px;
+  padding: 24px;
+}
+
+.enrollment-admin {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.enrollment-admin__hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+  padding: 36px;
+  background: linear-gradient(135deg, rgba(123, 17, 28, 0.95), #3d0b13);
+  border-radius: 28px;
+  color: #fff;
+  box-shadow: 0 35px 70px rgba(61, 11, 19, 0.35);
+}
+
+.enrollment-admin__eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  font-size: 0.8rem;
+  margin: 0 0 10px;
+  opacity: 0.9;
+}
+
+.enrollment-admin__headline {
+  margin: 0;
+  font-size: clamp(1.8rem, 3vw, 2.4rem);
+}
+
+.enrollment-admin__hero-copy {
+  margin-top: 12px;
+  margin-bottom: 18px;
+  max-width: 540px;
+  line-height: 1.6;
+  opacity: 0.95;
+}
+
+.enrollment-admin__inline-note {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.95rem;
+}
+
+.enrollment-admin__status-card {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  padding: 24px;
+  min-width: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  backdrop-filter: blur(10px);
+}
+
+.enrollment-admin__status-muted {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.95rem;
+}
+
+.enrollment-admin__account-chip {
+  margin-top: 12px;
+  padding: 14px 18px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+.enrollment-admin__account-chip p {
+  margin: 0;
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+
+.enrollment-admin__account-chip strong {
+  font-size: 1.4rem;
+}
+
+.enrollment-admin__grid {
+  display: grid;
+  grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
+  gap: 24px;
+}
+
+.enrollment-admin__sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.enrollment-card__title {
+  margin: 0 0 18px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.enrollment-card__title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.enrollment-card__badge {
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: rgba(123, 17, 28, 0.08);
+  color: #7b111c;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.enrollment-card__link {
+  display: inline-flex;
+  margin-top: 16px;
+  font-weight: 600;
+  color: #7b111c;
+  text-decoration: none;
+}
+
+.enrollment-meta-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.enrollment-meta-label {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #94a3b8;
+}
+
+.enrollment-meta-value {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.enrollment-requirements-list {
+  margin: 16px 0 0 0;
+  padding-left: 18px;
+  color: #1f2937;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.enrollment-admin__form section + section {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.enrollment-admin__alert {
+  margin: 0;
+}
+
+.enrollment-submit-btn--ghost {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  color: #fff;
+  padding: 12px 22px;
+}
+
+.enrollment-submit-btn--ghost:hover {
+  background: rgba(255, 255, 255, 0.12);
 }
 
 /* Headers */
@@ -296,6 +475,12 @@
   margin-left: 10px;
 }
 
+.enrollment-admin__pending-hint {
+  margin: 0;
+  padding: 0 4px 8px;
+  color: #475569;
+}
+
 .account-id-banner {
   margin-top: 16px;
   padding: 16px 20px;
@@ -399,4 +584,20 @@
 @keyframes slideDown {
   from { opacity: 0; transform: translateY(-10px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 1024px) {
+  .enrollment-admin__hero {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .enrollment-admin__status-card {
+    width: 100%;
+    align-items: center;
+  }
+
+  .enrollment-admin__grid {
+    grid-template-columns: 1fr;
+  }
 }

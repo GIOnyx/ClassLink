@@ -55,6 +55,32 @@ const RELATIONSHIP_OPTIONS = [
 
 const APPLICANT_TYPE_OPTIONS = APPLICANT_TYPE_DETAILS.map(({ value, label }) => ({ value, label }));
 
+const STATUS_COPY = {
+  APPROVED: {
+    heading: 'Welcome to CIT-U!',
+    copy: 'Your enrollment has been approved. Keep your official account ID handy for onboarding.'
+  },
+  PENDING: {
+    heading: 'Application under review',
+    copy: 'Our admissions team is reviewing your submission. We will notify you through your registered email.'
+  },
+  REJECTED: {
+    heading: 'We need a quick revision',
+    copy: 'Some details require updates. Review the information below and resubmit to continue the process.'
+  },
+  DEFAULT: {
+    heading: 'Enrollment overview',
+    copy: 'Review or update your submission details below.'
+  }
+};
+
+const formatDisplayDate = (value) => {
+  if (!value) return '—';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '—';
+  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+};
+
 const EnrollmentPage = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -326,44 +352,110 @@ const EnrollmentPage = () => {
   if (existingApp) {
     const status = (existingApp.status || 'Pending').toUpperCase();
     const statusClass = status === 'APPROVED' ? 'status-approved' : status === 'PENDING' ? 'status-pending' : 'status-rejected';
+    const statusCopy = STATUS_COPY[status] || STATUS_COPY.DEFAULT;
+    const departmentName = existingApp.department?.name || departments.find((d) => d.id === existingApp.departmentId)?.name;
+    const programName = existingApp.program?.name || programs.find((p) => p.id === existingApp.programId)?.name;
+    const infoSnapshot = [
+      { label: 'Applicant Type', value: selectedTypeDetails?.label || 'Not set' },
+      { label: 'Department', value: departmentName || 'Not assigned' },
+      { label: 'Program', value: programName || 'Not assigned' },
+      { label: 'Year Level', value: existingApp.yearLevel ? `Year ${existingApp.yearLevel}` : 'Not set' },
+      { label: 'Semester', value: existingApp.semester ? `${existingApp.semester} semester` : 'Not set' },
+      { label: 'Guardian', value: existingApp.parentGuardianName || 'Not provided' },
+    ];
+    const lastUpdated = formatDisplayDate(existingApp.updatedAt || existingApp.createdAt);
+    const canQuickEdit = status === 'REJECTED' && !editMode;
+    const hasAccountId = status === 'APPROVED' && existingApp.accountId;
 
     return (
-      <div className="standard-page-layout">
-        <div className="enrollment-form-container with-margin">
-          <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-              <h3 className="status-header">
-                Application Status: <span className={`status-label ${statusClass}`}>{status}</span>
-              </h3>
-          </div>
+      <div className="standard-page-layout enrollment-admin">
+        <section className="enrollment-admin__hero">
+          <div>
+            <p className="enrollment-admin__eyebrow">Enrollment Application</p>
+            <h1 className="enrollment-admin__headline">{statusCopy.heading}</h1>
+            <p className="enrollment-admin__hero-copy">{statusCopy.copy}</p>
             {status === 'PENDING' && (
-              <p className="status-note">Your application has been submitted and is awaiting admin review. Edits will be available only if the application is rejected.</p>
+              <p className="enrollment-admin__inline-note">We will notify you via email once the review is complete.</p>
             )}
-            {status === 'APPROVED' && existingApp.accountId && (
-              <div className="account-id-banner">
-                <div>
-                  <p className="account-id-label">Official Account ID</p>
-                  <p className="account-id-value">{existingApp.accountId}</p>
+            {canQuickEdit && (
+              <button type="button" className="enrollment-submit-btn enrollment-submit-btn--ghost" onClick={startEdit}>
+                Review &amp; Update
+              </button>
+            )}
+          </div>
+          <div className="enrollment-admin__status-card">
+            <span className={`status-label ${statusClass}`}>{status}</span>
+            <p className="enrollment-admin__status-muted">Last updated {lastUpdated}</p>
+            {hasAccountId ? (
+              <div className="enrollment-admin__account-chip">
+                <p>Official Account ID</p>
+                <strong>{existingApp.accountId}</strong>
+              </div>
+            ) : (
+              <p className="enrollment-admin__status-muted">Application ID: {existingApp.id || '—'}</p>
+            )}
+          </div>
+        </section>
+
+        {status === 'PENDING' && (
+          <p className="enrollment-admin__pending-hint">Your application has been submitted and is awaiting admin review. Edits will be available after evaluation.</p>
+        )}
+
+        {status === 'REJECTED' && (
+          <div className="rejection-alert enrollment-admin__alert">
+            <div className="rejection-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+            </div>
+            <div className="rejection-content">
+              <h4 className="rejection-title">Action required</h4>
+              <p className="rejection-message">{existingApp.rejectionReason || 'Your application needs some corrections. Please review your details below.'}</p>
+              <p className="rejection-subtext">Please correct the information below and resubmit.</p>
+            </div>
+          </div>
+        )}
+
+        <div className="enrollment-admin__grid">
+          <aside className="enrollment-admin__sidebar">
+            <div className="enrollment-card">
+              <p className="enrollment-card__title">Application snapshot</p>
+              <ul className="enrollment-meta-list">
+                {infoSnapshot.map((item) => (
+                  <li key={item.label}>
+                    <span className="enrollment-meta-label">{item.label}</span>
+                    <span className="enrollment-meta-value">{item.value}</span>
+                  </li>
+                ))}
+              </ul>
+              {formData.requirementsDocumentUrl ? (
+                <a
+                  className="enrollment-card__link"
+                  href={formData.requirementsDocumentUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  View uploaded PDF
+                </a>
+              ) : (
+                <p className="enrollment-meta-label">Requirements PDF not uploaded</p>
+              )}
+            </div>
+
+            {selectedTypeDetails && (
+              <div className="enrollment-card">
+                <div className="enrollment-card__title-row">
+                  <p className="enrollment-card__title">Checklist</p>
+                  <span className="enrollment-card__badge">{selectedTypeDetails.label}</span>
                 </div>
-                <p className="account-id-hint">Use this ID with your password to login.</p>
+                <ul className="enrollment-requirements-list">
+                  {selectedTypeDetails.requirements.map((req, idx) => (
+                    <li key={idx} className={req.note ? 'note' : ''}>{req.text}</li>
+                  ))}
+                </ul>
               </div>
             )}
-            {status === 'REJECTED' && (
-              <div className="rejection-alert">
-                  <div className="rejection-icon">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-                  </div>
-                  <div className="rejection-content">
-                      <h4 className="rejection-title">Action Required</h4>
-                      <p className="rejection-message">
-                          {existingApp.rejectionReason || "Your application needs some corrections. Please review your details below."}
-                      </p>
-                      <p className="rejection-subtext">Please correct the information below and resubmit.</p>
-                  </div>
-              </div>
-          )}
-        </div>
-        
-        <form className="enrollment-form-container" onSubmit={handleSave}>
+          </aside>
+
+          <form className="enrollment-card enrollment-admin__form" onSubmit={handleSave}>
             <section>
               <h3 className="enrollment-section-title">Application Details</h3>
               <div className="enrollment-grid">
@@ -518,6 +610,7 @@ const EnrollmentPage = () => {
               )}
             </div>
         </form>
+        </div>
       </div>
     );
   }

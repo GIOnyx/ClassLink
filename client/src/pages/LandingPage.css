@@ -1,12 +1,11 @@
 /* Styles for LandingPage */
 
 .landing-page-content {
-	/* This value MUST match the height of your navbar */
-	padding-top: 100px;
+	padding-top: var(--navbar-height);
 }
 
 .hero-section {
-	height: calc(100vh - 100px);
+	height: calc(100vh - var(--navbar-height));
 	width: 100%;
 	background-image: url('/welcome_banner_cit.png');
 	background-size: cover;
