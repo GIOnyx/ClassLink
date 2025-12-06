@@ -320,23 +320,24 @@ const CalendarPage = () => {
     return (
         <div className="standard-page-layout calendar-page-container">
             <section className="calendar-hero-card">
-                <div className="calendar-hero__text">
+                <div className="calendar-hero__copy">
                     <p className="calendar-pill">Academic Calendar • {currentSchoolYear}</p>
                     <h1>Command the school-year timeline</h1>
                     <p className="calendar-hero__subtitle">{heroSubtitle}</p>
                     <div className="calendar-hero__meta">
-                        <div>
+                        <div className="calendar-hero__stat">
                             <span>Scheduled items</span>
                             <strong>{events.length}</strong>
+                            <small>Active academic entries</small>
                         </div>
-                        <div>
+                        <div className="calendar-hero__stat highlight">
                             <span>Next milestone</span>
                             <strong>{nextEvent ? nextEvent.title : 'No upcoming events'}</strong>
                             <small>{nextEvent ? formatFullDate(nextEvent.startDate) : 'Add events to populate the queue.'}</small>
                         </div>
                     </div>
                 </div>
-                <div className="calendar-hero__actions">
+                <div className="calendar-hero__panel">
                     <div className="calendar-view-toggle">
                         <button
                             type="button"
@@ -354,6 +355,13 @@ const CalendarPage = () => {
                         </button>
                     </div>
                     {isAdmin && <span className="calendar-admin-chip">Admin Mode</span>}
+                    <div className="calendar-hero__timeline">
+                        <p className="timeline-label">Current window</p>
+                        <h3>{monthNames[month]} {year}</h3>
+                        <p className="timeline-range">
+                            {nextEvent ? formatTimelineRange(nextEvent.startDate, nextEvent.endDate || nextEvent.startDate) : 'Awaiting published events'}
+                        </p>
+                    </div>
                 </div>
             </section>
 
