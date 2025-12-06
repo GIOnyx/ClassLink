@@ -1,31 +1,76 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import '../App.css';
 import './BrandHeader.css';
 
-// The header now accepts an 'onLoginClick' function as a prop
-const BrandHeader = ({ onLoginClick, onRegisterClick }) => {
+const navLinks = [
+    { label: 'Home', target: '#home' },
+    { label: 'Vision', target: '#vision' },
+    { label: 'Mission', target: '#mission' },
+    { label: 'Core Values', target: '#core-values' },
+    { label: 'Programs', target: '#programs' },
+];
+
+const BrandHeader = () => {
+    const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+    useEffect(() => {
+        const handleOnline = () => setIsOnline(true);
+        const handleOffline = () => setIsOnline(false);
+
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
+
+        return () => {
+            window.removeEventListener('online', handleOnline);
+            window.removeEventListener('offline', handleOffline);
+        };
+    }, []);
+
+    const handleSmoothScroll = (event, target) => {
+        event.preventDefault();
+        const section = document.querySelector(target);
+        if (!section) return;
+
+        const navbarOffset = 100;
+        const elementPosition = section.getBoundingClientRect().top + window.pageYOffset;
+        window.scrollTo({
+            top: elementPosition - navbarOffset,
+            behavior: 'smooth',
+        });
+    };
+
     return (
-        <header className="navbar">
-            <div className="navbar-brand">
-                <img src="/CIT-logo.png" alt="CIT-U Logo" className="navbar-logo" />
-                <div className="navbar-text">
-                    <p>Cebu Institute of Technology - University</p>
-                    <p><span className="online-text">Online</span></p>
+        <header className="landing-navbar">
+            <div className="landing-navbar__brand">
+                <img src="/CIT-logo.png" alt="CIT-U Logo" className="landing-navbar__logo" />
+                <div className="landing-navbar__text">
+                    <p className="landing-navbar__headline">Cebu Institute of Technology - University</p>
+                    <p className="landing-navbar__status" aria-live="polite">
+                        <span
+                            className={`landing-navbar__status-dot ${isOnline ? 'online' : 'offline'}`}
+                            aria-hidden="true"
+                        />
+                        {isOnline ? 'Online' : 'Offline'}
+                    </p>
                 </div>
             </div>
-            
-            <nav>
-                <ul className="navbar-links">
-                    <li><a href="#home">Home</a></li>
-                    <li><a href="#vision">Vision</a></li>
-                    <li><a href="#mission">Mission</a></li>
-                    <li><a href="#core-values">Core Values</a></li>
-                    <li><a href="#programs">Programs</a></li>
-                    {/* ✨ This is now a button that calls the function from LandingPage */}
-                    <li><button onClick={onLoginClick} className="login-button-link">Login</button></li>
-                    <li><button onClick={onRegisterClick} className="login-button-link">Register</button></li>
+
+            <nav className="landing-navbar__nav" aria-label="Primary">
+                <ul>
+                    {navLinks.map(link => (
+                        <li key={link.label}>
+                            <a
+                                href={link.target}
+                                onClick={event => handleSmoothScroll(event, link.target)}
+                                className="landing-navbar__link"
+                            >
+                                {link.label}
+                            </a>
+                        </li>
+                    ))}
                 </ul>
             </nav>
+
         </header>
     );
 };

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import '../App.css';
 import './AdminPage.css';
 import { getStudentsByStatus, approveStudent, rejectStudent, getDepartments, getPrograms } from '../services/backend';
@@ -13,10 +13,12 @@ const APPLICANT_TYPE_LABELS = {
 
 const AdminPage = () => {
   const [allPending, setAllPending] = useState([]); // Holds all pending students
-  const [departments, setDepartments] = useState([]); //
-  const [programs, setPrograms] = useState([]); //
+  const [departments, setDepartments] = useState([]);
+  const [programs, setPrograms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [lastUpdated, setLastUpdated] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
   
   // New state for filters
   const [filters, setFilters] = useState({
@@ -52,6 +54,7 @@ const AdminPage = () => {
       // Load all pending students
       const res = await getStudentsByStatus('PENDING');
       setAllPending(res.data || []);
+      setLastUpdated(new Date());
     } catch (e) {
       setError('Failed to load students');
     } finally {
@@ -76,51 +79,98 @@ const AdminPage = () => {
   };
 
   // Memoized filtered list
-  const filteredStudents = allPending.filter(s => {
-    // Filter by Department
-    if (filters.departmentId) {
-        // Need to check if the student has a department and if it matches
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+
+  const filteredStudents = useMemo(() => {
+    return allPending.filter((s) => {
+      if (filters.departmentId) {
         const studentDepId = s.department?.id || '';
         if (studentDepId.toString() !== filters.departmentId) {
-            return false;
+          return false;
         }
-    }
+      }
 
-    // Filter by Program
-    if (filters.programId) {
-        // Need to check if the student has a program and if it matches
+      if (filters.programId) {
         const studentProgramId = s.program?.id || '';
         if (studentProgramId.toString() !== filters.programId) {
-            return false;
+          return false;
         }
-    }
-    
-    // Filter by Year Level
-    if (filters.yearLevel) {
+      }
+
+      if (filters.yearLevel) {
         const studentYear = s.yearLevel?.toString() || '';
         if (studentYear !== filters.yearLevel) {
-            return false;
+          return false;
         }
-    }
+      }
 
-    // Filter by Semester
-    if (filters.semester) {
+      if (filters.semester) {
         const studentSemester = s.semester || '';
         if (studentSemester !== filters.semester) {
-            return false;
+          return false;
         }
-    }
+      }
 
-    return true;
-  });
+      if (normalizedQuery) {
+        const haystack = `${s.firstName || ''} ${s.lastName || ''} ${s.email || ''}`.toLowerCase();
+        if (!haystack.includes(normalizedQuery)) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [allPending, filters.departmentId, filters.programId, filters.semester, filters.yearLevel, normalizedQuery]);
 
   // Calculate year options
   const availableYears = Array.from({ length: MAX_YEARS }, (_, i) => (i + 1).toString());
 
   // Filtered Programs based on selected Department
   const filteredPrograms = programs.filter(p => 
-      !filters.departmentId || p.department.id.toString() === filters.departmentId
+      !filters.departmentId || p?.department?.id?.toString() === filters.departmentId
   );
+
+  const applicantBreakdown = allPending.reduce(
+    (acc, curr) => {
+      const key = curr.applicantType || 'OTHER';
+      acc[key] = (acc[key] || 0) + 1;
+      return acc;
+    },
+    { NEW: 0, TRANSFEREE: 0, CROSS_ENROLLEE: 0, OTHER: 0 }
+  );
+
+  const insightCards = [
+    {
+      label: 'Total pending',
+      value: allPending.length,
+      detail: `${applicantBreakdown.NEW} new · ${applicantBreakdown.TRANSFEREE} transferees`
+    },
+    {
+      label: 'Filtered view',
+      value: filteredStudents.length,
+      detail: 'Matching current filters'
+    },
+    {
+      label: 'Departments synced',
+      value: departments.length || '—',
+      detail: 'Active intake hubs'
+    },
+    {
+      label: 'Programs monitored',
+      value: programs.length || '—',
+      detail: 'Connected curricula'
+    }
+  ];
+
+  const topApplicants = filteredStudents.slice(0, 4);
+  const lastUpdatedLabel = lastUpdated
+    ? lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    : '—';
+
+  const clearFilters = () => {
+    setFilters({ departmentId: '', programId: '', yearLevel: '', semester: '' });
+    setSearchQuery('');
+  };
 
 
   // Event handlers (kept original logic, only calling loadPendingStudents to reload)
@@ -162,128 +212,235 @@ const AdminPage = () => {
   const getApplicantTypeLabel = (type) => APPLICANT_TYPE_LABELS[type] || '—';
 
   return (
-    <div className="standard-page-layout">
+    <div className="admin-page standard-page-layout">
       {error && <div className="admin-error">{error}</div>}
 
-      <div className="admin-panel">
-        <h3 className="admin-sub-header">Filter Applications</h3>
-        {/* New Filter UI */}
-        <div className="filter-controls-grid">
-            {/* Department Filter */}
-            <div className="filter-group">
-                <label className="filter-label" htmlFor="departmentId">Department</label>
-                <select
-                    id="departmentId"
-                    name="departmentId"
-                    value={filters.departmentId}
-                    onChange={handleFilterChange}
-                    className="filter-select"
-                >
-                    <option value="">All Departments</option>
-                    {departments.map(d => (
-                        <option key={d.id} value={d.id}>{d.name}</option>
-                    ))}
-                </select>
-            </div>
-
-            {/* Program Filter */}
-            <div className="filter-group">
-                <label className="filter-label" htmlFor="programId">Program</label>
-                <select
-                    id="programId"
-                    name="programId"
-                    value={filters.programId}
-                    onChange={handleFilterChange}
-                    className="filter-select"
-                    disabled={!filters.departmentId && filteredPrograms.length === 0}
-                >
-                    <option value="">All Programs</option>
-                    {filteredPrograms.map(p => (
-                        <option key={p.id} value={p.id}>{p.name}</option>
-                    ))}
-                </select>
-            </div>
-
-            {/* Year Level Filter */}
-            <div className="filter-group">
-                <label className="filter-label" htmlFor="yearLevel">Year Level</label>
-                <select
-                    id="yearLevel"
-                    name="yearLevel"
-                    value={filters.yearLevel}
-                    onChange={handleFilterChange}
-                    className="filter-select"
-                >
-                    <option value="">All Years</option>
-                    {availableYears.map(y => (
-                        <option key={y} value={y}>{y}</option>
-                    ))}
-                </select>
-            </div>
-
-            {/* Semester Filter */}
-            <div className="filter-group">
-                <label className="filter-label" htmlFor="semester">Semester</label>
-                <select
-                    id="semester"
-                    name="semester"
-                    value={filters.semester}
-                    onChange={handleFilterChange}
-                    className="filter-select"
-                >
-                    <option value="">All Semesters</option>
-                    {SEMESTER_OPTIONS.map(s => (
-                        <option key={s} value={s}>{s}</option>
-                    ))}
-                </select>
-            </div>
-            <button className="btn-clear-filters" onClick={() => setFilters({ departmentId: '', programId: '', yearLevel: '', semester: '' })}>
-                Clear Filters
-            </button>
-        </div>
-      </div>
-
-
-      <div className="admin-panel">
-        <h3 className="admin-sub-header">Pending Registrations ({filteredStudents.length} / {allPending.length})</h3>
-        {loading ? (
-          <div className="admin-loading">Loading…</div>
-        ) : (
-          <div className="admin-table-wrapper">
-            <table className="admin-table">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Email</th>
-                  <th>Applicant Type</th>
-                  <th>Program</th>
-                  <th>Year</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredStudents.map((s) => (
-                  <tr key={s.id}>
-                    <td>{s.firstName} {s.lastName}</td>
-                    <td>{s.email}</td>
-                    <td>{getApplicantTypeLabel(s.applicantType)}</td>
-                    <td>{s.program ? s.program.name : '—'}</td>
-                    <td>{s.yearLevel || '—'}</td>
-                    <td>
-                      <button className="btn-view" onClick={() => setSelectedStudent(s)}>View</button>
-                    </td>
-                  </tr>
-                ))}
-                {filteredStudents.length === 0 && (
-                  <tr>
-                    <td colSpan={6} className="admin-empty-row">No matching pending registrations</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+      <section className="admin-hero">
+        <div className="admin-hero-content">
+          <p className="admin-hero-kicker">Admissions control center</p>
+          <h1 className="admin-hero-title">Pending Applications Queue</h1>
+          <p className="admin-hero-subtitle">
+            Monitor every incoming registration in one place. Apply focused filters, review supporting files,
+            and keep applicants moving forward without guesswork.
+          </p>
+          <div className="admin-hero-meta">
+            <span>Last synced · {lastUpdatedLabel}</span>
+            <span className={loading ? 'status-chip syncing' : 'status-chip live'}>
+              {loading ? 'Syncing data…' : 'Live queue'}
+            </span>
           </div>
-        )}
-      </div>
+        </div>
+        <div className="admin-hero-actions">
+          <button className="admin-ghost-btn" type="button" onClick={clearFilters}>Reset filters</button>
+          <button className="admin-primary-btn" type="button" onClick={loadPendingStudents} disabled={loading}>
+            {loading ? 'Refreshing…' : 'Refresh queue'}
+          </button>
+        </div>
+      </section>
+
+      <section className="admin-insights-grid">
+        {insightCards.map((card) => (
+          <article key={card.label} className="admin-insight-card">
+            <p className="insight-label">{card.label}</p>
+            <p className="insight-value">{card.value}</p>
+            <p className="insight-detail">{card.detail}</p>
+          </article>
+        ))}
+      </section>
+
+      <section className="admin-main-grid">
+        <aside className="filters-panel">
+          <div className="filters-panel-header">
+            <div>
+              <p className="panel-kicker">Filters</p>
+              <h3>Focus the review</h3>
+            </div>
+            <span className="panel-count">Showing {filteredStudents.length} of {allPending.length}</span>
+          </div>
+
+          <div className="admin-search-bar">
+            <input
+              type="search"
+              className="admin-search-input"
+              placeholder="Search by name or email"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+
+          <div className="filter-controls-grid modern">
+            <div className="filter-group">
+              <label className="filter-label" htmlFor="departmentId">Department</label>
+              <select
+                id="departmentId"
+                name="departmentId"
+                value={filters.departmentId}
+                onChange={handleFilterChange}
+                className="filter-select"
+              >
+                <option value="">All Departments</option>
+                {departments.map(d => (
+                  <option key={d.id} value={d.id}>{d.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="filter-group">
+              <label className="filter-label" htmlFor="programId">Program</label>
+              <select
+                id="programId"
+                name="programId"
+                value={filters.programId}
+                onChange={handleFilterChange}
+                className="filter-select"
+                disabled={!filters.departmentId && filteredPrograms.length === 0}
+              >
+                <option value="">All Programs</option>
+                {filteredPrograms.map(p => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="filter-group">
+              <label className="filter-label" htmlFor="yearLevel">Year Level</label>
+              <select
+                id="yearLevel"
+                name="yearLevel"
+                value={filters.yearLevel}
+                onChange={handleFilterChange}
+                className="filter-select"
+              >
+                <option value="">All Years</option>
+                {availableYears.map(y => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="filter-group">
+              <label className="filter-label" htmlFor="semester">Semester</label>
+              <select
+                id="semester"
+                name="semester"
+                value={filters.semester}
+                onChange={handleFilterChange}
+                className="filter-select"
+              >
+                <option value="">All Semesters</option>
+                {SEMESTER_OPTIONS.map(s => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="filters-panel-footer">
+            <button className="btn-clear-filters" onClick={clearFilters} type="button">
+              Clear filters
+            </button>
+            <p className="filters-help-text">Use filters to surface specific cohorts or keep it blank to see everyone.</p>
+          </div>
+        </aside>
+
+        <section className="queue-panel">
+          <div className="queue-toolbar">
+            <div>
+              <h3>Applications queue</h3>
+              <p>{filteredStudents.length === 0 ? 'No applicants match the current filters.' : `${filteredStudents.length} applicants ready for review.`}</p>
+            </div>
+            <div className="queue-toolbar-meta">
+              <span className="queue-pill">{filters.semester || 'All terms'}</span>
+            </div>
+          </div>
+
+          {loading ? (
+            <div className="admin-loading">Loading…</div>
+          ) : (
+            <div className="admin-table-wrapper modern">
+              <table className="admin-table queue-table">
+                <thead>
+                  <tr>
+                    <th>Applicant</th>
+                    <th>Program</th>
+                    <th>Year</th>
+                    <th>Applicant type</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredStudents.map((s) => (
+                    <tr key={s.id}>
+                      <td>
+                        <div className="applicant-cell">
+                          <p className="applicant-name">{s.firstName} {s.lastName}</p>
+                          <span className="applicant-email">{s.email}</span>
+                        </div>
+                      </td>
+                      <td>
+                        <p className="applicant-program">{s.program ? s.program.name : '—'}</p>
+                        <span className="applicant-department">{s.department ? s.department.name : 'Unassigned'}</span>
+                      </td>
+                      <td>{s.yearLevel || '—'}</td>
+                      <td>
+                        <span className={`applicant-badge type-${(s.applicantType || 'other').toLowerCase()}`}>
+                          {getApplicantTypeLabel(s.applicantType)}
+                        </span>
+                      </td>
+                      <td className="queue-actions">
+                        <button className="btn-view" onClick={() => setSelectedStudent(s)}>Open</button>
+                      </td>
+                    </tr>
+                  ))}
+                  {filteredStudents.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="admin-empty-row">No matching pending registrations</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      </section>
+
+      <section className="admin-secondary-grid">
+        <div className="applications-stack">
+          <div className="panel-header">
+            <p className="panel-kicker">Spotlight</p>
+            <h3>Next in queue</h3>
+          </div>
+          {topApplicants.length === 0 ? (
+            <p className="admin-empty-row">No applicants available under the current filters.</p>
+          ) : (
+            <ul className="admin-stack-list">
+              {topApplicants.map((applicant) => (
+                <li key={applicant.id} className="stack-card">
+                  <div>
+                    <p className="stack-name">{applicant.firstName} {applicant.lastName}</p>
+                    <p className="stack-meta">{applicant.program ? applicant.program.name : 'Unassigned'} · {applicant.semester || '—'} semester</p>
+                  </div>
+                  <button type="button" className="stack-view" onClick={() => setSelectedStudent(applicant)}>
+                    Review
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        <div className="guides-panel">
+          <div className="panel-header">
+            <p className="panel-kicker">Review checklist</p>
+            <h3>Before approving</h3>
+          </div>
+          <ul className="guide-list">
+            <li>Verify submitted PDF requirements are readable and complete.</li>
+            <li>Double-check department and program assignments for transfer students.</li>
+            <li>Capture rejection reasons with helpful, action-oriented language.</li>
+          </ul>
+        </div>
+      </section>
       
       {/* Rejection Reason Input Modal */}
       {rejectingId && (

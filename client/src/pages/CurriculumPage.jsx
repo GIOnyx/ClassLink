@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import '../App.css';
 import './CurriculumPage.css';
 import { getCurriculumByProgramId, createCurriculum, updateCurriculum } from '../services/backend';
@@ -75,6 +75,8 @@ const CurriculumPage = ({ role }) => {
   const [newTermTitleInput, setNewTermTitleInput] = useState('');
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
+  const [programSearch, setProgramSearch] = useState('');
+  const [lastSynced, setLastSynced] = useState(null);
 
   const setFieldError = (field, msg) => setErrors(prev => ({ ...prev, [field]: msg }));
   const clearFieldError = (field) => setErrors(prev => { const c = { ...prev }; delete c[field]; return c; });
@@ -201,6 +203,16 @@ const CurriculumPage = ({ role }) => {
     setLoadError(null);
   }, [selectedDeptId]);
 
+  useEffect(() => {
+    if (!selectedDeptId) {
+      setLastSynced(null);
+      return;
+    }
+    if (!programsLoading) {
+      setLastSynced(new Date());
+    }
+  }, [selectedDeptId, programsLoading, adminPrograms]);
+
   // If the admin opens the editor but departments haven't loaded yet, fetch them.
   useEffect(() => {
     if (editingCurriculum && role === 'ADMIN' && (!adminDepartments || adminDepartments.length === 0)) {
@@ -208,57 +220,265 @@ const CurriculumPage = ({ role }) => {
     }
   }, [editingCurriculum, role, adminDepartments]);
 
+  const isAdmin = role === 'ADMIN';
+  const showAdminDashboard = isAdmin && !viewingCurriculum && !editingCurriculum;
+
+  const filteredPrograms = useMemo(() => {
+    if (!Array.isArray(adminPrograms)) {
+      return [];
+    }
+    const query = programSearch.trim().toLowerCase();
+    if (!query) {
+      return adminPrograms;
+    }
+    return adminPrograms.filter((program) => {
+      const target = `${program.name || ''} ${program.code || ''}`.toLowerCase();
+      return target.includes(query);
+    });
+  }, [adminPrograms, programSearch]);
+
+  const heroStatusClass = programsLoading || depsLoading ? 'status-chip syncing' : 'status-chip live';
+  const heroStatusLabel = programsLoading || depsLoading ? 'Syncing catalog…' : 'Catalog current';
+
+  const lastSyncedLabel = useMemo(() => {
+    if (!lastSynced) {
+      return 'Awaiting sync';
+    }
+    return lastSynced.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }, [lastSynced]);
+
+  const curriculumStats = useMemo(() => {
+    const activeProgram = viewingCurriculum || current;
+    return [
+      {
+        label: 'Programs loaded',
+        value: selectedDeptId ? (Array.isArray(adminPrograms) ? adminPrograms.length : 0) : '—',
+        detail: selectedDeptId ? 'Inside selected department' : 'Pick a department to populate'
+      },
+      {
+        label: 'Departments linked',
+        value: Array.isArray(adminDepartments) ? adminDepartments.length : 0,
+        detail: 'Connected academic units'
+      },
+      {
+        label: 'Duration tracked',
+        value: activeProgram?.durationInYears ? `${activeProgram.durationInYears} years` : '—',
+        detail: activeProgram?.programName || 'Open a curriculum to inspect'
+      },
+      {
+        label: 'Subjects published',
+        value: activeProgram?.items?.length || '—',
+        detail: activeProgram ? 'Across current curriculum' : 'Awaiting selection'
+      }
+    ];
+  }, [adminPrograms, adminDepartments, viewingCurriculum, current, selectedDeptId]);
+
+  const highlightedPrograms = useMemo(() => filteredPrograms.slice(0, 4), [filteredPrograms]);
+
+  const heroTitle = selectedDept ? `${selectedDept} curricula` : 'Curriculum workspace';
+  const heroSubtitle = selectedDept
+    ? 'Audit and refresh curriculum plans for this department in one hub.'
+    : 'Select a department to sync its programs and manage curriculum versions.';
+  const selectedDeptLabel = selectedDept || 'No department selected';
+  const filteredCount = filteredPrograms.length;
+  const programTotal = Array.isArray(adminPrograms) ? adminPrograms.length : 0;
+  const searchPlaceholder = selectedDeptId ? 'Search programs by name or code' : 'Select a department first';
+  const shouldShowNonAdminControls = !isAdmin && !viewingCurriculum && !editingCurriculum;
+  const departmentOptions = Array.isArray(adminDepartments) ? adminDepartments : [];
+  const programOptions = Array.isArray(adminPrograms) ? adminPrograms : [];
+
+  const handleRefreshData = () => {
+    refreshDepartments();
+    if (selectedDeptId) {
+      refreshPrograms();
+    }
+  };
+
+  const handleClearFilters = () => {
+    setSelectedDeptId('');
+    setSelectedDept('');
+    setSelectedProgramId('');
+    setProgramSearch('');
+    setCurrent(null);
+  };
+
   return (
     <div className="standard-page-layout curriculum-root">
-      {!viewingCurriculum && !editingCurriculum && (
-        <div className="curriculum-header">
-          {role === 'ADMIN' ? (
-          <div className="curriculum-controls admin-controls">
-            <div className="dept-block">
-              <label htmlFor="deptSelect" className="small-label">Department</label>
+      {showAdminDashboard ? (
+        <>
+          <section className="curriculum-hero-card">
+            <div className="curriculum-hero-copy">
+              <p className="curriculum-hero-kicker">Curriculum management</p>
+              <h1>{heroTitle}</h1>
+              <p className="curriculum-hero-subtitle">{heroSubtitle}</p>
+              <div className="curriculum-hero-meta">
+                <span>Department · {selectedDeptLabel}</span>
+                <span>Last synced · {lastSyncedLabel}</span>
+                <span className={heroStatusClass}>{heroStatusLabel}</span>
+              </div>
+            </div>
+            <div className="curriculum-hero-actions">
+              <div className="curriculum-hero-stats">
+                <div>
+                  <span>Programs visible</span>
+                  <strong>{selectedDeptId ? filteredCount : 0}</strong>
+                </div>
+                <div>
+                  <span>Departments connected</span>
+                  <strong>{departmentOptions.length}</strong>
+                </div>
+              </div>
+              <div className="curriculum-hero-buttons">
+                <button type="button" className="admin-ghost-btn" onClick={handleClearFilters}>
+                  Reset filters
+                </button>
+                <button
+                  type="button"
+                  className="admin-primary-btn"
+                  onClick={handleRefreshData}
+                  disabled={programsLoading || depsLoading}
+                >
+                  {programsLoading || depsLoading ? 'Refreshing…' : 'Refresh data'}
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <section className="curriculum-metrics-grid">
+            {curriculumStats.map((card) => (
+              <article key={card.label} className="curriculum-metric-card">
+                <p className="metric-label">{card.label}</p>
+                <p className="metric-value">{card.value}</p>
+                <p className="metric-detail">{card.detail}</p>
+              </article>
+            ))}
+          </section>
+
+          <section className="curriculum-main-grid">
+            <aside className="curriculum-filter-panel">
+              <div className="panel-header">
+                <div>
+                  <p className="panel-kicker">Filters</p>
+                  <h3>Focus the catalog</h3>
+                </div>
+                <span className="panel-count">
+                  Showing {selectedDeptId ? filteredCount : 0} of {selectedDeptId ? programTotal : 0}
+                </span>
+              </div>
+
+              <label className="filter-field">
+                Department
                 <select
-                  id="deptSelect"
-                  className="dept-select"
                   value={selectedDeptId}
                   onChange={(e) => {
                     const deptId = e.target.value;
                     setSelectedDeptId(deptId);
-                    const deptObj = adminDepartments.find(d => String(d.id) === String(deptId));
-                    setSelectedDept(deptObj ? (deptObj.name || '') : '');
+                    const deptObj = departmentOptions.find((d) => String(d.id) === String(deptId));
+                    setSelectedDept(deptObj ? deptObj.name || '' : '');
                   }}
                   disabled={depsLoading}
                 >
-                  <option value="">{
-                    depsLoading
+                  <option value="">
+                    {depsLoading
                       ? 'Loading…'
-                      : adminDepartments.length > 0
+                      : departmentOptions.length > 0
                         ? 'Select Department'
-                        : '-- No Departments --'
-                  }</option>
-                  {!depsLoading && adminDepartments.length > 0 ? (
-                    adminDepartments.map(d => (
-                      <option key={d.id} value={d.id}>{d.name}</option>
-                    ))
-                  ) : null}
+                        : '-- No Departments --'}
+                  </option>
+                  {!depsLoading && departmentOptions.length > 0
+                    ? departmentOptions.map((d) => (
+                        <option key={d.id} value={d.id}>
+                          {d.name}
+                        </option>
+                      ))
+                    : null}
                 </select>
-            </div>
+              </label>
 
-            <div className="programs-list-wrap">
-              <h4 className="programs-heading">Programs</h4>
-              <div className="programs-panel">
-                {selectedDeptId === '' ? (
-                  <div className="no-programs">Select a department to view its programs.</div>
-                ) : programsLoading ? (
-                  <div className="no-programs">Loading programs…</div>
-                ) : adminPrograms.length === 0 ? (
-                  <div className="no-programs">No programs for selected department.</div>
-                ) : (
-                  <div className="admin-program-list">
-                    {adminPrograms.map(p => (
-                      <div className="program-row" key={p.id}>
-                        <div className="program-name">{p.name}</div>
-                            <div className="program-actions">
-                              <button className="btn-view" onClick={async () => {
+              <label className="filter-field">
+                Program search
+                <input
+                  type="search"
+                  className="curriculum-search-input"
+                  placeholder={searchPlaceholder}
+                  value={programSearch}
+                  onChange={(e) => setProgramSearch(e.target.value)}
+                  disabled={!selectedDeptId}
+                />
+              </label>
+
+              <button type="button" className="btn-clear-filters" onClick={handleClearFilters}>
+                Clear filters
+              </button>
+
+              <div className="curriculum-side-card">
+                <p className="panel-kicker">Top programs</p>
+                <h4>{selectedDeptId ? 'Highlights' : 'Awaiting selection'}</h4>
+                <ul>
+                  {selectedDeptId && highlightedPrograms.length > 0 ? (
+                    highlightedPrograms.map((program) => (
+                      <li key={program.id || program.name}>
+                        <div>
+                          <span className="side-program-name">{program.name}</span>
+                          <span className="side-program-code">{program.code || '—'}</span>
+                        </div>
+                        <span className="curriculum-tag">{program.level || 'Program'}</span>
+                      </li>
+                    ))
+                  ) : (
+                    <li>Select a department to preview programs.</li>
+                  )}
+                </ul>
+              </div>
+            </aside>
+
+            <section className="curriculum-program-panel">
+              <div className="panel-header">
+                <div>
+                  <p className="panel-kicker">Programs</p>
+                  <h3>Curriculum directory</h3>
+                  <p className="panel-subtitle">
+                    {selectedDeptId
+                      ? 'View and edit curriculum mappings per program.'
+                      : 'Choose a department to load its programs.'}
+                  </p>
+                </div>
+                <span className="panel-count">{selectedDeptId ? `${filteredCount} results` : '—'}</span>
+              </div>
+
+              {!selectedDeptId ? (
+                <p className="curriculum-empty-state">Select a department to load its programs.</p>
+              ) : programsLoading ? (
+                <p className="curriculum-empty-state">Loading programs…</p>
+              ) : filteredPrograms.length === 0 ? (
+                <p className="curriculum-empty-state">
+                  {programSearch ? 'No programs match the current search.' : 'No programs are linked to this department.'}
+                </p>
+              ) : (
+                <div className="curriculum-program-table-wrapper">
+                  <table className="curriculum-program-table">
+                    <thead>
+                      <tr>
+                        <th>Program</th>
+                        <th>Department</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredPrograms.map((p) => (
+                        <tr key={p.id}>
+                          <td>
+                            <div className="program-cell">
+                              <p className="program-name">{p.name}</p>
+                              <span className="program-code">{p.code || '—'}</span>
+                            </div>
+                          </td>
+                          <td>{p.department?.name || selectedDeptLabel}</td>
+                          <td className="curriculum-program-actions">
+                            <button
+                              type="button"
+                              className="ghost-action"
+                              onClick={async () => {
                                 try {
                                   const res = await getCurriculumByProgramId(p.id);
                                   setViewingCurriculum(res.data);
@@ -267,91 +487,113 @@ const CurriculumPage = ({ role }) => {
                                   console.error('View error for programId', p.id, e);
                                   alert('No curriculum found for this program.');
                                 }
-                              }}>View</button>
-
-                              <button className="btn-edit" onClick={async () => {
+                              }}
+                            >
+                              View
+                            </button>
+                            <button
+                              type="button"
+                              className="primary-action"
+                              onClick={async () => {
                                 try {
                                   const res = await getCurriculumByProgramId(p.id);
-                                  // make a deep copy for editing
                                   setEditingCurriculum(JSON.parse(JSON.stringify(res.data)));
                                   setViewingCurriculum(null);
                                 } catch (e) {
                                   console.error('Edit error for programId', p.id, e);
                                   alert('No curriculum found to edit for this program.');
                                 }
-                              }}>Edit</button>
+                              }}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              type="button"
+                              className="ghost-action subtle"
+                              onClick={() => {
+                                if (window.confirm('Delete program?')) {
+                                  alert('Delete not implemented');
+                                }
+                              }}
+                            >
+                              Delete
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </section>
+          </section>
+        </>
+      ) : (
+        !viewingCurriculum &&
+        !editingCurriculum &&
+        shouldShowNonAdminControls && (
+          <div className="curriculum-header">
+            <div>
+              <div style={{display:'flex', alignItems:'center', gap:12}} className="curriculum-controls">
+                <div style={{display:'flex', flexDirection:'column'}}>
+                  <label htmlFor="deptSelect" className="small-label">Department</label>
+                  <select
+                    id="deptSelect"
+                    className="dept-select"
+                    value={selectedDeptId}
+                    onChange={(e) => {
+                      const deptId = e.target.value;
+                      setSelectedDeptId(deptId);
+                      const deptObj = departmentOptions.find(d => String(d.id) === String(deptId));
+                      setSelectedDept(deptObj ? (deptObj.name || '') : '');
+                    }}
+                    disabled={depsLoading}
+                  >
+                    <option value="">{
+                      depsLoading
+                        ? 'Loading…'
+                        : departmentOptions.length > 0
+                          ? 'Select Department'
+                          : '-- No Departments --'
+                    }</option>
+                    {!depsLoading && departmentOptions.length > 0 ? (
+                      departmentOptions.map(d => (
+                        <option key={d.id} value={d.id}>{d.name}</option>
+                      ))
+                    ) : null}
+                  </select>
+                </div>
 
-                              <button className="btn-delete" onClick={() => { if (window.confirm('Delete program?')) { alert('Delete not implemented'); } }}>Delete</button>
-                            </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <div style={{display:'flex', flexDirection:'column'}}>
+                  <label htmlFor="programSelect" className="small-label">Program</label>
+                  <select
+                    id="programSelect"
+                    className="dept-select"
+                    value={selectedProgramId}
+                    onChange={(e) => setSelectedProgramId(e.target.value)}
+                    disabled={!selectedDeptId || depsLoading || programsLoading}
+                  >
+                    <option value="">{
+                      programsLoading
+                        ? 'Loading…'
+                        : programOptions.length > 0
+                          ? 'Select Program'
+                          : '-- No Programs --'
+                    }</option>
+                    {!programsLoading && programOptions.length > 0 ? (
+                      programOptions.map(p => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                      ))
+                    ) : null}
+                  </select>
+                </div>
+              </div>
+              <div className="curriculum-title" style={{marginTop:12}}>
+                <h2>{current ? current.programName : 'Curriculum'}</h2>
               </div>
             </div>
           </div>
-          ) : (
-          <div>
-            <div style={{display:'flex', alignItems:'center', gap:12}} className="curriculum-controls">
-              <div style={{display:'flex', flexDirection:'column'}}>
-                <label htmlFor="deptSelect" className="small-label">Department</label>
-                <select
-                  id="deptSelect"
-                  className="dept-select"
-                  value={selectedDeptId}
-                  onChange={(e) => {
-                    const deptId = e.target.value;
-                    setSelectedDeptId(deptId);
-                    const deptObj = adminDepartments.find(d => String(d.id) === String(deptId));
-                    setSelectedDept(deptObj ? (deptObj.name || '') : '');
-                  }}
-                  disabled={depsLoading}
-                >
-                  <option value="">{
-                    depsLoading
-                      ? 'Loading…'
-                      : adminDepartments.length > 0
-                        ? 'Select Department'
-                        : '-- No Departments --'
-                  }</option>
-                  {!depsLoading && adminDepartments.length > 0 ? (
-                    adminDepartments.map(d => (
-                      <option key={d.id} value={d.id}>{d.name}</option>
-                    ))
-                  ) : null}
-                </select>
-              </div>
-
-              <div style={{display:'flex', flexDirection:'column'}}>
-                <label htmlFor="programSelect" className="small-label">Program</label>
-                <select
-                  id="programSelect"
-                  className="dept-select"
-                  value={selectedProgramId}
-                  onChange={(e) => setSelectedProgramId(e.target.value)}
-                  disabled={!selectedDeptId || depsLoading || programsLoading}
-                >
-                  <option value="">{
-                    programsLoading
-                      ? 'Loading…'
-                      : adminPrograms && adminPrograms.length > 0
-                        ? 'Select Program'
-                        : '-- No Programs --'
-                  }</option>
-                  {!programsLoading && adminPrograms && adminPrograms.length > 0 ? (
-                    adminPrograms.map(p => (
-                      <option key={p.id} value={p.id}>{p.name}</option>
-                    ))
-                  ) : null}
-                </select>
-              </div>
-            </div>
-            <div className="curriculum-title" style={{marginTop:12}}>
-              <h2>{current ? current.programName : 'Curriculum'}</h2>
-            </div>
-          </div>
-        )}
-        </div>
+        )
       )}
 
       {(viewingCurriculum || editingCurriculum) && (
@@ -363,6 +605,7 @@ const CurriculumPage = ({ role }) => {
         </div>
       )}
 
+      {(!showAdminDashboard || !isAdmin) && (
       <div className="curriculum-content">
         {loading ? <div>Loading…</div> : null}
         {!loading && !viewingCurriculum && !editingCurriculum && loadError ? (
@@ -617,6 +860,7 @@ const CurriculumPage = ({ role }) => {
           null
         )}
       </div>
+      )}
 
       {/* Admin floating Add button (hidden when viewing) */}
       {role === 'ADMIN' && !viewingCurriculum && !editingCurriculum && (

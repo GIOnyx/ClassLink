@@ -3,12 +3,15 @@ import { Outlet } from 'react-router-dom';
 import Navbar from './Navbar';
 import SecondaryNavbar from './SecondaryNavbar';
 import Footer from './Footer';
+import LogoutModal from './LogoutModal';
 import { getMyNotifications, getUnreadNotificationCount, markNotificationAsRead } from '../services/backend';
 
 const MainLayout = ({ onLogout, role }) => {
     const [notifications, setNotifications] = useState([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const [notificationsLoading, setNotificationsLoading] = useState(false);
+    const [showLogoutModal, setShowLogoutModal] = useState(false);
+    const [logoutInFlight, setLogoutInFlight] = useState(false);
 
     const refreshUnreadCount = useCallback(async () => {
         if (role !== 'STUDENT') {
@@ -88,10 +91,33 @@ const MainLayout = ({ onLogout, role }) => {
         return () => clearInterval(interval);
     }, [role, loadNotifications, refreshUnreadCount]);
 
+    const handleRequestLogout = useCallback(() => {
+        if (logoutInFlight) return;
+        setShowLogoutModal(true);
+    }, [logoutInFlight]);
+
+    const handleCancelLogout = useCallback(() => {
+        if (logoutInFlight) return;
+        setShowLogoutModal(false);
+    }, [logoutInFlight]);
+
+    const handleConfirmLogout = useCallback(async () => {
+        if (logoutInFlight) return;
+        setLogoutInFlight(true);
+        try {
+            await onLogout?.();
+        } catch (err) {
+            console.error('Logout failed', err);
+            setLogoutInFlight(false);
+            return;
+        }
+        // If logout succeeds, MainLayout will unmount.
+    }, [logoutInFlight, onLogout]);
+
     return (
         <div className="app-container">
             <Navbar
-                onLogout={onLogout}
+                onLogout={handleRequestLogout}
                 role={role}
                 notifications={notifications}
                 unreadCount={unreadCount}
@@ -107,7 +133,7 @@ const MainLayout = ({ onLogout, role }) => {
             <main className="main-content">
                 <Outlet
                     context={{
-                        handleLogout: onLogout,
+                        handleLogout: handleRequestLogout,
                         role,
                         notifications,
                         notificationsLoading,
@@ -117,6 +143,13 @@ const MainLayout = ({ onLogout, role }) => {
                     }}
                 />
             </main>
+            {showLogoutModal && (
+                <LogoutModal
+                    onConfirm={handleConfirmLogout}
+                    onCancel={handleCancelLogout}
+                    pending={logoutInFlight}
+                />
+            )}
         </div>
     );
 };

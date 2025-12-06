@@ -1,11 +1,10 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { useNavigate, useOutletContext } from 'react-router-dom';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import '../App.css';
 import './ProfilePage.css';
-import { me, getMyStudent, getMyAdmin, submitStudentApplication, uploadMyProfileImage, uploadMyAdminProfileImage, updateMyAdmin, changeMyPassword, getMyApplicationHistory, logout as apiLogout } from '../services/backend';
+import { me, getMyStudent, getMyAdmin, submitStudentApplication, uploadMyProfileImage, uploadMyAdminProfileImage, updateMyAdmin, changeMyPassword, getMyApplicationHistory } from '../services/backend';
 
 const ProfilePage = () => {
-    const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [profile, setProfile] = useState({ name: '', email: '', phone: '', status: '', profileImageUrl: '' });
@@ -14,14 +13,14 @@ const ProfilePage = () => {
     const [isEditing, setIsEditing] = useState(false);
     const [saving, setSaving] = useState(false);
     const [role, setRole] = useState('');
-    const [settingsOpen, setSettingsOpen] = useState(false);
-    const [activePanel, setActivePanel] = useState('profile');
     const [passwordForm, setPasswordForm] = useState({ oldPassword: '', newPassword: '', confirmPassword: '' });
     const [passwordFeedback, setPasswordFeedback] = useState({ error: '', success: '' });
     const [changingPassword, setChangingPassword] = useState(false);
     const [historyEntries, setHistoryEntries] = useState([]);
     const [historyLoading, setHistoryLoading] = useState(false);
     const [historyError, setHistoryError] = useState('');
+    const [profileSyncedAt, setProfileSyncedAt] = useState(null);
+    const [notificationsRefreshedAt, setNotificationsRefreshedAt] = useState(null);
     const fileInputRef = useRef(null);
 
     const outletContext = typeof useOutletContext === 'function' ? useOutletContext() : {};
@@ -32,20 +31,17 @@ const ProfilePage = () => {
         markNotificationRead = () => {}
     } = outletContext || {};
 
+    const isAdmin = role === 'ADMIN';
+
     // Helper to resolve image URL (handles relative vs absolute)
     const resolveImageSrc = (url) => {
         if (!url) return null;
-        if (url.startsWith('http')) return url;
+        if (url.startsWith('http') || url.startsWith('blob:') || url.startsWith('data:')) return url;
         const base = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api').replace(/\/api$/, '');
         return base + url;
     };
 
     // Icons (kept inline as components for simplicity, or move to separate file)
-    const ProfileIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>;
-    const SettingsIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>;
-    const NotificationIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>;
-    const LogoutIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>;
-    const ChevronRightIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>;
 
     useEffect(() => {
         (async () => {
@@ -57,7 +53,6 @@ const ProfilePage = () => {
                 const currentRole = sessionData.role || '';
                 setRole(currentRole);
                 if (currentRole === 'ADMIN') {
-                    // Fetch admin profile
                     const adminRes = await getMyAdmin();
                     const a = adminRes?.data || {};
                     const loaded = {
@@ -65,12 +60,11 @@ const ProfilePage = () => {
                         email: a.email || '',
                         phone: '',
                         status: 'ADMIN',
-                        profileImageUrl: ''
+                        profileImageUrl: a.profileImageUrl || ''
                     };
                     setProfile(loaded);
                     setOriginalProfile(loaded);
                 } else {
-                    // Student path
                     const studentRes = await getMyStudent();
                     const s = studentRes?.data || {};
                     const loaded = {
@@ -83,6 +77,7 @@ const ProfilePage = () => {
                     setProfile(loaded);
                     setOriginalProfile(loaded);
                 }
+                setProfileSyncedAt(new Date());
             } catch (e) {
                 setError('Failed to load profile');
             } finally {
@@ -92,43 +87,38 @@ const ProfilePage = () => {
     }, []);
 
     useEffect(() => {
-        if (activePanel === 'notifications') {
-            refreshNotifications();
+        refreshNotifications();
+        setNotificationsRefreshedAt(new Date());
+    }, [refreshNotifications]);
+
+    const loadHistory = useCallback(async () => {
+        if (role === 'ADMIN') return;
+        setHistoryLoading(true);
+        setHistoryError('');
+        try {
+            const res = await getMyApplicationHistory();
+            setHistoryEntries(res?.data || []);
+        } catch (err) {
+            const message = err?.response?.data?.error || 'Unable to load application history.';
+            setHistoryError(message);
+        } finally {
+            setHistoryLoading(false);
         }
-    }, [activePanel, refreshNotifications]);
+    }, [role]);
 
-        useEffect(() => {
-            if (activePanel !== 'change-password') {
-                setPasswordFeedback({ error: '', success: '' });
-                setPasswordForm({ oldPassword: '', newPassword: '', confirmPassword: '' });
-                setChangingPassword(false);
-            }
-        }, [activePanel]);
+    useEffect(() => {
+        if (role && role !== 'ADMIN') {
+            loadHistory();
+        }
+    }, [role, loadHistory]);
 
-        useEffect(() => {
-            if (activePanel !== 'profile' && error) {
-                setError('');
-            }
-        }, [activePanel, error]);
-
-        useEffect(() => {
-            if (activePanel !== 'application-history' || role === 'ADMIN') {
-                return;
-            }
-            setHistoryLoading(true);
-            setHistoryError('');
-            (async () => {
-                try {
-                    const res = await getMyApplicationHistory();
-                    setHistoryEntries(res?.data || []);
-                } catch (err) {
-                    const message = err?.response?.data?.error || 'Unable to load application history.';
-                    setHistoryError(message);
-                } finally {
-                    setHistoryLoading(false);
-                }
-            })();
-        }, [activePanel, role]);
+    const handleNotificationRefresh = async () => {
+        try {
+            await Promise.resolve(refreshNotifications());
+        } finally {
+            setNotificationsRefreshedAt(new Date());
+        }
+    };
 
     // Handle profile image file selection & upload
     const handleImageChange = async (e) => {
@@ -177,12 +167,14 @@ const ProfilePage = () => {
             if (role === 'ADMIN') {
                 const res = await updateMyAdmin({ name: profile.name });
                 const data = res?.data || {};
-                setProfile(p => ({ ...p, name: data.name || p.name }));
-                setOriginalProfile(p => ({ ...p, name: data.name || p.name }));
+                const updatedName = data.name || profile.name;
+                setProfile(p => ({ ...p, name: updatedName }));
+                setOriginalProfile(p => ({ ...p, name: updatedName }));
             } else {
                 await submitStudentApplication({ name: profile.name, phone: profile.phone });
-                setOriginalProfile(profile); // persist new baseline
+                setOriginalProfile({ ...profile });
             }
+            setProfileSyncedAt(new Date());
             setIsEditing(false);
         } catch (e) {
             setError('Failed to save changes');
@@ -221,62 +213,6 @@ const ProfilePage = () => {
             setPasswordFeedback({ error: message, success: '' });
         } finally {
             setChangingPassword(false);
-        }
-    };
-
-    const profileActions = [
-        {
-            label: 'My Profile',
-            panel: 'profile',
-            action: () => {
-                setActivePanel('profile');
-                document.querySelector('.profile-main-content')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-        }
-    ];
-
-    const settingsSubmenu = [
-        {
-            label: 'Update Personal Info',
-            action: () => {
-                setActivePanel('profile');
-                if (!isEditing) {
-                    setIsEditing(true);
-                }
-                setTimeout(() => {
-                    document.getElementById('profile-details-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }, 0);
-            }
-        },
-        {
-            label: 'Change Password',
-            action: () => {
-                setActivePanel('change-password');
-                setTimeout(() => {
-                    document.getElementById('change-password-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }, 0);
-            }
-        },
-    ];
-
-    if (role !== 'ADMIN') {
-        settingsSubmenu.push({
-            label: 'View Application History',
-            action: () => {
-                setActivePanel('application-history');
-                setTimeout(() => {
-                    document.getElementById('application-history-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }, 0);
-            }
-        });
-    }
-
-    const handleProfileAction = (fn) => {
-        try {
-            fn();
-        } catch (err) {
-            console.warn('Action not available yet', err);
-            setError('That shortcut is not available yet.');
         }
     };
 
@@ -333,302 +269,343 @@ const ProfilePage = () => {
 
     const isApprovedStudent = role !== 'ADMIN' && (profile.status || '').toUpperCase() === 'APPROVED';
 
+    const handleCancelEdit = () => {
+        setProfile({ ...originalProfile });
+        setIsEditing(false);
+        setError('');
+    };
+
+    const profileStatusLabel = isAdmin ? 'Administrator' : (profile.status || 'Pending');
+    const statusClassName = profileStatusLabel.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    const lastProfileSyncLabel = profileSyncedAt
+        ? profileSyncedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        : 'Syncing…';
+    const notificationsRefreshedLabel = notificationsRefreshedAt
+        ? notificationsRefreshedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        : '—';
+    const unreadNotifications = useMemo(() => sharedNotifications.filter((item) => !item.read).length, [sharedNotifications]);
+    const profileStats = useMemo(() => ([
+        {
+            label: 'Primary email',
+            value: loading ? 'Loading…' : (profile.email || '—'),
+            detail: 'Used for all system access'
+        },
+        {
+            label: 'Phone on file',
+            value: isAdmin ? '—' : (profile.phone || 'Not provided'),
+            detail: isAdmin ? 'Admins manage via IT desk' : 'Required for SMS reminders'
+        },
+        {
+            label: 'Notifications',
+            value: notificationsLoading ? 'Loading…' : sharedNotifications.length,
+            detail: notificationsLoading ? 'Fetching feed' : unreadNotifications === 0 ? 'All caught up' : `${unreadNotifications} unread`
+        },
+        {
+            label: 'Status',
+            value: profileStatusLabel,
+            detail: isAdmin ? 'Full admin access' : 'Enrollment workflow'
+        }
+    ]), [loading, profile.email, profile.phone, profileStatusLabel, isAdmin, notificationsLoading, sharedNotifications.length, unreadNotifications]);
+
+    const displayedNotifications = useMemo(() => sharedNotifications.slice(0, 6), [sharedNotifications]);
+
     return (
-        <div className="standard-page-layout">
-            <div className="profile-page-wrapper">
-                <aside className="profile-sidebar">
-                    <div className="sidebar-profile-summary">
+        <div className="standard-page-layout profile-page">
+            <input
+                type="file"
+                ref={fileInputRef}
+                style={{ display: 'none' }}
+                accept="image/*"
+                onChange={handleImageChange}
+                disabled={uploading}
+            />
+            <section className="profile-hero-card">
+                <div className="profile-hero-left">
+                    <div
+                        className={`profile-avatar-wrapper ${uploading ? 'uploading' : ''}`}
+                        role="button"
+                        tabIndex={0}
+                        onClick={handleAvatarClick}
+                        onKeyDown={handleAvatarKeyDown}
+                    >
                         {(() => {
                             const src = resolveImageSrc(profile.profileImageUrl);
-                            return src ? (
-                                <img src={src} alt="Profile" style={{ width: 50, height: 50, borderRadius: '50%', objectFit: 'cover', background: '#e0e0e0' }} />
-                            ) : (
-                                <div className="avatar-placeholder-sm"></div>
-                            );
+                            return src ? <img src={src} alt="Profile" /> : <div className="avatar-placeholder-md"></div>;
                         })()}
-                        <div className="user-info">
-                            <span className="user-name">{loading ? 'Loading…' : profile.name || '—'}</span>
-                            <span className="user-email">{loading ? '' : profile.email || '—'}</span>
+                        <span className="profile-avatar-overlay">{uploading ? 'Uploading…' : 'Update photo'}</span>
+                    </div>
+                    <div className="profile-hero-copy">
+                        <p className="profile-hero-kicker">{isAdmin ? 'Admin account' : 'Student profile'}</p>
+                        <h1>{loading ? 'Loading…' : profile.name || 'Account profile'}</h1>
+                        <p className="profile-hero-subtitle">
+                            {isAdmin
+                                ? 'Keep executive contact details current so teams can reach you quickly.'
+                                : 'Your admissions details stay in sync across enrollment, curriculum, and advising tools.'}
+                        </p>
+                        <div className="profile-hero-meta">
+                            <span className="profile-role-chip">{isAdmin ? 'Administrator' : 'Student'}</span>
+                            {!isAdmin && (
+                                <span className={`profile-status-chip ${statusClassName}`}>{profileStatusLabel}</span>
+                            )}
+                            <span className="profile-sync-meta">Synced · {lastProfileSyncLabel}</span>
                         </div>
                     </div>
-                    <nav className="sidebar-nav">
-                        <ul>
-                            {profileActions.map(({ label, action, panel }) => (
-                                <li key={label}>
+                </div>
+            </section>
+
+            <section className="profile-metrics-grid">
+                {profileStats.map((card) => (
+                    <article key={card.label} className="profile-metric-card">
+                        <p className="metric-label">{card.label}</p>
+                        <p className="metric-value">{card.value}</p>
+                        <p className="metric-detail">{card.detail}</p>
+                    </article>
+                ))}
+            </section>
+
+            <section className="profile-main-grid">
+                <div className="profile-main-column">
+                    <article className="profile-card" id="profile-details-card">
+                        <div className="profile-card-header">
+                            <div>
+                                <p className="profile-card-kicker">Personal info</p>
+                                <h3>Account details</h3>
+                                <p>Everything admissions and faculty see when reviewing your record.</p>
+                            </div>
+                        </div>
+                        <div className="profile-form-grid" id="profile-details-form">
+                            <label className="profile-form-field">
+                                <span>Full name</span>
+                                <input
+                                    type="text"
+                                    value={profile.name}
+                                    disabled={!isEditing || isApprovedStudent}
+                                    onChange={(e) => setProfile((p) => ({ ...p, name: e.target.value }))}
+                                />
+                            </label>
+                            <label className="profile-form-field">
+                                <span>Email account</span>
+                                <input type="text" value={profile.email} readOnly disabled />
+                            </label>
+                            {!isAdmin && (
+                                <label className="profile-form-field">
+                                    <span>Mobile number</span>
+                                    <input
+                                        type="text"
+                                        value={profile.phone}
+                                        disabled={!isEditing}
+                                        onChange={(e) => setProfile((p) => ({ ...p, phone: e.target.value }))}
+                                    />
+                                </label>
+                            )}
+                            {!isAdmin && (
+                                <div className="profile-form-field">
+                                    <span>Enrollment status</span>
+                                    <div>
+                                        <span className={`status-pill ${(profile.status || 'pending').toLowerCase()}`}>
+                                            {profile.status ? profile.status : 'Pending'}
+                                        </span>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                        {error && <div className="profile-inline-error">{error}</div>}
+                        <div className="profile-actions-row">
+                            {!isEditing && (
+                                <button type="button" className="admin-primary-btn" onClick={handleEdit} disabled={loading}>
+                                    Edit info
+                                </button>
+                            )}
+                            {isEditing && (
+                                <>
+                                    <button type="button" className="admin-ghost-btn" onClick={handleCancelEdit}>
+                                        Cancel
+                                    </button>
                                     <button
                                         type="button"
-                                        className={`sidebar-link ${activePanel === panel ? 'active' : ''}`}
-                                        onClick={() => handleProfileAction(action)}
+                                        className="admin-primary-btn"
+                                        onClick={handleSave}
+                                        disabled={loading || saving}
                                     >
-                                        {panel === 'profile' && <ProfileIcon />}
-                                        <span>{label}</span>
-                                        <ChevronRightIcon />
+                                        {saving ? 'Saving…' : 'Save changes'}
                                     </button>
-                                </li>
-                            ))}
-                            <li className="settings-group">
-                                <button type="button" className="sidebar-link" onClick={() => setSettingsOpen(o => !o)}>
-                                    <SettingsIcon />
-                                    <span>Settings</span>
-                                    <ChevronRightIcon className={settingsOpen ? 'open' : ''} />
-                                </button>
-                                {settingsOpen && (
-                                    <ul className="settings-submenu">
-                                        {settingsSubmenu.map(item => (
-                                            <li key={item.label}>
-                                                <button type="button" onClick={() => handleProfileAction(item.action)}>
-                                                    {item.label}
-                                                </button>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                )}
-                            </li>
-                            <li>
+                                </>
+                            )}
+                        </div>
+                    </article>
+
+                    <article className="profile-card" id="change-password-card">
+                        <div className="profile-card-header">
+                            <div>
+                                <p className="profile-card-kicker">Security</p>
+                                <h3>Change password</h3>
+                                <p>Use a strong, unique password to keep your account protected.</p>
+                            </div>
+                        </div>
+                        <form className="change-password-form" onSubmit={handlePasswordSubmit}>
+                            <label>
+                                Old password
+                                <input
+                                    type="password"
+                                    name="oldPassword"
+                                    value={passwordForm.oldPassword}
+                                    onChange={handlePasswordFieldChange}
+                                    autoComplete="current-password"
+                                />
+                            </label>
+                            <label>
+                                New password
+                                <input
+                                    type="password"
+                                    name="newPassword"
+                                    value={passwordForm.newPassword}
+                                    onChange={handlePasswordFieldChange}
+                                    autoComplete="new-password"
+                                />
+                            </label>
+                            <label>
+                                Confirm new password
+                                <input
+                                    type="password"
+                                    name="confirmPassword"
+                                    value={passwordForm.confirmPassword}
+                                    onChange={handlePasswordFieldChange}
+                                    autoComplete="new-password"
+                                />
+                            </label>
+                            {passwordFeedback.error && <p className="form-feedback error">{passwordFeedback.error}</p>}
+                            {passwordFeedback.success && <p className="form-feedback success">{passwordFeedback.success}</p>}
+                            <button type="submit" className="admin-primary-btn" disabled={changingPassword}>
+                                {changingPassword ? 'Updating…' : 'Update password'}
+                            </button>
+                        </form>
+                    </article>
+                </div>
+
+                <div className="profile-side-column">
+                    {!isAdmin && (
+                        <article className="profile-card" id="application-history-card">
+                            <div className="profile-card-header">
+                                <div>
+                                    <p className="profile-card-kicker">Application trail</p>
+                                    <h3>Status timeline</h3>
+                                    <p>See every approval, denial, and reviewer note.</p>
+                                </div>
                                 <button
                                     type="button"
-                                    className={`sidebar-link notifications-link ${activePanel === 'notifications' ? 'active' : ''}`}
-                                    onClick={() => handleProfileAction(() => setActivePanel('notifications'))}
+                                    className="admin-ghost-btn"
+                                    onClick={loadHistory}
+                                    disabled={historyLoading}
                                 >
-                                    <NotificationIcon />
-                                    <span>Notifications</span>
-                                    <ChevronRightIcon />
+                                    {historyLoading ? 'Refreshing…' : 'Refresh'}
                                 </button>
-                            </li>
-                            <li><a href="#" onClick={async (e) => { e.preventDefault(); try { await apiLogout(); } catch {} window.location.href = '/'; }}><LogoutIcon /> Log Out</a></li>
-                        </ul>
-                    </nav>
-                </aside>
-                
-                <main className="profile-main-content">
-                    <input
-                        type="file"
-                        ref={fileInputRef}
-                        style={{ display: 'none' }}
-                        accept="image/*"
-                        onChange={handleImageChange}
-                        disabled={uploading}
-                    />
-                    <div className="profile-header">
-                        <div
-                            className={`profile-avatar-wrapper ${uploading ? 'uploading' : ''}`}
-                            role="button"
-                            tabIndex={0}
-                            onClick={handleAvatarClick}
-                            onKeyDown={handleAvatarKeyDown}
-                        >
-                            {(() => {
-                                const base = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api').replace(/\/api$/, '');
-                                const src = profile.profileImageUrl
-                                    ? (profile.profileImageUrl.startsWith('http') ? profile.profileImageUrl : base + profile.profileImageUrl)
-                                    : null;
-                                return src ? (
-                                    <img src={src} alt="Profile" />
-                                ) : (
-                                    <div className="avatar-placeholder-md"></div>
-                                );
-                            })()}
-                            <span className="profile-avatar-overlay">{uploading ? 'Uploading…' : 'Change photo'}</span>
-                        </div>
-                        <div className="user-info">
-                            <span className="user-name">{loading ? 'Loading…' : profile.name || '—'}</span>
-                            <span className="user-email">{loading ? '' : profile.email || '—'}</span>
-                        </div>
-                    </div>
-                    {activePanel === 'profile' && (
-                        <>
-                            <div className="profile-details-form" id="profile-details-form">
-                                <div className="form-row">
-                                    <label>Name</label>
-                                    <input
-                                        type="text"
-                                        value={profile.name}
-                                        disabled={!isEditing || isApprovedStudent}
-                                        onChange={(e) => setProfile((p) => ({ ...p, name: e.target.value }))}
-                                    />
-                                </div>
-                                <div className="form-row">
-                                    <label>Email account</label>
-                                    <input
-                                        type="text"
-                                        value={profile.email}
-                                        readOnly
-                                        disabled
-                                    />
-                                </div>
-                                {role !== 'ADMIN' && (
-                                    <>
-                                        <div className="form-row">
-                                            <label>Mobile number</label>
-                                            <input
-                                                type="text"
-                                                value={profile.phone}
-                                                disabled={!isEditing}
-                                                onChange={(e) => setProfile((p) => ({ ...p, phone: e.target.value }))}
-                                            />
-                                        </div>
-                                        <div className="form-row">
-                                            <label>Enrollment status</label>
-                                            <div>
-                                                <span className={`status-pill ${(profile.status||'').toLowerCase()}`}>
-                                                    {profile.status ? profile.status : 'Pending'}
-                                                </span>
+                            </div>
+                            {historyLoading && <p className="form-feedback">Loading application history…</p>}
+                            {!historyLoading && historyError && <p className="form-feedback error">{historyError}</p>}
+                            {!historyLoading && !historyError && (
+                                <div className="history-card">
+                                    <div className="history-progress">
+                                        <div className="progress-row">
+                                            <span>Approved</span>
+                                            <div className="progress-track">
+                                                <span className="progress-bar approved" style={{ width: approvedBarWidth }}></span>
                                             </div>
                                         </div>
-                                    </>
-                                )}
-                            </div>
-                            {error && <div style={{ color: '#b00020', margin: '8px 0' }}>{error}</div>}
-                            <div className="actions-row">
-                                {!isEditing && (
-                                    <button className="save-changes-button" onClick={handleEdit} disabled={loading}>Edit Profile</button>
-                                )}
-                                {isEditing && (
-                                    <button className="save-changes-button editing" onClick={handleSave} disabled={loading || saving}>
-                                        {saving ? 'Saving…' : 'Save Changes'}
-                                    </button>
-                                )}
-                            </div>
-                        </>
-                    )}
-                    {activePanel === 'notifications' && (
-                        <section className="card-section" id="notifications-card">
-                            <div className="notifications-header">
-                                <div>
-                                    <h3>Notifications</h3>
-                                    <p className="notifications-subtitle">Review every enrollment update and calendar alert you have received.</p>
+                                        <div className="progress-row">
+                                            <span>Denied</span>
+                                            <div className="progress-track">
+                                                <span className="progress-bar denied" style={{ width: deniedBarWidth }}></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {heroEntry ? (
+                                        <div className={`history-hero ${heroStatusClass}`}>
+                                            <div className="history-hero-header">
+                                                <span className="history-hero-status">{heroStatusLabel}</span>
+                                                <span className="history-hero-type">Latest update</span>
+                                            </div>
+                                            <div className="history-hero-body">
+                                                <p>{heroMessage}</p>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <p className="history-empty">No application history yet.</p>
+                                    )}
+                                    {historyEntries.length > 0 && (
+                                        <div className="history-list">
+                                            {historyEntries.map((entry, index) => (
+                                                <div key={entry.id || index} className="history-entry">
+                                                    <div className="history-entry-header">
+                                                        <span className={`status-pill ${(entry.status || '').toLowerCase()}`}>
+                                                            {entry.status || 'Pending'}
+                                                        </span>
+                                                        <span>{formatHistoryDate(entry.changedAt)}</span>
+                                                    </div>
+                                                    {entry.remarks && (
+                                                        <ul>
+                                                            {buildReasonList(entry.remarks).map((reason, index) => (
+                                                                <li key={`${entry.id}-${index}`}>{reason}</li>
+                                                            ))}
+                                                        </ul>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
+                            )}
+                        </article>
+                    )}
+
+                    <article className="profile-card" id="notifications-card">
+                        <div className="profile-card-header">
+                            <div>
+                                <p className="profile-card-kicker">Activity feed</p>
+                                <h3>Notifications</h3>
+                                <p>Everything coming from enrollment, curriculum, and events.</p>
+                            </div>
+                            <div className="notifications-controls">
+                                <span className="notifications-last-sync">Updated {notificationsRefreshedLabel}</span>
                                 <button
                                     type="button"
-                                    className="notifications-refresh"
-                                    onClick={() => refreshNotifications()}
+                                    className="admin-ghost-btn"
+                                    onClick={handleNotificationRefresh}
                                     disabled={notificationsLoading}
                                 >
                                     {notificationsLoading ? 'Refreshing…' : 'Refresh'}
                                 </button>
                             </div>
-                            <div className="notifications-list">
-                                {notificationsLoading ? (
-                                    <p className="notifications-empty">Loading notifications…</p>
-                                ) : sharedNotifications.length === 0 ? (
-                                    <p className="notifications-empty">No notifications yet. We'll keep this updated when something changes.</p>
-                                ) : (
-                                    sharedNotifications.map((entry) => (
-                                        <article key={entry.id} className={`notifications-item ${entry.read ? 'read' : 'unread'}`}>
-                                            <header className="notifications-item-header">
-                                                <span className="notifications-item-type">{formatNotificationType(entry.type)}</span>
-                                                <span className="notifications-item-time">{formatNotificationTimestamp(entry.createdAt)}</span>
-                                            </header>
-                                            <h4 className="notifications-item-title">{entry.title || formatNotificationType(entry.type)}</h4>
-                                            <p className="notifications-item-message">{entry.message || 'No additional details provided.'}</p>
-                                            <div className="notifications-item-actions">
-                                                {!entry.read && (
-                                                    <button type="button" onClick={() => markNotificationRead(entry.id)}>
-                                                        Mark as read
-                                                    </button>
-                                                )}
-                                                {entry.read && <span className="notifications-item-status">Read</span>}
-                                            </div>
-                                        </article>
-                                    ))
-                                )}
-                            </div>
-                        </section>
-                    )}
-                    {activePanel === 'change-password' && (
-                        <section className="card-section" id="change-password-card">
-                            <h3>Change Password</h3>
-                            <form className="change-password-form" onSubmit={handlePasswordSubmit}>
-                                <label>
-                                    Old password
-                                    <input
-                                        type="password"
-                                        name="oldPassword"
-                                        value={passwordForm.oldPassword}
-                                        onChange={handlePasswordFieldChange}
-                                        autoComplete="current-password"
-                                    />
-                                </label>
-                                <label>
-                                    New password
-                                    <input
-                                        type="password"
-                                        name="newPassword"
-                                        value={passwordForm.newPassword}
-                                        onChange={handlePasswordFieldChange}
-                                        autoComplete="new-password"
-                                    />
-                                </label>
-                                <label>
-                                    Confirm new password
-                                    <input
-                                        type="password"
-                                        name="confirmPassword"
-                                        value={passwordForm.confirmPassword}
-                                        onChange={handlePasswordFieldChange}
-                                        autoComplete="new-password"
-                                    />
-                                </label>
-                                {passwordFeedback.error && (
-                                    <p className="form-feedback error">{passwordFeedback.error}</p>
-                                )}
-                                {passwordFeedback.success && (
-                                    <p className="form-feedback success">{passwordFeedback.success}</p>
-                                )}
-                                <button type="submit" className="password-submit-button" disabled={changingPassword}>
-                                    {changingPassword ? 'Updating…' : 'Update Password'}
-                                </button>
-                            </form>
-                        </section>
-                    )}
-                    {activePanel === 'application-history' && (
-                        <section className="card-section" id="application-history-card">
-                            <h3>Application History</h3>
-                            {historyLoading && <p className="form-feedback">Loading application history…</p>}
-                            {!historyLoading && historyError && (
-                                <p className="form-feedback error">{historyError}</p>
+                        </div>
+                        <div className="notifications-list">
+                            {notificationsLoading && <p className="notifications-empty">Loading notifications…</p>}
+                            {!notificationsLoading && displayedNotifications.length === 0 && (
+                                <p className="notifications-empty">No notifications yet. We'll surface updates here.</p>
                             )}
-                            {!historyLoading && !historyError && (
-                                <>
-                                    <div className="history-card">
-                                        <div className="history-summary">
-                                            <div>
-                                                <h4>Application Overview</h4>
-                                                <p>Track every approval or denial with clear reasoning.</p>
-                                            </div>
+                            {!notificationsLoading && displayedNotifications.length > 0 && (
+                                displayedNotifications.map((entry, index) => (
+                                    <article key={entry.id || entry.createdAt || index} className={`notifications-item ${entry.read ? 'read' : 'unread'}`}>
+                                        <header className="notifications-item-header">
+                                            <span className="notifications-item-type">{formatNotificationType(entry.type)}</span>
+                                            <span className="notifications-item-time">{formatNotificationTimestamp(entry.createdAt)}</span>
+                                        </header>
+                                        <h4 className="notifications-item-title">{entry.title || formatNotificationType(entry.type)}</h4>
+                                        <p className="notifications-item-message">{entry.message || 'No additional details provided.'}</p>
+                                        <div className="notifications-item-actions">
+                                            {!entry.read ? (
+                                                <button type="button" onClick={() => markNotificationRead(entry.id)}>
+                                                    Mark as read
+                                                </button>
+                                            ) : (
+                                                <span className="notifications-item-status">Read</span>
+                                            )}
                                         </div>
-                                        <div className="history-progress">
-                                            <div className="progress-row">
-                                                <span>Approved</span>
-                                                <div className="progress-track">
-                                                    <span className="progress-bar approved" style={{ width: approvedBarWidth }}></span>
-                                                </div>
-                                            </div>
-                                            <div className="progress-row">
-                                                <span>Denied</span>
-                                                <div className="progress-track">
-                                                    <span className="progress-bar denied" style={{ width: deniedBarWidth }}></span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        {heroEntry && (
-                                            <div className={`history-hero ${heroStatusClass}`}>
-                                                <div className="history-hero-header">
-                                                    <span className="history-hero-status">{heroStatusLabel}</span>
-                                                    <span className="history-hero-type">Latest update</span>
-                                                </div>
-                                                <div className="history-hero-body">
-                                                    <p>{heroMessage}</p>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                </>
+                                    </article>
+                                ))
                             )}
-                        </section>
-                    )}
-                </main>
-            </div>
+                        </div>
+                    </article>
+                </div>
+            </section>
         </div>
     );
 };

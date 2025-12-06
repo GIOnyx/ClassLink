@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import '../App.css';
+import './AuthModal.css';
 import './Login.css';
 import { login, requestForgotId } from '../services/backend';
 
@@ -67,70 +68,90 @@ const Login = ({ onLoginSuccess, onClose }) => {
     };
 
     return (
-        <div className="login-modal-overlay" onClick={onClose}>
-            <div className="login-form" onClick={(e) => e.stopPropagation()}>
-                <form onSubmit={handleSubmit}>
-                    <h2 className="login-title">
-                        Welcome to <span className="class-text">Class</span><span className="link-text">Link</span>
-                    </h2>
-                    <h2>It is our great pleasure to have you on board!</h2>
-                    <div className="form-group">
-                        {/* ✅ Added name, id, and autoComplete attributes here */}
-                        <input 
-                            type="text" 
-                            name="identifier"
-                            id="identifier"
-                            autoComplete="username email"
-                            placeholder="Enter email or account ID" 
-                            value={identifier} 
-                            onChange={(e) => setIdentifier(e.target.value)} 
-                            className={errors.identifier ? 'error-input' : ''} 
-                        />
-                        {errors.identifier && <p className="error-text">{errors.identifier}</p>}
+        <div className="login-modal-overlay">
+            <div className="auth-card auth-card--login">
+                <button
+                    type="button"
+                    className="auth-close"
+                    onClick={onClose}
+                    aria-label="Close login modal"
+                >
+                    ×
+                </button>
+
+                <div className="auth-body" aria-label="Login form">
+                    <div className="auth-brand">
+                        <div className="auth-brand__mark" aria-hidden="true" />
+                        <div className="auth-brand__text">
+                            <span className="auth-brand__name">ClassLink</span>
+                            <span className="auth-brand__tag">Access</span>
+                        </div>
                     </div>
-                    <div className="form-group">
-                        {/* ✅ Added name, id, and autoComplete attributes here */}
-                        <input 
-                            type="password" 
-                            name="password"
-                            id="password"
-                            autoComplete="current-password"
-                            placeholder="Enter Password" 
-                            value={password} 
-                            onChange={(e) => setPassword(e.target.value)} 
-                            className={errors.password ? 'error-input' : ''} 
-                        />
-                        {errors.password && <p className="error-text">{errors.password}</p>}
+                    <p className="auth-eyebrow">ClassLink Portal</p>
+                    <h1 className="auth-headline">Welcome back to CIT University</h1>
+                    <p className="auth-subhead">
+                        Sign in to continue your coursework, track enrollment tasks, and receive campus alerts from a single,
+                        secured dashboard.
+                    </p>
+
+                    <form onSubmit={handleSubmit} className="auth-fields">
+                        <div className="form-group">
+                            <input
+                                type="text"
+                                name="identifier"
+                                id="identifier"
+                                autoComplete="username email"
+                                placeholder="CIT email or Student ID"
+                                value={identifier}
+                                onChange={(e) => setIdentifier(e.target.value)}
+                                className={errors.identifier ? 'error-input' : ''}
+                            />
+                            {errors.identifier && <p className="error-text">{errors.identifier}</p>}
+                        </div>
+                        <div className="form-group">
+                            <input
+                                type="password"
+                                name="password"
+                                id="password"
+                                autoComplete="current-password"
+                                placeholder="Portal password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                className={errors.password ? 'error-input' : ''}
+                            />
+                            {errors.password && <p className="error-text">{errors.password}</p>}
+                        </div>
+                        {errors.form && <p className="error-text">{errors.form}</p>}
+                        <button type="submit" className="signin-button">Sign In Securely</button>
+                    </form>
+
+                    <div className="forgot-id-section">
+                        <button type="button" className="forgot-id-link" onClick={toggleForgotForm}>
+                            Forgot Student ID?
+                        </button>
+                        {showForgotForm && (
+                            <form className="forgot-id-form" onSubmit={handleForgotSubmit}>
+                                <div className="form-group">
+                                    <input
+                                        type="email"
+                                        name="forgotEmail"
+                                        id="forgotEmail"
+                                        placeholder="Enter your registered CIT email"
+                                        value={forgotEmail}
+                                        onChange={(e) => setForgotEmail(e.target.value)}
+                                    />
+                                </div>
+                                <button type="submit" className="forgot-submit-button">
+                                    Enable temporary email login
+                                </button>
+                                {forgotFeedback && (
+                                    <p className={forgotFeedback.type === 'error' ? 'error-text' : 'success-text'}>
+                                        {forgotFeedback.message}
+                                    </p>
+                                )}
+                            </form>
+                        )}
                     </div>
-                    {errors.form && <p className="error-text">{errors.form}</p>}
-                    <button type="submit" className="signin-button">Sign In</button>
-                </form>
-                <div className="forgot-id-section">
-                    <button type="button" className="forgot-id-link" onClick={toggleForgotForm}>
-                        Forgot Student ID?
-                    </button>
-                    {showForgotForm && (
-                        <form className="forgot-id-form" onSubmit={handleForgotSubmit}>
-                            <div className="form-group">
-                                <input
-                                    type="email"
-                                    name="forgotEmail"
-                                    id="forgotEmail"
-                                    placeholder="Enter your registered email"
-                                    value={forgotEmail}
-                                    onChange={(e) => setForgotEmail(e.target.value)}
-                                />
-                            </div>
-                            <button type="submit" className="forgot-submit-button">
-                                Enable Email Login
-                            </button>
-                            {forgotFeedback && (
-                                <p className={forgotFeedback.type === 'error' ? 'error-text' : 'success-text'}>
-                                    {forgotFeedback.message}
-                                </p>
-                            )}
-                        </form>
-                    )}
                 </div>
             </div>
         </div>
