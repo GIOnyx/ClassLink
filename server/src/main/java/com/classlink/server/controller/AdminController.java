@@ -344,6 +344,9 @@ public class AdminController {
 		}
 		List<Admin> admins = adminRepository.findAll();
 		for (Admin admin : admins) {
+			if (!admin.isActive()) {
+				continue;
+			}
 			if (admin.getEmail() == null) {
 				continue;
 			}
@@ -389,6 +392,8 @@ public class AdminController {
 		admin.setPassword(password);
 		admin.setName(name.isEmpty() ? email : name);
 		admin.setRole("ADMIN");
+		admin.setActive(true);
+		admin.setRemovedBy(null);
 		Admin saved = adminRepository.save(admin);
 		AdminAccountDto response = new AdminAccountDto(saved.getAdminId(), saved.getEmail(), saved.getPassword(), saved.getName());
 		adminAccountsFileService.appendAccount(response);
@@ -420,13 +425,21 @@ public class AdminController {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Password is incorrect");
 		}
 		Admin target = adminRepository.findByEmail(email);
-		boolean deletedFromDb = false;
-		if (target != null) {
-			adminRepository.delete(target);
-			deletedFromDb = true;
+		if (target == null) {
+			return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Admin account not found");
 		}
+		if (!target.isActive()) {
+			return ResponseEntity.badRequest().body("Admin account is already removed");
+		}
+		String removerName = currentAdmin.getName();
+		if (removerName == null || removerName.isBlank()) {
+			removerName = currentAdmin.getEmail();
+		}
+		target.setActive(false);
+		target.setRemovedBy(removerName);
+		adminRepository.save(target);
 		adminAccountsFileService.removeAccount(email);
-		return ResponseEntity.ok(Map.of("removedFromDb", deletedFromDb));
+		return ResponseEntity.ok(Map.of("removedBy", removerName));
 	}
 
 	private String capitalizeFirstLetter(String value) {

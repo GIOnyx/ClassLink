@@ -56,6 +56,19 @@ public class AuthController {
 
         Admin admin = adminRepository.findByEmailAndPassword(identifier, body.password());
         if (admin != null) {
+            if (!admin.isActive()) {
+                String removedBy = admin.getRemovedBy();
+                if (removedBy == null || removedBy.isBlank()) {
+                    removedBy = admin.getName();
+                }
+                if (removedBy == null || removedBy.isBlank()) {
+                    removedBy = admin.getEmail();
+                }
+                return ResponseEntity.status(403).body(Map.of(
+                        "error", "Admin account has been removed",
+                        "removedBy", removedBy != null ? removedBy : "Administrator"
+                ));
+            }
             session.setAttribute("userType", "admin");
             session.setAttribute("role", "ADMIN");
             session.setAttribute("userId", admin.getAdminId());

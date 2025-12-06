@@ -11,6 +11,7 @@ const Login = ({ onLoginSuccess, onClose }) => {
     const [showForgotForm, setShowForgotForm] = useState(false);
     const [forgotEmail, setForgotEmail] = useState('');
     const [forgotFeedback, setForgotFeedback] = useState(null);
+    const [blockedAdmin, setBlockedAdmin] = useState(null);
 
     const validateForm = () => {
         const newErrors = {};
@@ -34,7 +35,13 @@ const Login = ({ onLoginSuccess, onClose }) => {
             onClose?.();
         } catch (err) {
             console.error('Login failed:', err);
-            const msg = err?.response?.data?.error || 'Login failed';
+            const status = err?.response?.status;
+            const data = err?.response?.data;
+            if (status === 403 && data?.removedBy) {
+                setBlockedAdmin({ removedBy: data.removedBy, message: data?.error });
+                return;
+            }
+            const msg = data?.error || 'Login failed';
             setErrors({ form: msg });
         }
     };
@@ -68,8 +75,9 @@ const Login = ({ onLoginSuccess, onClose }) => {
     };
 
     return (
-        <div className="login-modal-overlay">
-            <div className="auth-card auth-card--login">
+        <>
+            <div className="login-modal-overlay" onClick={onClose}>
+                <div className="auth-card auth-card--login" onClick={(e) => e.stopPropagation()}>
                 <button
                     type="button"
                     className="auth-close"
@@ -153,8 +161,26 @@ const Login = ({ onLoginSuccess, onClose }) => {
                         )}
                     </div>
                 </div>
+                </div>
             </div>
-        </div>
+            {blockedAdmin && (
+                <div className="login-blocked-overlay" onClick={() => setBlockedAdmin(null)}>
+                    <div className="login-blocked-card" onClick={(event) => event.stopPropagation()}>
+                        <p className="login-blocked-title">Account removed</p>
+                        <p className="login-blocked-message">
+                            Your Admin account was removed by {blockedAdmin.removedBy || 'another administrator'}.
+                        </p>
+                        <button
+                            type="button"
+                            className="login-blocked-close"
+                            onClick={() => setBlockedAdmin(null)}
+                        >
+                            Close
+                        </button>
+                    </div>
+                </div>
+            )}
+        </>
     );
 };
 
