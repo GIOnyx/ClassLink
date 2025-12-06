@@ -1,0 +1,55 @@
+.auth-card--logout {
+    width: min(480px, 94%);
+    background: linear-gradient(180deg, #ffffff 0%, #f9f6f3 100%);
+}
+
+.auth-card--logout .auth-body {
+    gap: 16px;
+}
+
+.logout-modal-actions {
+    margin-top: 12px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.logout-modal-button {
+    flex: 1 1 180px;
+    border-radius: 14px;
+    padding: 12px 18px;
+    font-weight: 600;
+    font-size: 1rem;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.logout-modal-button:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.logout-modal-button--secondary {
+    background: #fff;
+    border-color: rgba(123, 17, 28, 0.2);
+    color: #7b111c;
+}
+
+.logout-modal-button--secondary:hover:not(:disabled) {
+    border-color: rgba(123, 17, 28, 0.4);
+    transform: translateY(-1px);
+}
+
+.logout-modal-button--primary {
+    background: linear-gradient(135deg, #7b111c, #b42318);
+    color: #fff;
+    box-shadow: 0 12px 26px rgba(123, 17, 28, 0.25);
+}
+
+.logout-modal-button--primary:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 16px 30px rgba(123, 17, 28, 0.35);
+}
