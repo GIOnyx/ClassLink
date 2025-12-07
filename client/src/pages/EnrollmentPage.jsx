@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { submitStudentApplication, getMyStudent, uploadMyRequirementsDocument } from '../services/backend';
+import { submitStudentApplication, getMyStudent, uploadMyRequirementsDocument, logout as apiLogout } from '../services/backend';
 import useDepartments from '../hooks/useDepartments';
 import usePrograms from '../hooks/usePrograms';
 import '../App.css';
@@ -74,6 +74,25 @@ const STATUS_COPY = {
   }
 };
 
+const STATUS_CARD_DETAIL = {
+  APPROVED: {
+    label: 'Approved',
+    helper: 'You are ready to transition to your official student account.'
+  },
+  PENDING: {
+    label: 'Pending review',
+    helper: 'Admissions is validating your submission. Expect an email update soon.'
+  },
+  REJECTED: {
+    label: 'Needs revision',
+    helper: 'Correct the highlighted details and resubmit for processing.'
+  },
+  DEFAULT: {
+    label: 'Status update',
+    helper: 'Track the latest decision from admissions here.'
+  }
+};
+
 const WIZARD_STEPS = [
   {
     id: 1,
@@ -96,6 +115,25 @@ const WIZARD_STEPS = [
     summary: 'Select your desired department, program, and study details.'
   }
 ];
+
+const DEFAULT_STUDENT_PASSWORD = '123456';
+
+const deriveStudentId = (application) => {
+  if (!application) return '';
+  const providedId = application.accountId || application.studentId;
+  if (providedId && /\d{2}-\d{4}-\d{2}/.test(providedId)) {
+    return providedId;
+  }
+  const timestamp = application.updatedAt || application.createdAt;
+  const date = timestamp ? new Date(timestamp) : new Date();
+  const yearSegment = Number.isNaN(date.getTime())
+    ? new Date().getFullYear().toString().slice(-2)
+    : date.getFullYear().toString().slice(-2);
+  const slotNumber = Number(application.accountSequence || application.id || 1);
+  const middleSegment = String(Math.max(slotNumber, 1)).padStart(4, '0');
+  const trailingSegment = String(Math.max(slotNumber % 100, 1)).padStart(2, '0');
+  return `${yearSegment}-${middleSegment}-${trailingSegment}`;
+};
 
 const formatDisplayDate = (value) => {
   if (!value) return '—';
@@ -124,6 +162,9 @@ const EnrollmentPage = () => {
   const [showWizard, setShowWizard] = useState(false);
   const [requirementsUploading, setRequirementsUploading] = useState(false);
   const [requirementsUploadError, setRequirementsUploadError] = useState('');
+  const [showApprovalModal, setShowApprovalModal] = useState(false);
+  const [hasAcknowledgedApproval, setHasAcknowledgedApproval] = useState(false);
+  const [officialStudentId, setOfficialStudentId] = useState('');
   
   const handleChange = (e) => {
     const { name } = e.target;
@@ -297,6 +338,25 @@ const EnrollmentPage = () => {
     // programs will be fetched by the usePrograms hook when formData.departmentId is set above
   }, [existingApp, currentUserEmail]);
 
+  useEffect(() => {
+    if (!existingApp) {
+      setShowApprovalModal(false);
+      setOfficialStudentId('');
+      setHasAcknowledgedApproval(false);
+      return;
+    }
+    const isApproved = (existingApp.status || '').toUpperCase() === 'APPROVED';
+    if (!isApproved) {
+      setShowApprovalModal(false);
+      setHasAcknowledgedApproval(false);
+      return;
+    }
+    if (!hasAcknowledgedApproval) {
+      setOfficialStudentId(deriveStudentId(existingApp));
+      setShowApprovalModal(true);
+    }
+  }, [existingApp, hasAcknowledgedApproval]);
+
 
   // When programs load (or change) and there's a selected program in the form, set year options
   useEffect(() => {
@@ -369,6 +429,23 @@ const EnrollmentPage = () => {
     }
   };
 
+  const handleDismissApprovalModal = () => {
+    setHasAcknowledgedApproval(true);
+    setShowApprovalModal(false);
+  };
+
+  const handleSwitchToOfficialLogin = async () => {
+    setHasAcknowledgedApproval(true);
+    setShowApprovalModal(false);
+    try {
+      await apiLogout();
+    } catch (err) {
+      console.warn('Failed to log out before redirecting to login screen', err);
+    } finally {
+      window.location.href = '/';
+    }
+  };
+
   const selectedTypeDetails = APPLICANT_TYPE_DETAILS.find(type => type.value === formData.applicantType);
 
   // --- RENDER ---
@@ -386,17 +463,55 @@ const EnrollmentPage = () => {
       { label: 'Semester', value: existingApp.semester ? `${existingApp.semester} semester` : 'Not set' },
       { label: 'Guardian', value: existingApp.parentGuardianName || 'Not provided' },
     ];
+    const submittedOn = formatDisplayDate(existingApp.createdAt);
     const lastUpdated = formatDisplayDate(existingApp.updatedAt || existingApp.createdAt);
     const canQuickEdit = status === 'REJECTED' && !editMode;
     const hasAccountId = status === 'APPROVED' && existingApp.accountId;
+    const approvalStudentId = officialStudentId || deriveStudentId(existingApp);
+    const shouldShowApprovalModal = status === 'APPROVED' && showApprovalModal;
+    const statusDetail = STATUS_CARD_DETAIL[status] || STATUS_CARD_DETAIL.DEFAULT;
+    const normalizedStatus = status.toLowerCase();
+    const statusToneClass = ['approved', 'pending', 'rejected'].includes(normalizedStatus) ? normalizedStatus : 'default';
 
     return (
       <div className="standard-page-layout enrollment-admin">
+        {shouldShowApprovalModal && (
+          <div className="approval-modal-overlay" role="dialog" aria-modal="true">
+            <div className="approval-modal">
+              <p className="approval-modal__eyebrow">Official student access</p>
+              <h2>Application Approved</h2>
+              <p className="approval-modal__copy">
+                Use the issued student account below to sign in to the official portal. This enrollment login will be disabled soon.
+              </p>
+              <div className="approval-modal__credentials">
+                <article>
+                  <span>Student ID</span>
+                  <strong>{approvalStudentId}</strong>
+                </article>
+                <article>
+                  <span>Default Password</span>
+                  <strong>{DEFAULT_STUDENT_PASSWORD}</strong>
+                </article>
+              </div>
+              <p className="approval-modal__note">
+                These are temporary credentials. Please change your password immediately after logging into your official student account.
+              </p>
+              <div className="approval-modal__actions">
+                <button type="button" className="enrollment-submit-btn" onClick={handleSwitchToOfficialLogin}>
+                  Go to official login
+                </button>
+                <button type="button" className="enrollment-submit-btn enrollment-back-btn" onClick={handleDismissApprovalModal}>
+                  Stay on enrollment portal
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         <section className="enrollment-admin__hero">
-          <div>
+          <div className="enrollment-admin__hero-copy">
             <p className="enrollment-admin__eyebrow">Enrollment Application</p>
             <h1 className="enrollment-admin__headline">{statusCopy.heading}</h1>
-            <p className="enrollment-admin__hero-copy">{statusCopy.copy}</p>
+            <p className="enrollment-admin__hero-copy-text">{statusCopy.copy}</p>
             {status === 'PENDING' && (
               <p className="enrollment-admin__inline-note">We will notify you via email once the review is complete.</p>
             )}
@@ -407,15 +522,28 @@ const EnrollmentPage = () => {
             )}
           </div>
           <div className="enrollment-admin__status-card">
-            <span className={`status-label ${statusClass}`}>{status}</span>
-            {hasAccountId ? (
-              <div className="enrollment-admin__account-chip">
-                <p>Official Account ID</p>
-                <strong>{existingApp.accountId}</strong>
-              </div>
-            ) : (
-              <p className="enrollment-admin__status-muted">Application ID: {existingApp.id || '—'}</p>
-            )}
+            <span className={`enrollment-status-pill enrollment-status-pill--${statusToneClass}`}>{statusDetail.label}</span>
+            <p className="enrollment-status-helper">{statusDetail.helper}</p>
+            <div className="enrollment-status-meta">
+              <article>
+                <span>Application ID</span>
+                <strong>{existingApp.id || '—'}</strong>
+              </article>
+              <article>
+                <span>Submitted</span>
+                <strong>{submittedOn}</strong>
+              </article>
+              <article>
+                <span>Last Update</span>
+                <strong>{lastUpdated}</strong>
+              </article>
+              {hasAccountId && (
+                <article className="enrollment-status-meta__highlight">
+                  <span>Official Account ID</span>
+                  <strong>{existingApp.accountId}</strong>
+                </article>
+              )}
+            </div>
           </div>
         </section>
 

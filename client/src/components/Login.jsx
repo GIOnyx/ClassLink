@@ -76,8 +76,8 @@ const Login = ({ onLoginSuccess, onClose }) => {
 
     return (
         <>
-            <div className="login-modal-overlay" onClick={onClose}>
-                <div className="auth-card auth-card--login" onClick={(e) => e.stopPropagation()}>
+            <div className="login-modal-overlay">
+                <div className="auth-card auth-card--login">
                 <button
                     type="button"
                     className="auth-close"
