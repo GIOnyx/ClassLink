@@ -81,8 +81,12 @@ const StudentPage = () => {
       fetchAdminAccounts();
       setShowAddModal(false);
     } catch (err) {
-      const message = err?.response?.data || 'Failed to add admin account.';
-      setFormFeedback({ error: typeof message === 'string' ? message : 'Failed to add admin account.', success: '' });
+      console.error('Failed to add admin account', err);
+      const responsePayload = err?.response?.data;
+      const derivedMessage = typeof responsePayload === 'string'
+        ? responsePayload
+        : responsePayload?.error || err?.message || 'Failed to add admin account.';
+      setFormFeedback({ error: derivedMessage, success: '' });
     } finally {
       setSavingAdmin(false);
     }
@@ -127,7 +131,7 @@ const StudentPage = () => {
     const credentialReady = accounts.filter((account) => Boolean(account.password && account.password.trim())).length;
     const credentialStat = accounts.length ? `${credentialReady}/${accounts.length}` : '0/0';
     return [
-      { label: 'Active admins', value: accounts.length, detail: 'CSV and database sources' },
+      { label: 'Active admins', value: accounts.length, detail: 'Synced from the live MySQL roster' },
       { label: 'Session role', value: info?.role || 'N/A', detail: info?.userType || 'Administrator' },
       { label: 'Credentials stored', value: credentialStat, detail: 'Accounts with saved passwords' },
       { label: 'Last sync', value: lastSyncedLabel, detail: accountsLoading ? 'Sync in progress' : 'Manual refresh available' }
@@ -230,7 +234,7 @@ const StudentPage = () => {
                 <div>
                   <p className="panel-kicker">Directory</p>
                   <h3>Admin roster</h3>
-                  <p className="panel-subtitle">Entries loaded from admin-accounts.csv and the live database.</p>
+                  <p className="panel-subtitle">Entries loaded directly from the live administrator database.</p>
                 </div>
                 <span className="panel-count">
                   Showing {filteredAccounts.length} of {accounts.length || 0}
@@ -320,7 +324,7 @@ const StudentPage = () => {
             <div className="admin-modal-header">
               <div>
                 <h3>Add administrator</h3>
-                <p>Creates an admin record and appends it to admin-accounts.csv.</p>
+                <p>Creates an admin record directly in the database.</p>
               </div>
               <button type="button" className="admin-close-button" onClick={closeAddModal} aria-label="Close">
                 x
@@ -364,7 +368,7 @@ const StudentPage = () => {
             </div>
             <p className="admin-remove-description">
               Enter your password to confirm this change. This action cannot be undone and removes the account from
-              both the live database and the CSV source.
+              the live administrator database immediately.
             </p>
             <form className="admin-remove-form" onSubmit={handleConfirmRemove}>
               <label>

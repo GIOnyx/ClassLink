@@ -471,8 +471,21 @@
   font-size: 0.95rem;
 }
 
+
 .status-label {
-  margin-left: 10px;
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 16px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border: 1px solid transparent;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
 }
 
 .enrollment-admin__pending-hint {
@@ -514,9 +527,24 @@
   font-size: 0.95rem;
 }
 
-.status-approved { color: #087f23; }
-.status-pending { color: #b36b00; }
-.status-rejected { color: #b00020; }
+.status-approved {
+  color: #0f9d58;
+  background: rgba(15, 157, 88, 0.18);
+  border-color: rgba(15, 157, 88, 0.5);
+  box-shadow: 0 10px 30px rgba(15, 157, 88, 0.35);
+}
+
+.status-pending {
+  color: #b36b00;
+  background: rgba(179, 107, 0, 0.18);
+  border-color: rgba(179, 107, 0, 0.4);
+}
+
+.status-rejected {
+  color: #b00020;
+  background: rgba(176, 0, 32, 0.18);
+  border-color: rgba(176, 0, 32, 0.45);
+}
 
 /* Edit Actions */
 .enrollment-edit-actions {
