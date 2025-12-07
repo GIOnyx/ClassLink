@@ -371,7 +371,7 @@
 }
 
 .program-panel {
-	min-height: 320px;
+	min-height: 180px;
 	border-radius: 28px;
 	padding: 28px;
 	color: #fff;
@@ -381,10 +381,52 @@
 	scroll-snap-align: start;
 	display: flex;
 	flex-direction: column;
-	justify-content: flex-end;
+	justify-content: center;
+	align-items: flex-start;
 	gap: 12px;
 	text-transform: uppercase;
 	letter-spacing: 0.02em;
+	transition: min-height 0.35s ease, box-shadow 0.35s ease;
+}
+
+
+.program-panel:hover {
+	min-height: 420px;
+	box-shadow: 0 35px 55px rgba(0, 0, 0, 0.25);
+}
+
+.program-panel__content,
+.program-panel__programs {
+	width: 100%;
+	transition: transform 0.45s ease, opacity 0.35s ease;
+	position: relative;
+}
+
+.program-panel__content {
+	z-index: 2;
+}
+
+.program-panel__programs {
+	position: absolute;
+	inset: 0;
+	padding: 28px;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	gap: 14px;
+	background: linear-gradient(170deg, rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0));
+	opacity: 0;
+	transform: translateY(40%);
+}
+
+.program-panel:hover .program-panel__content {
+	opacity: 0;
+	transform: translateY(-30%);
+}
+
+.program-panel:hover .program-panel__programs {
+	opacity: 1;
+	transform: translateY(0);
 }
 
 .program-panel::after {
@@ -410,6 +452,7 @@
 	line-height: 1.3;
 }
 
+
 .program-panel-dots {
 	letter-spacing: 0.4em;
 	color: rgba(255, 255, 255, 0.8);
@@ -421,4 +464,31 @@
 
 .program-panel {
 	background: linear-gradient(170deg, #7a0000, #b71c1c);
+}
+
+.program-panel-programs-label {
+	font-size: 0.7rem;
+	letter-spacing: 0.25em;
+}
+
+.program-panel-programs-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	text-transform: none;
+	letter-spacing: normal;
+}
+
+.program-panel-programs-item {
+	font-size: 0.95rem;
+	font-weight: 600;
+}
+
+.program-panel-programs-state {
+	margin: 0;
+	font-size: 0.9rem;
+	text-transform: none;
 }

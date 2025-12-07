@@ -26,6 +26,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(registry -> registry
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/", "/index.html", "/static/**").permitAll()
+                .requestMatchers("/api/departments/**", "/api/programs/**").permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .requestMatchers("/api/students/**").hasAnyRole("STUDENT", "ADMIN")
                 .requestMatchers("/api/**").authenticated()
