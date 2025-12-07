@@ -355,7 +355,7 @@ const CurriculumPage = ({ role }) => {
     ? 'Audit and refresh curriculum plans for this department in one hub.'
     : 'Select a department to sync its programs and manage curriculum versions.';
   const studentHeroTitle = current?.programName
-    ? `${current.programName} curriculum`
+    ? current.programName
     : 'Map your academic journey';
   const studentHeroSubtitle = selectedProgramId
     ? current
@@ -932,16 +932,14 @@ const CurriculumPage = ({ role }) => {
             );
           })()
         ) : current ? (
-          // group items by yearLabel then termTitle
           (() => {
             const items = current.items || [];
             if (items.length === 0) {
-              return (
-                <div className="no-items-box">No curriculum items found for this program.</div>
-              );
+              return <div className="no-items-box">No curriculum items found for this program.</div>;
             }
+
             const byYear = {};
-            items.forEach(it => {
+            items.forEach((it) => {
               const y = it.yearLabel || 'Unknown Year';
               const t = it.semester || 'Term';
               byYear[y] = byYear[y] || {};
@@ -949,39 +947,101 @@ const CurriculumPage = ({ role }) => {
               byYear[y][t].push(it);
             });
 
-            return Object.keys(byYear).map((yearKey, yi) => (
-              <div className="curriculum-year" key={yi}>
-                <h3 className="year-title">{yearKey}</h3>
-                {Object.keys(byYear[yearKey]).map((termKey, ti) => (
-                  <div className="term-block" key={ti}>
-                    <h4 className="term-title">{termKey}</h4>
-                    <div className="table-wrap">
-                      <table className="curriculum-table">
-                        <thead>
-                          <tr>
-                            <th>Subject Code</th>
-                            <th>Prerequisite</th>
-                            <th>Equiv. Subject Code</th>
-                            <th>Description</th>
-                            <th>Units</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {byYear[yearKey][termKey].map((s, i) => (
-                            <tr key={i}>
-                              <td className="mono">{s.subjectCode}</td>
-                              <td className="mono">{s.prerequisite}</td>
-                              <td className="mono">{s.equivSubjectCode}</td>
-                              <td>{s.description}</td>
-                                <td className="mono">{s.units}</td>
+            if (isAdmin) {
+              return Object.keys(byYear).map((yearKey, yi) => (
+                <div className="curriculum-year" key={yi}>
+                  <h3 className="year-title">{yearKey}</h3>
+                  {Object.keys(byYear[yearKey]).map((termKey, ti) => (
+                    <div className="term-block" key={ti}>
+                      <h4 className="term-title">{termKey}</h4>
+                      <div className="table-wrap">
+                        <table className="curriculum-table">
+                          <thead>
+                            <tr>
+                              <th>Subject Code</th>
+                              <th>Prerequisite</th>
+                              <th>Equiv. Subject Code</th>
+                              <th>Description</th>
+                              <th>Units</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                          </thead>
+                          <tbody>
+                            {byYear[yearKey][termKey].map((s, i) => (
+                              <tr key={i}>
+                                <td className="mono">{s.subjectCode}</td>
+                                <td className="mono">{s.prerequisite}</td>
+                                <td className="mono">{s.equivSubjectCode}</td>
+                                <td>{s.description}</td>
+                                <td className="mono">{s.units}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ));
+            }
+
+            const prettyValue = (value, fallback) => {
+              if (value === null || value === undefined) return fallback;
+              const trimmed = String(value).trim();
+              return trimmed.length ? trimmed : fallback;
+            };
+
+            return Object.keys(byYear).map((yearKey, yi) => (
+              <section className="student-curriculum-year" key={yi}>
+                <div className="student-year-header">
+                  <span className="year-chip">{yearKey}</span>
+                  <span className="year-meta">
+                    {Object.values(byYear[yearKey]).reduce((count, list) => count + list.length, 0)} subject
+                    {Object.values(byYear[yearKey]).reduce((count, list) => count + list.length, 0) === 1 ? '' : 's'}
+                  </span>
+                </div>
+                <div className="student-term-stack">
+                  {Object.keys(byYear[yearKey]).map((termKey, ti) => {
+                    const termItems = byYear[yearKey][termKey];
+                    const totalUnits = termItems.reduce((sum, entry) => sum + (Number(entry.units) || 0), 0);
+                    return (
+                      <article className="student-term-card" key={ti}>
+                        <div className="student-term-head">
+                          <div>
+                            <p className="term-chip">{termKey}</p>
+                            <p className="term-count">{termItems.length} subject{termItems.length === 1 ? '' : 's'}</p>
+                          </div>
+                          <div className="term-stat">
+                            <span>Total units</span>
+                            <strong>{totalUnits ? Number(totalUnits).toLocaleString() : '—'}</strong>
+                          </div>
+                        </div>
+                        <div className="student-term-grid">
+                          {termItems.map((s, i) => (
+                            <article className="student-subject-row" key={i}>
+                              <div className="subject-main">
+                                <span className="subject-code-pill">{prettyValue(s.subjectCode, 'TBA')}</span>
+                                <p>{prettyValue(s.description, 'Description forthcoming')}</p>
+                              </div>
+                              <div className="subject-metric">
+                                <span>Prerequisite</span>
+                                <strong>{prettyValue(s.prerequisite, 'None')}</strong>
+                              </div>
+                              <div className="subject-metric">
+                                <span>Equivalent</span>
+                                <strong>{prettyValue(s.equivSubjectCode, '—')}</strong>
+                              </div>
+                              <div className="subject-metric">
+                                <span>Units</span>
+                                <strong>{s.units !== null && s.units !== undefined && s.units !== '' ? Number(s.units).toLocaleString() : '—'}</strong>
+                              </div>
+                            </article>
+                          ))}
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              </section>
             ));
           })()
         ) : (

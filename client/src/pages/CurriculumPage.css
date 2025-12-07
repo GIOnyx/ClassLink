@@ -53,8 +53,8 @@
 
 .student-hero-stats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
 }
 
 .student-stat-card {
@@ -62,6 +62,11 @@
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.12);
   border: 1px solid rgba(255, 255, 255, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 140px;
+  word-break: break-word;
 }
 
 .student-stat-card span {
@@ -77,10 +82,12 @@
   margin: 8px 0 6px;
   font-size: 1.4rem;
   color: #fff;
+  line-height: 1.4;
 }
 
 .student-stat-card small {
   color: rgba(255, 255, 255, 0.9);
+  line-height: 1.4;
 }
 
 .student-hero-panel {
@@ -825,6 +832,154 @@
 
 .curriculum-title h2 {
   color: #111;
+}
+
+.student-curriculum-year {
+  background: #fff;
+  border-radius: 28px;
+  border: 1px solid #e2e8f0;
+  padding: 24px;
+  box-shadow: 0 25px 50px rgba(15, 23, 42, 0.08);
+}
+
+.student-year-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.year-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 16px;
+  border-radius: 999px;
+  background: rgba(123, 17, 28, 0.1);
+  color: #7b111c;
+  font-weight: 700;
+}
+
+.year-meta {
+  font-weight: 600;
+  color: #475569;
+}
+
+.student-term-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.student-term-card {
+  border-radius: 20px;
+  border: 1px solid #f4d0d5;
+  background: #fff7f7;
+  padding: 20px;
+}
+
+.student-term-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.term-chip {
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.75rem;
+  color: #b42318;
+}
+
+.term-count {
+  margin: 4px 0 0;
+  color: #0f172a;
+  font-weight: 600;
+}
+
+.term-stat {
+  border-radius: 16px;
+  padding: 10px 16px;
+  background: #fff;
+  border: 1px solid #f4d0d5;
+  text-align: right;
+}
+
+.term-stat span {
+  display: block;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #b42318;
+}
+
+.term-stat strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 1.4rem;
+  color: #7b111c;
+}
+
+.student-term-grid {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.student-subject-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  padding: 16px;
+  border-radius: 16px;
+  background: #fff;
+  border: 1px solid #fce3e6;
+}
+
+.subject-main {
+  grid-column: span 2;
+  min-width: 220px;
+}
+
+.subject-code-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.08);
+  color: #0f172a;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.subject-main p {
+  margin: 0;
+  color: #334155;
+}
+
+.subject-metric span {
+  display: block;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #94a3b8;
+}
+
+.subject-metric strong {
+  display: block;
+  margin-top: 4px;
+  color: #0f172a;
+  font-weight: 600;
+}
+
+@media (max-width: 720px) {
+  .subject-main {
+    grid-column: span 1;
+  }
 }
 
 /* Small responsive tweaks */
