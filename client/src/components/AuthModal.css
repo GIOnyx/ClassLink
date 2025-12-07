@@ -25,7 +25,7 @@
 
 .auth-card--register {
     width: min(720px, 96%);
-    background: linear-gradient(180deg, #ffffff 0%, #faf5ef 100%);
+    background: linear-gradient(180deg, #ffffff 0%, #f5f5f9 100%);
 }
 
 .auth-close {
