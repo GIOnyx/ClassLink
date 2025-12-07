@@ -658,10 +658,6 @@ const EnrollmentPage = () => {
               </div>
             ) : null}
           </div>
-          <div className="enrollment-hero-note">
-            <p>Need help?</p>
-            <span>Email admissions@cit.edu.ph for assistance.</span>
-          </div>
         </section>
 
         <section className="requirements-section">
@@ -730,7 +726,6 @@ const EnrollmentPage = () => {
             })}
           </ol>
           <div className="enrollment-stepper-foot">
-            <p>Need help? <a href="mailto:admissions@cit.edu.ph">admissions@cit.edu.ph</a></p>
             {requirementsUploading && <span className="upload-hint">Uploading requirements…</span>}
           </div>
         </aside>
