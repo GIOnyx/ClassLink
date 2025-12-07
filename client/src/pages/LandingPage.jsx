@@ -6,6 +6,39 @@ import Footer from '../components/Footer.jsx';
 import '../App.css';
 import './LandingPage.css';
 import useDepartments from '../hooks/useDepartments';
+import usePrograms from '../hooks/usePrograms';
+
+const DepartmentCard = ({ department, accentClass }) => {
+    const { programs, loading } = usePrograms(department.id);
+    const programItems = programs?.slice(0, 4) || [];
+    const hasPrograms = programItems.length > 0;
+
+    return (
+        <article className={`program-panel ${accentClass}`}>
+            <div className="program-panel__content">
+                <span className="program-panel-label">Department</span>
+                <h3>{department.name}</h3>
+                <span className="program-panel-dots" aria-hidden="true">•••</span>
+            </div>
+            <div className="program-panel__programs" aria-live="polite">
+                <span className="program-panel-label program-panel-programs-label">Programs</span>
+                {loading ? (
+                    <p className="program-panel-programs-state">Loading…</p>
+                ) : hasPrograms ? (
+                    <ul className="program-panel-programs-list">
+                        {programItems.map((program) => (
+                            <li key={program.id ?? program.name} className="program-panel-programs-item">
+                                {program.name}
+                            </li>
+                        ))}
+                    </ul>
+                ) : (
+                    <p className="program-panel-programs-state">Programs coming soon.</p>
+                )}
+            </div>
+        </article>
+    );
+};
 
 const LandingPage = ({ onLoginSuccess }) => {
     // State to control the visibility of the login pop-up
@@ -176,15 +209,12 @@ const LandingPage = ({ onLoginSuccess }) => {
                     </div>
                     <div className="programs-panel-grid" ref={sliderRef}>
                         {departments.length > 0 ? (
-                            departments.map((d, index) => (
-                                <article
-                                    key={d.id}
-                                    className={`program-panel ${programClassNames[index % programClassNames.length]}`}
-                                >
-                                    <span className="program-panel-label">Department</span>
-                                    <h3>{d.name}</h3>
-                                    <span className="program-panel-dots" aria-hidden="true">•••</span>
-                                </article>
+                            departments.map((department, index) => (
+                                <DepartmentCard
+                                    key={department.id}
+                                    department={department}
+                                    accentClass={programClassNames[index % programClassNames.length]}
+                                />
                             ))
                         ) : (
                             <article className="program-panel accent-one loading">

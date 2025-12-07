@@ -77,4 +77,5 @@ public class CalendarController {
     private boolean isAdmin(ClasslinkUserDetails principal) {
         return principal != null && "ADMIN".equalsIgnoreCase(principal.getRole());
     }
+    
 }
