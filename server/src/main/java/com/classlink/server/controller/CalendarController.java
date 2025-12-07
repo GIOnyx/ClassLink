@@ -5,13 +5,13 @@ import java.util.Map;
 import java.time.LocalDate; // Import LocalDate
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import com.classlink.server.model.Calendar;
 import com.classlink.server.repository.CalendarEventRepository;
+import com.classlink.server.security.ClasslinkUserDetails;
 import com.classlink.server.service.NotificationService;
-
-import jakarta.servlet.http.HttpSession;
 
 @RestController
 @RequestMapping("/api/calendar")
@@ -34,8 +34,9 @@ public class CalendarController {
 
     // --- POST create a new event (Supporting date range) ---
     @PostMapping
-    public ResponseEntity<?> createEvent(@RequestBody Calendar event, HttpSession session) {
-        if (!isAdmin(session)) {
+    public ResponseEntity<?> createEvent(@RequestBody Calendar event,
+                                         @AuthenticationPrincipal ClasslinkUserDetails principal) {
+        if (!isAdmin(principal)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Admin access required");
         }
 
@@ -63,8 +64,9 @@ public class CalendarController {
 
     // --- DELETE an event ---
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteEvent(@PathVariable Long id, HttpSession session) {
-        if (!isAdmin(session)) {
+    public ResponseEntity<?> deleteEvent(@PathVariable Long id,
+                                         @AuthenticationPrincipal ClasslinkUserDetails principal) {
+        if (!isAdmin(principal)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Admin access required");
         }
         calendarEventRepository.deleteById(id);
@@ -72,8 +74,7 @@ public class CalendarController {
     }
 
     // --- Admin Check Helper ---
-    private boolean isAdmin(HttpSession session) {
-        Object role = session.getAttribute("role");
-        return role != null && "ADMIN".equals(role.toString());
+    private boolean isAdmin(ClasslinkUserDetails principal) {
+        return principal != null && "ADMIN".equalsIgnoreCase(principal.getRole());
     }
 }

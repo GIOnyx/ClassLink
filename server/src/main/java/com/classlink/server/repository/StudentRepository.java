@@ -11,6 +11,7 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
 	Student findByEmailAndPassword(String email, String password);
 	Student findByAccountIdAndPassword(String accountId, String password);
 	Student findByEmail(String email);
+	Student findByAccountId(String accountId);
 	Student findTopByAccountIdStartingWithOrderByAccountIdDesc(String prefix);
 	boolean existsByAccountId(String accountId);
 	List<Student> findAllByStatus(StudentStatus status);

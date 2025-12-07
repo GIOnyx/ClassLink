@@ -8,13 +8,17 @@ import com.classlink.server.repository.ProgramRepository;
 import com.classlink.server.repository.DepartmentRepository;
 import com.classlink.server.model.Department;
 import com.classlink.server.model.Program;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Optional;
 import java.util.Map;
 import java.util.List;
 import java.util.Comparator;
+
+import com.classlink.server.security.ClasslinkUserDetails;
 
 @RestController
 @RequestMapping("/api/curricula")
@@ -193,7 +197,11 @@ public class CurriculumController {
     }
 
     @PostMapping
-    public ResponseEntity<?> create(@RequestBody Map<String,Object> payload) {
+    public ResponseEntity<?> create(@RequestBody Map<String,Object> payload,
+                                    @AuthenticationPrincipal ClasslinkUserDetails principal) {
+        if (!isAdmin(principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Admin access required");
+        }
         // Resolve department if provided
         Department d = null;
         try {
@@ -282,7 +290,12 @@ public class CurriculumController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> update(@PathVariable Long id, @RequestBody Map<String,Object> payload) {
+    public ResponseEntity<?> update(@PathVariable Long id,
+                                    @RequestBody Map<String,Object> payload,
+                                    @AuthenticationPrincipal ClasslinkUserDetails principal) {
+        if (!isAdmin(principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Admin access required");
+        }
         Optional<Curriculum> maybeCurriculum = curriculumRepository.findById(id);
         if (maybeCurriculum.isEmpty()) {
             return ResponseEntity.notFound().build();
@@ -407,14 +420,22 @@ public class CurriculumController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> delete(@PathVariable Long id) {
+    public ResponseEntity<?> delete(@PathVariable Long id,
+                                    @AuthenticationPrincipal ClasslinkUserDetails principal) {
+        if (!isAdmin(principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Admin access required");
+        }
         if (!curriculumRepository.existsById(id)) return ResponseEntity.notFound().build();
         curriculumRepository.deleteById(id);
         return ResponseEntity.ok().build();
     }
 
     @PostMapping("/{id}/clone")
-    public ResponseEntity<?> cloneCurriculum(@PathVariable Long id) {
+    public ResponseEntity<?> cloneCurriculum(@PathVariable Long id,
+                                             @AuthenticationPrincipal ClasslinkUserDetails principal) {
+        if (!isAdmin(principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Admin access required");
+        }
         // Interpret {id} as a Program id to clone the program and its curriculum items
         Optional<Program> srcProg = programRepository.findById(id);
         if (srcProg.isEmpty()) return ResponseEntity.notFound().build();
@@ -491,4 +512,8 @@ public class CurriculumController {
         out.put("items", dtoItems);
         return ResponseEntity.ok(out);
     }
+
+	private boolean isAdmin(ClasslinkUserDetails principal) {
+		return principal != null && "ADMIN".equalsIgnoreCase(principal.getRole());
+	}
 }

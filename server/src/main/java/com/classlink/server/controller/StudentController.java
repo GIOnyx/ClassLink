@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -34,7 +35,7 @@ import com.classlink.server.repository.ProgramRepository;
 import com.classlink.server.repository.StudentRepository;
 import com.classlink.server.repository.ApplicationHistoryRepository;
 
-import jakarta.servlet.http.HttpSession;
+import com.classlink.server.security.ClasslinkUserDetails;
 
 @RestController
 @RequestMapping("/api/students")
@@ -60,13 +61,12 @@ public class StudentController {
     // Using a Map here to avoid strict record parsing issues if fields are
     // missing/null
     @PutMapping("/me")
-    public ResponseEntity<?> updateStudentApplication(@RequestBody Map<String, Object> body, HttpSession session) {
-        Object userIdObj = session.getAttribute("userId");
-        if (userIdObj == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("You are not logged in.");
+    public ResponseEntity<?> updateStudentApplication(@RequestBody Map<String, Object> body,
+            @AuthenticationPrincipal ClasslinkUserDetails principal) {
+        Long userId = resolveStudentId(principal);
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Student access required.");
         }
-
-        Long userId = ((Number) userIdObj).longValue();
         log.info("Received application update for student {}", userId);
 
         Student student = studentRepository.findById(userId).orElse(null);
@@ -165,12 +165,11 @@ public class StudentController {
     }
 
     @GetMapping("/me")
-    public ResponseEntity<?> getMyStudent(HttpSession session) {
-        Object userIdObj = session.getAttribute("userId");
-        if (userIdObj == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("You are not logged in.");
+    public ResponseEntity<?> getMyStudent(@AuthenticationPrincipal ClasslinkUserDetails principal) {
+        Long userId = resolveStudentId(principal);
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Student access required.");
         }
-        Long userId = ((Number) userIdObj).longValue();
         Student student = studentRepository.findById(userId).orElse(null);
         if (student == null)
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Student record not found.");
@@ -178,12 +177,11 @@ public class StudentController {
     }
 
     @GetMapping("/me/history")
-    public ResponseEntity<?> getMyHistory(HttpSession session) {
-        Object userIdObj = session.getAttribute("userId");
-        if (userIdObj == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("You are not logged in.");
+    public ResponseEntity<?> getMyHistory(@AuthenticationPrincipal ClasslinkUserDetails principal) {
+        Long userId = resolveStudentId(principal);
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Student access required.");
         }
-        Long userId = ((Number) userIdObj).longValue();
         List<ApplicationHistory> entries = applicationHistoryRepository.findAllByStudentIdOrderByChangedAtDesc(userId);
         List<Map<String, Object>> payload = new ArrayList<>();
         for (ApplicationHistory entry : entries) {
@@ -201,12 +199,12 @@ public class StudentController {
     }
 
     @PostMapping("/me/profile-image")
-    public ResponseEntity<?> uploadProfileImage(@RequestParam("file") MultipartFile file, HttpSession session) {
-        Object userIdObj = session.getAttribute("userId");
-        if (userIdObj == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("You are not logged in.");
+    public ResponseEntity<?> uploadProfileImage(@RequestParam("file") MultipartFile file,
+            @AuthenticationPrincipal ClasslinkUserDetails principal) {
+        Long userId = resolveStudentId(principal);
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Student access required.");
         }
-        Long userId = ((Number) userIdObj).longValue();
         Student student = studentRepository.findById(userId).orElse(null);
         if (student == null) return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Student record not found.");
 
@@ -244,12 +242,12 @@ public class StudentController {
     }
 
     @PostMapping("/me/requirements")
-    public ResponseEntity<?> uploadRequirementsDocument(@RequestParam("file") MultipartFile file, HttpSession session) {
-        Object userIdObj = session.getAttribute("userId");
-        if (userIdObj == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("You are not logged in.");
+    public ResponseEntity<?> uploadRequirementsDocument(@RequestParam("file") MultipartFile file,
+            @AuthenticationPrincipal ClasslinkUserDetails principal) {
+        Long userId = resolveStudentId(principal);
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Student access required.");
         }
-        Long userId = ((Number) userIdObj).longValue();
         Student student = studentRepository.findById(userId).orElse(null);
         if (student == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Student record not found.");
@@ -299,4 +297,11 @@ public class StudentController {
         }
         return value.toString().trim();
     }
+
+	private Long resolveStudentId(ClasslinkUserDetails principal) {
+		if (principal == null || !principal.isStudent()) {
+			return null;
+		}
+		return principal.getUserId();
+	}
 }
