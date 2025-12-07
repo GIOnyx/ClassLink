@@ -4,7 +4,7 @@ import Navbar from './Navbar';
 import SecondaryNavbar from './SecondaryNavbar';
 import Footer from './Footer';
 import LogoutModal from './LogoutModal';
-import { getMyNotifications, getUnreadNotificationCount, markNotificationAsRead } from '../services/backend';
+import { getMyNotifications, getUnreadNotificationCount, markNotificationAsRead, getMyStudent, getMyAdmin } from '../services/backend';
 
 const MainLayout = ({ onLogout, role }) => {
     const [notifications, setNotifications] = useState([]);
@@ -12,6 +12,16 @@ const MainLayout = ({ onLogout, role }) => {
     const [notificationsLoading, setNotificationsLoading] = useState(false);
     const [showLogoutModal, setShowLogoutModal] = useState(false);
     const [logoutInFlight, setLogoutInFlight] = useState(false);
+    const [profileSummary, setProfileSummary] = useState({ name: '', avatarUrl: '', roleLabel: '' });
+    const [profileLoading, setProfileLoading] = useState(false);
+    const resolveImageSrc = (url) => {
+        if (!url) return '';
+        if (/^(https?:|data:|blob:)/i.test(url)) {
+            return url;
+        }
+        const base = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api').replace(/\/api$/, '');
+        return `${base}${url.startsWith('/') ? '' : '/'}${url}`;
+    };
 
     const refreshUnreadCount = useCallback(async () => {
         if (role !== 'STUDENT') {
@@ -91,6 +101,46 @@ const MainLayout = ({ onLogout, role }) => {
         return () => clearInterval(interval);
     }, [role, loadNotifications, refreshUnreadCount]);
 
+    useEffect(() => {
+        let cancelled = false;
+        if (!role) {
+            setProfileSummary({ name: '', avatarUrl: '', roleLabel: '' });
+            return () => { cancelled = true; };
+        }
+
+        const fetchProfile = async () => {
+            setProfileLoading(true);
+            try {
+                const res = role === 'ADMIN' ? await getMyAdmin() : await getMyStudent();
+                if (cancelled) return;
+                const data = res?.data || {};
+                const resolvedName = data.name || `${data.firstName || ''} ${data.lastName || ''}`.trim() || (role === 'ADMIN' ? 'Admin Account' : 'Student Account');
+                const avatarUrl = resolveImageSrc(data.profileImageUrl || data.photoUrl || '');
+                setProfileSummary({
+                    name: resolvedName,
+                    avatarUrl,
+                    roleLabel: role === 'ADMIN' ? 'Administrator' : 'Student'
+                });
+            } catch (err) {
+                console.warn('Failed to load profile summary', err);
+                if (!cancelled) {
+                    setProfileSummary({
+                        name: role === 'ADMIN' ? 'Admin Account' : 'Student Account',
+                        avatarUrl: '',
+                        roleLabel: role === 'ADMIN' ? 'Administrator' : 'Student'
+                    });
+                }
+            } finally {
+                if (!cancelled) {
+                    setProfileLoading(false);
+                }
+            }
+        };
+
+        fetchProfile();
+        return () => { cancelled = true; };
+    }, [role]);
+
     const handleRequestLogout = useCallback(() => {
         if (logoutInFlight) return;
         setShowLogoutModal(true);
@@ -124,6 +174,8 @@ const MainLayout = ({ onLogout, role }) => {
                 onRefreshNotifications={handleRefreshNotifications}
                 onMarkNotificationRead={handleMarkNotificationRead}
                 notificationsLoading={notificationsLoading}
+                userProfile={profileSummary}
+                profileLoading={profileLoading}
             />
             
             {/* Sidebar Navigation */}

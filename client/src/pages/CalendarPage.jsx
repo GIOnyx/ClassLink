@@ -100,6 +100,9 @@ const CalendarPage = () => {
     }, [events]);
 
     const nextEvent = upcomingEvents[0];
+    const heroTitle = isAdmin
+        ? 'Command the school-year timeline'
+        : 'Stay ahead of every campus milestone';
     const heroSubtitle = isAdmin
         ? 'Publish key milestones, exams, and breaks with a single source of truth for your campus.'
         : 'Stay in sync with every approved milestone, from enrolment to breaks and examinations.';
@@ -322,7 +325,7 @@ const CalendarPage = () => {
             <section className="calendar-hero-card">
                 <div className="calendar-hero__copy">
                     <p className="calendar-pill">Academic Calendar • {currentSchoolYear}</p>
-                    <h1>Command the school-year timeline</h1>
+                    <h1>{heroTitle}</h1>
                     <p className="calendar-hero__subtitle">{heroSubtitle}</p>
                     <div className="calendar-hero__meta">
                         <div className="calendar-hero__stat">

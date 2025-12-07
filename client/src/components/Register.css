@@ -2,14 +2,14 @@
 
 
 .auth-card--register {
-	background: linear-gradient(180deg, #ffffff 0%, #fef6ef 100%);
+	background: linear-gradient(180deg, #ffffff 0%, #f5f5f9 100%);
 	border: 1px solid rgba(39, 51, 56, 0.08);
 }
 
 
 .auth-card--register .signin-button {
-	background: linear-gradient(135deg, #7b111c, #f4a261);
-	color: #fffaf4;
+	background: linear-gradient(135deg, #7b111c, #b42318);
+	color: #ffffff;
 }
 
 .auth-card--register .signin-button:hover {

@@ -16,7 +16,9 @@ const Navbar = ({
     unreadCount = 0,
     onRefreshNotifications,
     onMarkNotificationRead,
-    notificationsLoading = false
+    notificationsLoading = false,
+    userProfile = {},
+    profileLoading = false
 }) => {
     const [isDropdownOpen, setDropdownOpen] = useState(false);
     const [isOnline, setIsOnline] = useState(typeof navigator === 'undefined' ? true : navigator.onLine);
@@ -51,7 +53,16 @@ const Navbar = ({
         }
     }, [isDropdownOpen, onRefreshNotifications]);
 
-    const toggleDropdown = () => setDropdownOpen((open) => !open);
+    const openDropdown = () => setDropdownOpen(true);
+    const closeDropdown = () => setDropdownOpen(false);
+
+    const handleNotificationsBlur = (event) => {
+        if (!dropdownRef.current) return;
+        const nextFocus = event?.relatedTarget;
+        if (!dropdownRef.current.contains(nextFocus)) {
+            closeDropdown();
+        }
+    };
 
     const formatRelativeTime = (value) => {
         if (!value) return '';
@@ -79,12 +90,19 @@ const Navbar = ({
     };
 
     const renderNotifications = () => (
-        <li className="notification-wrapper" ref={dropdownRef}>
+        <li
+            className="notification-wrapper"
+            ref={dropdownRef}
+            onMouseEnter={openDropdown}
+            onMouseLeave={closeDropdown}
+            onFocusCapture={openDropdown}
+            onBlurCapture={handleNotificationsBlur}
+        >
             <button
                 type="button"
                 className={`notification-link ${isDropdownOpen ? 'open' : ''}`}
-                onClick={toggleDropdown}
                 aria-label="Notifications"
+                aria-expanded={isDropdownOpen}
             >
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -170,28 +188,54 @@ const Navbar = ({
         </div>
     );
 
-    if (role === 'ADMIN') {
-        return (
-            <nav className="navbar navbar--admin">
-                {renderBrand()}
-                <ul className="navbar-links">
-                    {renderNotifications()}
-                    <li>
-                        <button onClick={onLogout} className="logout-button">Logout</button>
-                    </li>
-                </ul>
-            </nav>
-        );
-    }
+    const displayName = profileLoading
+        ? 'Loading account…'
+        : (userProfile?.name && userProfile.name.trim().length > 0
+            ? userProfile.name.trim()
+            : role === 'ADMIN'
+                ? 'Admin Account'
+                : 'Student Account');
+    const roleLabel = userProfile?.roleLabel || (role === 'ADMIN' ? 'Administrator' : 'Student');
+    const avatarSrc = userProfile?.avatarUrl;
+    const initials = displayName
+        .split(' ')
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((segment) => segment[0]?.toUpperCase() || '')
+        .join('') || role?.[0] || '?';
+
+    const renderProfileCard = () => (
+        <li className="navbar-profile-item">
+            <div className={`navbar-profile-card ${profileLoading ? 'is-loading' : ''}`}>
+                <div className="navbar-profile-avatar" aria-hidden={avatarSrc ? 'true' : 'false'}>
+                    {avatarSrc ? (
+                        <img src={avatarSrc} alt={`${displayName} avatar`} />
+                    ) : (
+                        <span>{initials}</span>
+                    )}
+                </div>
+                <div className="navbar-profile-copy">
+                    <p>{displayName}</p>
+                    <span>{roleLabel}</span>
+                </div>
+                <button
+                    type="button"
+                    className="navbar-profile-signout"
+                    onClick={onLogout}
+                    aria-label="Logout"
+                >
+                    <img src="/icons/logout.png" alt="" />
+                </button>
+            </div>
+        </li>
+    );
 
     return (
-        <nav className="navbar">
+        <nav className={`navbar ${role === 'ADMIN' ? 'navbar--admin' : ''}`}>
             {renderBrand()}
             <ul className="navbar-links">
                 {renderNotifications()}
-                <li>
-                    <button onClick={onLogout} className="logout-button">Logout</button>
-                </li>
+                {renderProfileCard()}
             </ul>
         </nav>
     );
