@@ -275,10 +275,95 @@ const CurriculumPage = ({ role }) => {
 
   const highlightedPrograms = useMemo(() => filteredPrograms.slice(0, 4), [filteredPrograms]);
 
+  const studentStats = useMemo(() => {
+    const totalSubjects = current?.items?.length || 0;
+    const totalUnits = current?.items?.reduce((sum, item) => sum + (Number(item.units) || 0), 0) || 0;
+    return [
+      {
+        label: 'Program focus',
+        value: current?.programName || 'Select a program',
+        helper: selectedDept ? selectedDept : 'Pick a department'
+      },
+      {
+        label: 'Duration',
+        value: current?.durationInYears ? `${current.durationInYears} years` : '—',
+        helper: current?.durationInYears ? 'Official study length' : 'Will populate once loaded'
+      },
+      {
+        label: 'Subjects',
+        value: totalSubjects || '—',
+        helper: totalSubjects ? 'Published curriculum entries' : 'No entries yet'
+      },
+      {
+        label: 'Total units',
+        value: totalUnits ? `${Number(totalUnits).toLocaleString()} units` : '—',
+        helper: totalUnits ? 'Summed across plan' : 'Awaiting curriculum data'
+      }
+    ];
+  }, [current, selectedDept]);
+
+  const studentSnapshot = useMemo(() => {
+    if (!current || !Array.isArray(current.items) || current.items.length === 0) return null;
+    const groups = current.items.reduce((acc, item) => {
+      const yearLabel = item.yearLabel || 'Year';
+      const termLabel = item.semester || 'Term';
+      const key = `${yearLabel}__${termLabel}`;
+      if (!acc[key]) {
+        acc[key] = { year: yearLabel, term: termLabel, items: [] };
+      }
+      acc[key].items.push(item);
+      return acc;
+    }, {});
+    const orderedGroups = Object.values(groups).sort((a, b) => {
+      const aYear = getYearNumberFromItem(a.items[0]) ?? parseYearLabelToNumber(a.year) ?? 999;
+      const bYear = getYearNumberFromItem(b.items[0]) ?? parseYearLabelToNumber(b.year) ?? 999;
+      if (aYear !== bYear) return aYear - bYear;
+      return (a.term || '').localeCompare(b.term || '');
+    });
+    const primary = orderedGroups[0];
+    const leadSubject = primary.items.find((it) => it.description)?.description
+      || primary.items.find((it) => it.subjectCode)?.subjectCode
+      || 'Core subjects commencing';
+    return {
+      year: primary.year,
+      term: primary.term,
+      count: primary.items.length,
+      leadSubject
+    };
+  }, [current]);
+
+  const studentYearBreakdown = useMemo(() => {
+    if (!current || !Array.isArray(current.items) || current.items.length === 0) return [];
+    const tally = current.items.reduce((acc, item) => {
+      const label = item.yearLabel || 'Year';
+      if (!acc[label]) {
+        acc[label] = { label, subjects: 0, units: 0 };
+      }
+      acc[label].subjects += 1;
+      acc[label].units += Number(item.units) || 0;
+      return acc;
+    }, {});
+    return Object.values(tally).sort((a, b) => {
+      const aYear = parseYearLabelToNumber(a.label) ?? 999;
+      const bYear = parseYearLabelToNumber(b.label) ?? 999;
+      return aYear - bYear;
+    });
+  }, [current]);
+
   const heroTitle = selectedDept ? `${selectedDept} curricula` : 'Curriculum workspace';
   const heroSubtitle = selectedDept
     ? 'Audit and refresh curriculum plans for this department in one hub.'
     : 'Select a department to sync its programs and manage curriculum versions.';
+  const studentHeroTitle = current?.programName
+    ? `${current.programName} curriculum`
+    : 'Map your academic journey';
+  const studentHeroSubtitle = selectedProgramId
+    ? current
+      ? 'Review the official course plan for your selected program, term by term.'
+      : 'Fetching the official plan approved by your department.'
+    : selectedDeptId
+      ? 'Choose a program to reveal its subjects, prerequisites, and units.'
+      : 'Start by selecting a department to see the programs it offers.';
   const selectedDeptLabel = selectedDept || 'No department selected';
   const filteredCount = filteredPrograms.length;
   const programTotal = Array.isArray(adminPrograms) ? adminPrograms.length : 0;
@@ -532,67 +617,94 @@ const CurriculumPage = ({ role }) => {
         !viewingCurriculum &&
         !editingCurriculum &&
         shouldShowNonAdminControls && (
-          <div className="curriculum-header">
-            <div>
-              <div style={{display:'flex', alignItems:'center', gap:12}} className="curriculum-controls">
-                <div style={{display:'flex', flexDirection:'column'}}>
-                  <label htmlFor="deptSelect" className="small-label">Department</label>
-                  <select
-                    id="deptSelect"
-                    className="dept-select"
-                    value={selectedDeptId}
-                    onChange={(e) => {
-                      const deptId = e.target.value;
-                      setSelectedDeptId(deptId);
-                      const deptObj = departmentOptions.find(d => String(d.id) === String(deptId));
-                      setSelectedDept(deptObj ? (deptObj.name || '') : '');
-                    }}
-                    disabled={depsLoading}
-                  >
-                    <option value="">{
-                      depsLoading
-                        ? 'Loading…'
-                        : departmentOptions.length > 0
-                          ? 'Select Department'
-                          : '-- No Departments --'
-                    }</option>
-                    {!depsLoading && departmentOptions.length > 0 ? (
-                      departmentOptions.map(d => (
-                        <option key={d.id} value={d.id}>{d.name}</option>
-                      ))
-                    ) : null}
-                  </select>
-                </div>
-
-                <div style={{display:'flex', flexDirection:'column'}}>
-                  <label htmlFor="programSelect" className="small-label">Program</label>
-                  <select
-                    id="programSelect"
-                    className="dept-select"
-                    value={selectedProgramId}
-                    onChange={(e) => setSelectedProgramId(e.target.value)}
-                    disabled={!selectedDeptId || depsLoading || programsLoading}
-                  >
-                    <option value="">{
-                      programsLoading
-                        ? 'Loading…'
-                        : programOptions.length > 0
-                          ? 'Select Program'
-                          : '-- No Programs --'
-                    }</option>
-                    {!programsLoading && programOptions.length > 0 ? (
-                      programOptions.map(p => (
-                        <option key={p.id} value={p.id}>{p.name}</option>
-                      ))
-                    ) : null}
-                  </select>
-                </div>
-              </div>
-              <div className="curriculum-title" style={{marginTop:12}}>
-                <h2>{current ? current.programName : 'Curriculum'}</h2>
+          <section className="curriculum-student-hero">
+            <div className="student-hero-copy">
+              <p className="student-hero-pill">
+                {selectedDept ? `Department • ${selectedDept}` : 'Curriculum planner'}
+              </p>
+              <h1>{studentHeroTitle}</h1>
+              <p className="student-hero-subtitle">{studentHeroSubtitle}</p>
+              <div className="student-hero-stats">
+                {studentStats.map((stat) => (
+                  <article key={stat.label} className="student-stat-card">
+                    <span>{stat.label}</span>
+                    <strong>{stat.value}</strong>
+                    <small>{stat.helper}</small>
+                  </article>
+                ))}
               </div>
             </div>
-          </div>
+            <div className="student-hero-panel">
+              <div className="student-selector">
+                <label htmlFor="deptSelect">Department</label>
+                <select
+                  id="deptSelect"
+                  className="student-select"
+                  value={selectedDeptId}
+                  onChange={(e) => {
+                    const deptId = e.target.value;
+                    setSelectedDeptId(deptId);
+                    const deptObj = departmentOptions.find((d) => String(d.id) === String(deptId));
+                    setSelectedDept(deptObj ? (deptObj.name || '') : '');
+                  }}
+                  disabled={depsLoading}
+                >
+                  <option value="">{
+                    depsLoading
+                      ? 'Loading…'
+                      : departmentOptions.length > 0
+                        ? 'Select Department'
+                        : '-- No Departments --'
+                  }</option>
+                  {!depsLoading && departmentOptions.length > 0
+                    ? departmentOptions.map((d) => (
+                        <option key={d.id} value={d.id}>
+                          {d.name}
+                        </option>
+                      ))
+                    : null}
+                </select>
+              </div>
+              <div className="student-selector">
+                <label htmlFor="programSelect">Program</label>
+                <select
+                  id="programSelect"
+                  className="student-select"
+                  value={selectedProgramId}
+                  onChange={(e) => setSelectedProgramId(e.target.value)}
+                  disabled={!selectedDeptId || depsLoading || programsLoading}
+                >
+                  <option value="">{
+                    programsLoading
+                      ? 'Loading…'
+                      : programOptions.length > 0
+                        ? 'Select Program'
+                        : '-- No Programs --'
+                  }</option>
+                  {!programsLoading && programOptions.length > 0
+                    ? programOptions.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.name}
+                        </option>
+                      ))
+                    : null}
+                </select>
+              </div>
+              <div className="student-highlight">
+                <span className="highlight-label">{studentSnapshot ? 'Current snapshot' : 'Preview pending'}</span>
+                <h3>
+                  {studentSnapshot
+                    ? `${studentSnapshot.year} • ${studentSnapshot.term}`
+                    : 'Select a program to preview'}
+                </h3>
+                <p>
+                  {studentSnapshot
+                    ? `Includes ${studentSnapshot.count} subject${studentSnapshot.count === 1 ? '' : 's'} — kicks off with ${studentSnapshot.leadSubject}.`
+                    : 'Choose a department and program to unlock the course plan per term.'}
+                </p>
+              </div>
+            </div>
+          </section>
         )
       )}
 
@@ -606,6 +718,22 @@ const CurriculumPage = ({ role }) => {
       )}
 
       {(!showAdminDashboard || !isAdmin) && (
+      <>
+      {!isAdmin && !viewingCurriculum && !editingCurriculum && current && studentYearBreakdown.length > 0 && (
+        <section className="student-breakdown-grid">
+          {studentYearBreakdown.map((year) => (
+            <article key={year.label} className="breakdown-card">
+              <span className="breakdown-pill">{year.label}</span>
+              <h3>
+                {year.units
+                  ? `${Number(year.units).toLocaleString()} unit${Number(year.units) === 1 ? '' : 's'}`
+                  : `${year.subjects} subject${year.subjects === 1 ? '' : 's'}`}
+              </h3>
+              <p>{year.subjects} subject{year.subjects === 1 ? '' : 's'} scheduled</p>
+            </article>
+          ))}
+        </section>
+      )}
       <div className="curriculum-content">
         {loading ? <div>Loading…</div> : null}
         {!loading && !viewingCurriculum && !editingCurriculum && loadError ? (
@@ -860,6 +988,7 @@ const CurriculumPage = ({ role }) => {
           null
         )}
       </div>
+      </>
       )}
 
       {/* Admin floating Add button (hidden when viewing) */}
