@@ -11,6 +11,7 @@ import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -32,7 +33,7 @@ import com.classlink.server.repository.AdminRepository;
 import com.classlink.server.repository.StudentRepository;
 import com.classlink.server.service.AdminAccountsFileService;
 import com.classlink.server.service.NotificationService;
-import jakarta.servlet.http.HttpSession;
+import com.classlink.server.security.ClasslinkUserDetails;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -60,11 +61,7 @@ public class AdminController {
 	// List students, optionally filtered by status e.g.,
 	// /api/admin/students?status=PENDING
 	@GetMapping("/students")
-	public ResponseEntity<?> listStudents(@RequestParam(name = "status", required = false) String status,
-			HttpSession session) {
-		// Require ADMIN role
-		if (!isAdmin(session))
-			return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Admin role required");
+	public ResponseEntity<?> listStudents(@RequestParam(name = "status", required = false) String status) {
 		if (status == null || status.isBlank()) {
 			return ResponseEntity.ok(studentRepository.findAll());
 		}
@@ -77,9 +74,7 @@ public class AdminController {
 	}
 
 	@PostMapping("/students")
-	public ResponseEntity<?> createStudent(@RequestBody Student input, HttpSession session) {
-		if (!isAdmin(session))
-			return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Admin role required");
+	public ResponseEntity<?> createStudent(@RequestBody Student input) {
 		if (input.getEmail() == null || input.getEmail().isBlank()) {
 			return ResponseEntity.badRequest().body("Email is required");
 		}
@@ -104,10 +99,7 @@ public class AdminController {
 
 	// Change status: PATCH /api/admin/students/{id}/status { "status": "APPROVED" }
 	@PatchMapping("/students/{id}/status")
-	public ResponseEntity<?> setStatus(@PathVariable Long id, @RequestBody Map<String, String> body,
-			HttpSession session) {
-		if (!isAdmin(session))
-			return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Admin role required");
+	public ResponseEntity<?> setStatus(@PathVariable Long id, @RequestBody Map<String, String> body) {
 		Student student = studentRepository.findById(id).orElse(null);
 		if (student == null)
 			return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Student not found");
@@ -146,20 +138,15 @@ public class AdminController {
 
 	// Convenience endpoints
 	@PostMapping("/students/{id}/approve")
-	public ResponseEntity<?> approve(@PathVariable Long id, HttpSession session) {
-		return setStatus(id, Map.of("status", "APPROVED"), session);
+	public ResponseEntity<?> approve(@PathVariable Long id) {
+		return setStatus(id, Map.of("status", "APPROVED"));
 	}
 
 	@PostMapping("/students/{id}/reject")
-	public ResponseEntity<?> reject(@PathVariable Long id, @RequestBody Map<String, String> body, HttpSession session) {
+	public ResponseEntity<?> reject(@PathVariable Long id, @RequestBody Map<String, String> body) {
 		Map<String, String> payload = new HashMap<>(body);
 		payload.put("status", "REJECTED");
-		return setStatus(id, payload, session);
-	}
-
-	private boolean isAdmin(HttpSession session) {
-		Object role = session.getAttribute("role");
-		return role != null && "ADMIN".equals(role.toString());
+		return setStatus(id, payload);
 	}
 
 	private void recordStatusChange(Student student, StudentStatus previous, StudentStatus next, String remarks) {
@@ -218,16 +205,11 @@ public class AdminController {
 
 	// Return currently authenticated admin basic profile (excluding password)
 	@GetMapping("/me")
-	public ResponseEntity<?> getMyAdmin(HttpSession session) {
-		if (!isAdmin(session)) {
-			return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Admin role required");
-		}
-		Object userIdObj = session.getAttribute("userId");
-		if (userIdObj == null) {
+	public ResponseEntity<?> getMyAdmin(@AuthenticationPrincipal ClasslinkUserDetails principal) {
+		if (principal == null) {
 			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Not logged in");
 		}
-		Long id = ((Number) userIdObj).longValue();
-		Admin admin = adminRepository.findById(id).orElse(null);
+		Admin admin = adminRepository.findById(principal.getUserId()).orElse(null);
 		if (admin == null) {
 			return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Admin record not found");
 		}
@@ -242,16 +224,11 @@ public class AdminController {
 
 	@PostMapping("/me/profile-image")
 	public ResponseEntity<?> uploadAdminProfileImage(@RequestParam("file") org.springframework.web.multipart.MultipartFile file,
-			HttpSession session) {
-		if (!isAdmin(session)) {
-			return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Admin role required");
-		}
-		Object userIdObj = session.getAttribute("userId");
-		if (userIdObj == null) {
+			@AuthenticationPrincipal ClasslinkUserDetails principal) {
+		if (principal == null) {
 			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Not logged in");
 		}
-		Long id = ((Number) userIdObj).longValue();
-		Admin admin = adminRepository.findById(id).orElse(null);
+		Admin admin = adminRepository.findById(principal.getUserId()).orElse(null);
 		if (admin == null) {
 			return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Admin record not found");
 		}
@@ -285,16 +262,12 @@ public class AdminController {
 	}
 
 	@PutMapping("/me")
-	public ResponseEntity<?> updateMyAdmin(@RequestBody Map<String, String> body, HttpSession session) {
-		if (!isAdmin(session)) {
-			return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Admin role required");
-		}
-		Object userIdObj = session.getAttribute("userId");
-		if (userIdObj == null) {
+	public ResponseEntity<?> updateMyAdmin(@RequestBody Map<String, String> body,
+			@AuthenticationPrincipal ClasslinkUserDetails principal) {
+		if (principal == null) {
 			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Not logged in");
 		}
-		Long id = ((Number) userIdObj).longValue();
-		Admin admin = adminRepository.findById(id).orElse(null);
+		Admin admin = adminRepository.findById(principal.getUserId()).orElse(null);
 		if (admin == null) {
 			return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Admin record not found");
 		}
@@ -328,10 +301,7 @@ public class AdminController {
 	}
 
 	@GetMapping("/accounts")
-	public ResponseEntity<?> listAdminAccounts(HttpSession session) {
-		if (!isAdmin(session)) {
-			return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Admin role required");
-		}
+	public ResponseEntity<?> listAdminAccounts() {
 		List<AdminAccountDto> fromFile = adminAccountsFileService.readAccounts();
 		LinkedHashMap<String, AdminAccountDto> merged = new LinkedHashMap<>();
 		for (AdminAccountDto dto : fromFile) {
@@ -375,10 +345,7 @@ public class AdminController {
 	}
 
 	@PostMapping("/accounts")
-	public ResponseEntity<?> createAdminAccount(@RequestBody AdminAccountDto body, HttpSession session) {
-		if (!isAdmin(session)) {
-			return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Admin role required");
-		}
+	public ResponseEntity<?> createAdminAccount(@RequestBody AdminAccountDto body) {
 		if (body == null) {
 			return ResponseEntity.badRequest().body("Request body is required");
 		}
@@ -409,10 +376,8 @@ public class AdminController {
 	}
 
 	@DeleteMapping("/accounts")
-	public ResponseEntity<?> removeAdminAccount(@RequestBody RemoveAdminAccountRequest request, HttpSession session) {
-		if (!isAdmin(session)) {
-			return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Admin role required");
-		}
+	public ResponseEntity<?> removeAdminAccount(@RequestBody RemoveAdminAccountRequest request,
+			@AuthenticationPrincipal ClasslinkUserDetails principal) {
 		if (request == null || request.email() == null || request.password() == null) {
 			return ResponseEntity.badRequest().body("Email and password are required");
 		}
@@ -421,11 +386,10 @@ public class AdminController {
 		if (email.isEmpty() || password.isEmpty()) {
 			return ResponseEntity.badRequest().body("Email and password are required");
 		}
-		Long currentId = getSessionAdminId(session);
-		if (currentId == null) {
+		if (principal == null) {
 			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Not authenticated");
 		}
-		Admin currentAdmin = adminRepository.findById(currentId).orElse(null);
+		Admin currentAdmin = adminRepository.findById(principal.getUserId()).orElse(null);
 		if (currentAdmin == null) {
 			return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Current admin record not found");
 		}
@@ -461,17 +425,4 @@ public class AdminController {
 		return trimmed.substring(0, 1).toUpperCase() + trimmed.substring(1);
 	}
 
-	private Long getSessionAdminId(HttpSession session) {
-		Object userIdObj = session.getAttribute("userId");
-		if (userIdObj instanceof Number number) {
-			return number.longValue();
-		}
-		if (userIdObj instanceof String str && !str.isBlank()) {
-			try {
-				return Long.parseLong(str);
-			} catch (NumberFormatException ignored) {
-			}
-		}
-		return null;
-	}
 }

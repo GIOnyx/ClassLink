@@ -5,7 +5,9 @@ import java.util.Date;
 import java.util.Optional;
 import java.util.List; // ADDED: Required import for List
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -20,6 +22,7 @@ import com.classlink.server.model.Student;
 import com.classlink.server.repository.EnrollmentRepository;
 import com.classlink.server.repository.EnrollmentFormRepository; // Added this import
 import com.classlink.server.repository.StudentRepository;
+import com.classlink.server.security.ClasslinkUserDetails;
 
 @RestController
 @RequestMapping("/api/enrollments")
@@ -44,11 +47,15 @@ public class EnrollmentController {
     }
 
     @GetMapping("/forms")
-    public ResponseEntity<List<EnrollmentForm>> getFilteredEnrollmentForms(
+    public ResponseEntity<?> getFilteredEnrollmentForms(
             @RequestParam(required = false) String department,
             @RequestParam(required = false) String program,
             @RequestParam(required = false) Integer yearLevel,
-            @RequestParam(required = false) String semester) {
+            @RequestParam(required = false) String semester,
+            @AuthenticationPrincipal ClasslinkUserDetails principal) {
+        if (!isAdmin(principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Admin access required");
+        }
 
         // Delegate the filtering logic to the custom repository method.
         List<EnrollmentForm> filteredForms = enrollmentFormRepository.findFormsByFilters(
@@ -61,13 +68,20 @@ public class EnrollmentController {
     }
 
     @GetMapping
-    public ResponseEntity<?> getAllEnrollments() {
+    public ResponseEntity<?> getAllEnrollments(@AuthenticationPrincipal ClasslinkUserDetails principal) {
+        if (!isAdmin(principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Admin access required");
+        }
         return ResponseEntity.ok(enrollmentRepository.findAll());
     }
 
     // Minimal DTO expected: { "studentName": "Full Name", "courseId": 1 }
     @PostMapping
-    public ResponseEntity<?> createEnrollment(@RequestBody EnrollmentRequest req) {
+    public ResponseEntity<?> createEnrollment(@RequestBody EnrollmentRequest req,
+                                              @AuthenticationPrincipal ClasslinkUserDetails principal) {
+        if (!isAdmin(principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Admin access required");
+        }
             Student student = new Student();
         // Example splits; in production parse names properly
         if (req.getStudentName() != null) {
@@ -108,5 +122,9 @@ public class EnrollmentController {
         public void setCurriculumId(Long curriculumId) {
             this.curriculumId = curriculumId;
         }
+    }
+
+    private boolean isAdmin(ClasslinkUserDetails principal) {
+        return principal != null && "ADMIN".equalsIgnoreCase(principal.getRole());
     }
 }
