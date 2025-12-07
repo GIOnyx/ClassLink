@@ -19,6 +19,7 @@ import ErrorBoundary from './components/ErrorBoundary.jsx';
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [role, setRole] = useState(null); // 'ADMIN' or 'STUDENT'
+  const [shouldOpenProfile, setShouldOpenProfile] = useState(false);
 
   // On first load, ask the server if there's an active session
   useEffect(() => {
@@ -41,7 +42,9 @@ function App() {
       const res = await me();
       if (res.data?.authenticated) {
         setIsLoggedIn(true);
-        setRole(res.data?.role || null);
+        const sessionRole = res.data?.role || null;
+        setRole(sessionRole);
+        setShouldOpenProfile(sessionRole === 'STUDENT');
       }
     } catch {}
   };
@@ -50,6 +53,7 @@ function App() {
     try { await apiLogout(); } catch {}
     setIsLoggedIn(false);
     setRole(null);
+    setShouldOpenProfile(false);
   };
 
   return (
@@ -58,7 +62,17 @@ function App() {
       <Routes>
         {isLoggedIn ? (
           // --- LOGGED-IN ROUTES ---
-          <Route path="/*" element={<MainLayout onLogout={handleLogout} role={role} />}>
+          <Route
+            path="/*"
+            element={
+              <MainLayout
+                onLogout={handleLogout}
+                role={role}
+                shouldOpenProfile={shouldOpenProfile}
+                onProfileRedirectComplete={() => setShouldOpenProfile(false)}
+              />
+            }
+          >
             {/* Default landing after login per role */}
             <Route index element={role === 'ADMIN' ? <AdminPage /> : <EnrollmentPage />} />
             <Route path="admin" element={role === 'ADMIN' ? <AdminPage /> : <Navigate to="/" />} />

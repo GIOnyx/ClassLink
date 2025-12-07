@@ -88,10 +88,16 @@ public class AuthController {
                     return ResponseEntity.status(404).body(Map.of("error", "Student record not found"));
                 }
                 boolean usingEmail = student.getEmail() != null && student.getEmail().equalsIgnoreCase(identifier);
+                boolean graceActive = student.isEmailLoginGraceActive();
                 if (student.getStatus() == StudentStatus.APPROVED && usingEmail && !emailAllowed) {
-                    return ResponseEntity.status(400)
-                            .body(Map.of("error",
-                                    "Your application is approved. Please use your Student ID (e.g., 25-0001-123) to sign in."));
+                    if (graceActive) {
+                        student.setEmailLoginGraceActive(false);
+                        studentRepository.save(student);
+                    } else {
+                        return ResponseEntity.status(400)
+                                .body(Map.of("error",
+                                        "Your application is approved. Please use your Student ID (e.g., 25-0001-123) to sign in."));
+                    }
                 }
                 if (student.getStatus() == StudentStatus.INACTIVE) {
                     return ResponseEntity.status(403).body(Map.of("error", "Account is inactive"));
@@ -242,10 +248,14 @@ public class AuthController {
         if (student == null) {
             return ResponseEntity.status(404).body(Map.of("error", "Account not found"));
         }
-        if (!body.oldPassword().equals(student.getPassword())) {
+        boolean matchesPrimary = body.oldPassword().equals(student.getPassword());
+        boolean matchesTemp = student.getTempPassword() != null && body.oldPassword().equals(student.getTempPassword());
+        if (!matchesPrimary && !matchesTemp) {
             return ResponseEntity.status(400).body(Map.of("error", "Old password is incorrect"));
         }
         student.setPassword(body.newPassword());
+        student.setTempPassword(null);
+        student.setTempPasswordActive(false);
         studentRepository.save(student);
         return ResponseEntity.ok(Map.of("ok", true));
     }

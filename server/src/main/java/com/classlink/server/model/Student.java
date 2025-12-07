@@ -44,6 +44,15 @@ public class Student {
     private Integer yearLevel;
     private String semester;
     private String password;
+    
+    @Column(name = "temp_password")
+    private String tempPassword;
+
+    @Column(name = "temp_password_active")
+    private boolean tempPasswordActive;
+
+    @Column(name = "email_login_grace_active")
+    private boolean emailLoginGraceActive;
 
     @Enumerated(EnumType.STRING)
     private StudentStatus status;
@@ -74,4 +83,7 @@ public class Student {
 
     // PDF of submitted requirements for admin review
     private String requirementsDocumentUrl;
+
+    // Tracks whether the one-time approval email login override has already been consumed
+    private boolean approvalEmailLoginUsed;
 }
