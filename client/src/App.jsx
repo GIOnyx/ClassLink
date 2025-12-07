@@ -60,7 +60,7 @@ function App() {
           // --- LOGGED-IN ROUTES ---
           <Route path="/*" element={<MainLayout onLogout={handleLogout} role={role} />}>
             {/* Default landing after login per role */}
-            <Route index element={role === 'ADMIN' ? <AdminPage /> : <EnrollmentPage />} />
+            <Route index element={<EnrollmentPage />} />
             <Route path="admin" element={role === 'ADMIN' ? <AdminPage /> : <Navigate to="/" />} />
             <Route path="admins" element={role === 'ADMIN' ? <StudentPage /> : <Navigate to="/" />} />
             <Route path="students" element={role === 'ADMIN' ? <StudentsListPage /> : <Navigate to="/" />} />
