@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { submitStudentApplication, getMyStudent, uploadMyRequirementsDocument, logout as apiLogout } from '../services/backend';
+import { useOutletContext } from 'react-router-dom';
+import { submitStudentApplication, getMyStudent, uploadMyRequirementsDocument } from '../services/backend';
 import useDepartments from '../hooks/useDepartments';
 import usePrograms from '../hooks/usePrograms';
 import '../App.css';
@@ -116,7 +117,6 @@ const WIZARD_STEPS = [
   }
 ];
 
-const DEFAULT_STUDENT_PASSWORD = '123456';
 
 const deriveStudentId = (application) => {
   if (!application) return '';
@@ -162,9 +162,9 @@ const EnrollmentPage = () => {
   const [showWizard, setShowWizard] = useState(false);
   const [requirementsUploading, setRequirementsUploading] = useState(false);
   const [requirementsUploadError, setRequirementsUploadError] = useState('');
-  const [showApprovalModal, setShowApprovalModal] = useState(false);
-  const [hasAcknowledgedApproval, setHasAcknowledgedApproval] = useState(false);
   const [officialStudentId, setOfficialStudentId] = useState('');
+  const outletContext = typeof useOutletContext === 'function' ? useOutletContext() : {};
+  const { openCredentialModal, credentialModalVisible } = outletContext || {};
   
   const handleChange = (e) => {
     const { name } = e.target;
@@ -285,41 +285,50 @@ const EnrollmentPage = () => {
         const res = await getMyStudent();
         const student = res.data;
         const loginEmail = student?.email || student?.emailAddress || '';
+
         if (loginEmail) {
           setCurrentUserEmail(loginEmail);
         }
+
         setFormData(prev => ({
           ...prev,
           emailAddress: loginEmail || prev.emailAddress,
           firstName: prev.firstName || student?.firstName || '',
           lastName: prev.lastName || student?.lastName || ''
         }));
-          // consider there an existing application if student has program/previous info OR a non-null status
-            const hasApplication = student && (student.program || student.parentGuardianName || student.previousSchool || (student.status && student.status !== 'REGISTERED'));
-          if (hasApplication) {
-              setExistingApp(student);
-              if (student.status && student.status === 'REJECTED') {
-                  setEditMode(true);
-                  setError('Your application was rejected. Please review your details and resubmit.');
-              }
-                // Only show 'under review' when the server reports PENDING
-                if (student.status && student.status === 'PENDING') {
-                  setError('Your application is under review. Please wait for the admin decision before making changes.');
-                }
+
+        const hasApplication = Boolean(student) && (
+          student.program ||
+          student.parentGuardianName ||
+          student.previousSchool ||
+          (student.status && student.status !== 'REGISTERED')
+        );
+
+        if (hasApplication) {
+          setExistingApp(student);
+          if ((student.status || '').toUpperCase() === 'REJECTED') {
+            setEditMode(true);
+            setError('Your application was rejected. Please review your details and resubmit.');
           }
-      } catch (err) {}
+        }
+      } catch (err) {
+        console.error('Failed to load student record:', err);
+        setError('Unable to load your enrollment record. Please refresh the page.');
+      }
     };
+
     load();
-    // departments are provided by useDepartments hook
   }, []);
 
   useEffect(() => {
-    if (!existingApp) return;
+    if (!existingApp) {
+      return;
+    }
+
     setFormData(prev => ({
+      ...prev,
       applicantType: existingApp.applicantType || prev.applicantType,
       requirementsDocumentUrl: existingApp.requirementsDocumentUrl || prev.requirementsDocumentUrl,
-      firstName: existingApp.firstName || prev.firstName,
-      lastName: existingApp.lastName || prev.lastName,
       birthDate: existingApp.birthDate || prev.birthDate,
       gender: existingApp.gender || prev.gender,
       studentAddress: existingApp.studentAddress || prev.studentAddress,
@@ -340,22 +349,16 @@ const EnrollmentPage = () => {
 
   useEffect(() => {
     if (!existingApp) {
-      setShowApprovalModal(false);
       setOfficialStudentId('');
-      setHasAcknowledgedApproval(false);
       return;
     }
     const isApproved = (existingApp.status || '').toUpperCase() === 'APPROVED';
     if (!isApproved) {
-      setShowApprovalModal(false);
-      setHasAcknowledgedApproval(false);
+      setOfficialStudentId('');
       return;
     }
-    if (!hasAcknowledgedApproval) {
-      setOfficialStudentId(deriveStudentId(existingApp));
-      setShowApprovalModal(true);
-    }
-  }, [existingApp, hasAcknowledgedApproval]);
+    setOfficialStudentId(deriveStudentId(existingApp));
+  }, [existingApp]);
 
 
   // When programs load (or change) and there's a selected program in the form, set year options
@@ -429,23 +432,6 @@ const EnrollmentPage = () => {
     }
   };
 
-  const handleDismissApprovalModal = () => {
-    setHasAcknowledgedApproval(true);
-    setShowApprovalModal(false);
-  };
-
-  const handleSwitchToOfficialLogin = async () => {
-    setHasAcknowledgedApproval(true);
-    setShowApprovalModal(false);
-    try {
-      await apiLogout();
-    } catch (err) {
-      console.warn('Failed to log out before redirecting to login screen', err);
-    } finally {
-      window.location.href = '/';
-    }
-  };
-
   const selectedTypeDetails = APPLICANT_TYPE_DETAILS.find(type => type.value === formData.applicantType);
 
   // --- RENDER ---
@@ -468,45 +454,17 @@ const EnrollmentPage = () => {
     const canQuickEdit = status === 'REJECTED' && !editMode;
     const hasAccountId = status === 'APPROVED' && existingApp.accountId;
     const approvalStudentId = officialStudentId || deriveStudentId(existingApp);
-    const shouldShowApprovalModal = status === 'APPROVED' && showApprovalModal;
     const statusDetail = STATUS_CARD_DETAIL[status] || STATUS_CARD_DETAIL.DEFAULT;
     const normalizedStatus = status.toLowerCase();
     const statusToneClass = ['approved', 'pending', 'rejected'].includes(normalizedStatus) ? normalizedStatus : 'default';
+    const showViewCredentialsButton =
+      status === 'APPROVED'
+      && existingApp?.tempPasswordActive
+      && !credentialModalVisible
+      && typeof openCredentialModal === 'function';
 
     return (
       <div className="standard-page-layout enrollment-admin">
-        {shouldShowApprovalModal && (
-          <div className="approval-modal-overlay" role="dialog" aria-modal="true">
-            <div className="approval-modal">
-              <p className="approval-modal__eyebrow">Official student access</p>
-              <h2>Application Approved</h2>
-              <p className="approval-modal__copy">
-                Use the issued student account below to sign in to the official portal. This enrollment login will be disabled soon.
-              </p>
-              <div className="approval-modal__credentials">
-                <article>
-                  <span>Student ID</span>
-                  <strong>{approvalStudentId}</strong>
-                </article>
-                <article>
-                  <span>Default Password</span>
-                  <strong>{DEFAULT_STUDENT_PASSWORD}</strong>
-                </article>
-              </div>
-              <p className="approval-modal__note">
-                These are temporary credentials. Please change your password immediately after logging into your official student account.
-              </p>
-              <div className="approval-modal__actions">
-                <button type="button" className="enrollment-submit-btn" onClick={handleSwitchToOfficialLogin}>
-                  Go to official login
-                </button>
-                <button type="button" className="enrollment-submit-btn enrollment-back-btn" onClick={handleDismissApprovalModal}>
-                  Stay on enrollment portal
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
         <section className="enrollment-admin__hero">
           <div className="enrollment-admin__hero-copy">
             <p className="enrollment-admin__eyebrow">Enrollment Application</p>
@@ -514,6 +472,15 @@ const EnrollmentPage = () => {
             <p className="enrollment-admin__hero-copy-text">{statusCopy.copy}</p>
             {status === 'PENDING' && (
               <p className="enrollment-admin__inline-note">We will notify you via email once the review is complete.</p>
+            )}
+            {showViewCredentialsButton && (
+              <button
+                type="button"
+                className="enrollment-submit-btn enrollment-submit-btn--ghost"
+                onClick={() => openCredentialModal?.()}
+              >
+                View login credentials
+              </button>
             )}
             {canQuickEdit && (
               <button type="button" className="enrollment-submit-btn enrollment-submit-btn--ghost" onClick={startEdit}>

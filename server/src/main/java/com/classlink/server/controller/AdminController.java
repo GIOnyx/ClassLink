@@ -33,6 +33,7 @@ import com.classlink.server.repository.ApplicationHistoryRepository;
 import com.classlink.server.repository.AdminRepository;
 import com.classlink.server.repository.StudentRepository;
 import com.classlink.server.service.NotificationService;
+import com.classlink.server.service.TemporaryPasswordService;
 import com.classlink.server.security.ClasslinkUserDetails;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,14 +48,17 @@ public class AdminController {
 	private final AdminRepository adminRepository;
 	private final ApplicationHistoryRepository applicationHistoryRepository;
 	private final NotificationService notificationService;
+	private final TemporaryPasswordService temporaryPasswordService;
 
 	public AdminController(StudentRepository studentRepository, AdminRepository adminRepository,
 			ApplicationHistoryRepository applicationHistoryRepository,
-			NotificationService notificationService) {
+			NotificationService notificationService,
+			TemporaryPasswordService temporaryPasswordService) {
 		this.studentRepository = studentRepository;
 		this.adminRepository = adminRepository;
 		this.applicationHistoryRepository = applicationHistoryRepository;
 		this.notificationService = notificationService;
+		this.temporaryPasswordService = temporaryPasswordService;
 	}
 
 	public record RemoveAdminAccountRequest(String email, String password) {}
@@ -83,9 +87,15 @@ public class AdminController {
 			return ResponseEntity.status(HttpStatus.CONFLICT).body("Email already exists");
 		}
 
-		// Set default password if not provided
+		// Always generate an official temporary credential
+		if (input.getTempPassword() == null || input.getTempPassword().isBlank()) {
+			input.setTempPassword(temporaryPasswordService.generate());
+		}
+		input.setTempPasswordActive(true);
+
+		// Ensure the portal login password exists
 		if (input.getPassword() == null || input.getPassword().isBlank()) {
-			input.setPassword("123456");
+			input.setPassword(input.getTempPassword());
 		}
 
 		// Admin-created students are automatically APPROVED
@@ -93,6 +103,7 @@ public class AdminController {
 		if (input.getAccountId() == null || input.getAccountId().isBlank()) {
 			input.setAccountId(generateAccountId());
 		}
+		input.setEmailLoginGraceActive(true);
 
 		Student saved = studentRepository.save(input);
 		return ResponseEntity.created(URI.create("/api/admin/students/" + saved.getId())).body(saved);
@@ -117,6 +128,19 @@ public class AdminController {
 			if (newStatus == StudentStatus.APPROVED) {
 				student.setFirstName(capitalizeFirstLetter(student.getFirstName()));
 				student.setLastName(capitalizeFirstLetter(student.getLastName()));
+				if (previousStatus != StudentStatus.APPROVED || student.getTempPassword() == null
+						|| student.getTempPassword().isBlank() || !student.isTempPasswordActive()) {
+					String generated = temporaryPasswordService.generate();
+					student.setTempPassword(generated);
+					student.setTempPasswordActive(true);
+					if (student.getPassword() == null || student.getPassword().isBlank()) {
+						student.setPassword(generated);
+					}
+				}
+				student.setEmailLoginGraceActive(true);
+			}
+			else {
+				student.setEmailLoginGraceActive(false);
 			}
 
 			if (newStatus == StudentStatus.APPROVED && (student.getAccountId() == null || student.getAccountId().isBlank())) {
