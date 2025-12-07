@@ -53,7 +53,16 @@ const Navbar = ({
         }
     }, [isDropdownOpen, onRefreshNotifications]);
 
-    const toggleDropdown = () => setDropdownOpen((open) => !open);
+    const openDropdown = () => setDropdownOpen(true);
+    const closeDropdown = () => setDropdownOpen(false);
+
+    const handleNotificationsBlur = (event) => {
+        if (!dropdownRef.current) return;
+        const nextFocus = event?.relatedTarget;
+        if (!dropdownRef.current.contains(nextFocus)) {
+            closeDropdown();
+        }
+    };
 
     const formatRelativeTime = (value) => {
         if (!value) return '';
@@ -81,12 +90,19 @@ const Navbar = ({
     };
 
     const renderNotifications = () => (
-        <li className="notification-wrapper" ref={dropdownRef}>
+        <li
+            className="notification-wrapper"
+            ref={dropdownRef}
+            onMouseEnter={openDropdown}
+            onMouseLeave={closeDropdown}
+            onFocusCapture={openDropdown}
+            onBlurCapture={handleNotificationsBlur}
+        >
             <button
                 type="button"
                 className={`notification-link ${isDropdownOpen ? 'open' : ''}`}
-                onClick={toggleDropdown}
                 aria-label="Notifications"
+                aria-expanded={isDropdownOpen}
             >
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
