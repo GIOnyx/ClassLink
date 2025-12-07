@@ -35,37 +35,9 @@ server.servlet.session.cookie.secure=false
   ```
   This opens two windows: backend (port 8080) + frontend (port 5173).
 4. Open http://localhost:5173 in your browser.
-5. Register a student account or add an admin in `server/src/main/resources/admin-accounts.csv` then restart backend.
+5. Register a student account or use the in-app Administrator directory to add admins directly to the database.
 
 Done. For more detail, see the full sections below.
-
-## Admin file-based provisioning
-
-Admins can also be provisioned without SQL by editing `server/src/main/resources/admin-accounts.csv`.
-
-How it works:
-- At startup `AdminAccountsLoader` reads the CSV.
-- Each non-comment, non-blank line is parsed as: `email,password,name`.
-- If an admin with that email does not exist, it is created (plaintext password for now).
-- Existing admins are left untouched (no overwrite).
-
-Example lines (already present):
-```
-admin,admin,System Administrator
-andreyv.reyes3@gmail.com,gwapo123,Christian Andrey Reyes
-```
-
-Add a new admin:
-1. Open `server/src/main/resources/admin-accounts.csv`.
-2. Append: `new.admin@example.com,changeme,New Admin`.
-3. Save and restart backend (`mvnw.cmd spring-boot:run`).
-4. Log in with role `admin` using the new credentials.
-
-Guidelines & future improvements:
-- Don’t commit real production passwords; switch to hashing before deployment.
-- Keep formatting tight (avoid stray spaces around commas).
-- Optionally extend format later: `email,password,name,role`.
-- Consider password hashing + audit logging for security.
 
 ---
 

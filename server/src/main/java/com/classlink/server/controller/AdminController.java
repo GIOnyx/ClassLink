@@ -3,14 +3,15 @@ package com.classlink.server.controller;
 import java.net.URI;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -31,28 +32,28 @@ import com.classlink.server.model.StudentStatus;
 import com.classlink.server.repository.ApplicationHistoryRepository;
 import com.classlink.server.repository.AdminRepository;
 import com.classlink.server.repository.StudentRepository;
-import com.classlink.server.service.AdminAccountsFileService;
 import com.classlink.server.service.NotificationService;
 import com.classlink.server.security.ClasslinkUserDetails;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RestController
 @RequestMapping("/api/admin")
 public class AdminController {
 
+	private static final Logger log = LoggerFactory.getLogger(AdminController.class);
+
 	private final StudentRepository studentRepository;
 	private final AdminRepository adminRepository;
 	private final ApplicationHistoryRepository applicationHistoryRepository;
-	private final AdminAccountsFileService adminAccountsFileService;
 	private final NotificationService notificationService;
 
 	public AdminController(StudentRepository studentRepository, AdminRepository adminRepository,
 			ApplicationHistoryRepository applicationHistoryRepository,
-			AdminAccountsFileService adminAccountsFileService,
 			NotificationService notificationService) {
 		this.studentRepository = studentRepository;
 		this.adminRepository = adminRepository;
 		this.applicationHistoryRepository = applicationHistoryRepository;
-		this.adminAccountsFileService = adminAccountsFileService;
 		this.notificationService = notificationService;
 	}
 
@@ -302,46 +303,13 @@ public class AdminController {
 
 	@GetMapping("/accounts")
 	public ResponseEntity<?> listAdminAccounts() {
-		List<AdminAccountDto> fromFile = adminAccountsFileService.readAccounts();
-		LinkedHashMap<String, AdminAccountDto> merged = new LinkedHashMap<>();
-		for (AdminAccountDto dto : fromFile) {
-			if (dto.getEmail() == null || dto.getEmail().isBlank()) {
-				continue;
-			}
-			if (dto.getName() == null || dto.getName().isBlank()) {
-				dto.setName(dto.getEmail());
-			}
-			merged.put(dto.getEmail(), dto);
-		}
-		List<Admin> admins = adminRepository.findAll();
-		for (Admin admin : admins) {
-			if (!admin.isActive()) {
-				continue;
-			}
-			if (admin.getEmail() == null) {
-				continue;
-			}
-			AdminAccountDto dto = merged.get(admin.getEmail());
-			if (dto == null) {
-				dto = new AdminAccountDto();
-				dto.setEmail(admin.getEmail());
-				dto.setPassword(admin.getPassword());
-				dto.setName(admin.getName() != null ? admin.getName() : admin.getEmail());
-				merged.put(admin.getEmail(), dto);
-			} else {
-				if (dto.getPassword() == null || dto.getPassword().isBlank()) {
-					dto.setPassword(admin.getPassword());
-				}
-				if (dto.getName() == null || dto.getName().isBlank()) {
-					dto.setName(admin.getName() != null ? admin.getName() : admin.getEmail());
-				}
-			}
-			dto.setId(admin.getAdminId());
-			if (dto.getCreatedAt() == null && admin.getCreatedAt() != null) {
-				dto.setCreatedAt(admin.getCreatedAt());
-			}
-		}
-		return ResponseEntity.ok(new ArrayList<>(merged.values()));
+		List<AdminAccountDto> admins = adminRepository.findAll().stream()
+				.filter(Admin::isActive)
+				.filter(admin -> admin.getEmail() != null && !admin.getEmail().isBlank())
+				.sorted(Comparator.comparing(Admin::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder())).reversed())
+				.map(this::toAdminAccountDto)
+				.collect(Collectors.toList());
+		return ResponseEntity.ok(admins);
 	}
 
 	@PostMapping("/accounts")
@@ -355,7 +323,18 @@ public class AdminController {
 		if (email.isEmpty() || password.isEmpty()) {
 			return ResponseEntity.badRequest().body("Email and password are required");
 		}
-		if (adminRepository.findByEmail(email) != null) {
+		Admin existing = adminRepository.findByEmail(email);
+		if (existing != null) {
+			if (!existing.isActive()) {
+				// Reactivate previously removed admin accounts so rosters stay reusable
+				existing.setActive(true);
+				existing.setRemovedBy(null);
+				existing.setPassword(password);
+				existing.setRole("ADMIN");
+				existing.setName(name.isEmpty() ? email : name);
+				Admin reactivated = adminRepository.save(existing);
+				return ResponseEntity.ok(toAdminAccountDto(reactivated));
+			}
 			return ResponseEntity.status(HttpStatus.CONFLICT).body("Email already exists");
 		}
 		Admin admin = new Admin();
@@ -368,11 +347,19 @@ public class AdminController {
 		if (admin.getCreatedAt() == null) {
 			admin.setCreatedAt(LocalDateTime.now());
 		}
-		Admin saved = adminRepository.save(admin);
-		AdminAccountDto response = new AdminAccountDto(saved.getAdminId(), saved.getEmail(), saved.getPassword(), saved.getName());
-		response.setCreatedAt(saved.getCreatedAt());
-		adminAccountsFileService.appendAccount(response);
-		return ResponseEntity.status(HttpStatus.CREATED).body(response);
+		try {
+			Admin saved = adminRepository.save(admin);
+			AdminAccountDto response = toAdminAccountDto(saved);
+			return ResponseEntity.status(HttpStatus.CREATED).body(response);
+		} catch (DataIntegrityViolationException ex) {
+			log.error("Failed to create admin {} due to data integrity issue", email, ex);
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+					.body("Unable to save admin account. Please double-check the details and try again.");
+		} catch (Exception ex) {
+			log.error("Failed to create admin {}", email, ex);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+					.body("Failed to save admin account. Please try again.");
+		}
 	}
 
 	@DeleteMapping("/accounts")
@@ -410,8 +397,17 @@ public class AdminController {
 		target.setActive(false);
 		target.setRemovedBy(removerName);
 		adminRepository.save(target);
-		adminAccountsFileService.removeAccount(email);
 		return ResponseEntity.ok(Map.of("removedBy", removerName));
+	}
+
+	private AdminAccountDto toAdminAccountDto(Admin admin) {
+		AdminAccountDto dto = new AdminAccountDto();
+		dto.setId(admin.getAdminId());
+		dto.setEmail(admin.getEmail());
+		dto.setPassword(admin.getPassword());
+		dto.setName(admin.getName() != null && !admin.getName().isBlank() ? admin.getName() : admin.getEmail());
+		dto.setCreatedAt(admin.getCreatedAt());
+		return dto;
 	}
 
 	private String capitalizeFirstLetter(String value) {

@@ -123,6 +123,7 @@
   border: 1px solid rgba(255, 255, 255, 0.4);
   color: #fff;
   text-transform: capitalize;
+  letter-spacing: 0.08em;
 }
 
 .profile-status-chip.pending {
@@ -130,8 +131,11 @@
 }
 
 .profile-status-chip.approved {
-  background: rgba(121, 214, 149, 0.3);
-  color: #fafff3;
+  background: #0f9d58;
+  border-color: #0f9d58;
+  color: #f4fff6;
+  box-shadow: 0 12px 25px rgba(15, 157, 88, 0.35);
+  text-transform: uppercase;
 }
 
 .profile-status-chip.denied,
