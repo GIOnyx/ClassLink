@@ -162,6 +162,10 @@ const ProfilePage = () => {
 
     const handleSave = async () => {
         setError('');
+        if (!profileChanged) {
+            setIsEditing(false);
+            return;
+        }
         setSaving(true);
         try {
             if (role === 'ADMIN') {
@@ -268,6 +272,16 @@ const ProfilePage = () => {
     };
 
     const isApprovedStudent = role !== 'ADMIN' && (profile.status || '').toUpperCase() === 'APPROVED';
+
+    const normalizeField = (value = '') => String(value).trim();
+    const profileChanged = useMemo(() => {
+        const nameChanged = normalizeField(profile.name) !== normalizeField(originalProfile.name);
+        if (isAdmin) {
+            return nameChanged;
+        }
+        const phoneChanged = (profile.phone || '') !== (originalProfile.phone || '');
+        return nameChanged || phoneChanged;
+    }, [isAdmin, profile.name, originalProfile.name, profile.phone, originalProfile.phone]);
 
     const handleCancelEdit = () => {
         setProfile({ ...originalProfile });
@@ -425,7 +439,7 @@ const ProfilePage = () => {
                                         type="button"
                                         className="admin-primary-btn"
                                         onClick={handleSave}
-                                        disabled={loading || saving}
+                                        disabled={loading || saving || !profileChanged}
                                     >
                                         {saving ? 'Saving…' : 'Save changes'}
                                     </button>

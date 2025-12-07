@@ -8,10 +8,8 @@
 
 .calendar-hero-card {
     display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: 32px;
+    flex-direction: column;
+    gap: 24px;
     padding: 36px;
     background: linear-gradient(135deg, rgba(123, 17, 28, 0.95), #3d0b13);
     border-radius: 28px;
@@ -23,6 +21,18 @@
 .calendar-hero__copy {
     flex: 1;
     min-width: 260px;
+}
+
+.calendar-hero__top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 24px;
+    flex-wrap: wrap;
+}
+
+.calendar-hero__top .calendar-hero__copy {
+    flex: 1 1 300px;
 }
 
 .calendar-pill {
@@ -52,14 +62,12 @@
 
 .calendar-hero__meta {
     margin-top: 24px;
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: minmax(220px, 1fr) minmax(300px, 2fr);
     gap: 16px;
 }
 
 .calendar-hero__stat {
-    flex: 1;
-    min-width: 220px;
     padding: 18px 20px;
     border-radius: 20px;
     background: rgba(255, 255, 255, 0.08);
@@ -67,6 +75,12 @@
     display: flex;
     flex-direction: column;
     gap: 6px;
+}
+
+@media (max-width: 768px) {
+    .calendar-hero__meta {
+        grid-template-columns: 1fr;
+    }
 }
 
 .calendar-hero__stat span {
@@ -91,12 +105,13 @@
     border-color: rgba(255, 255, 255, 0.35);
 }
 
-.calendar-hero__panel {
+.calendar-view-controls {
     display: flex;
-    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
     gap: 16px;
-    align-items: flex-end;
-    min-width: 220px;
+    flex-wrap: wrap;
+    flex: 0 0 auto;
 }
 
 .calendar-view-toggle {
@@ -135,46 +150,17 @@
     font-size: 0.85rem;
 }
 
-.calendar-hero__timeline {
-    padding: 20px;
-    border-radius: 20px;
-    background: rgba(255, 255, 255, 0.12);
-    border: 1px solid rgba(255, 255, 255, 0.25);
-    text-align: right;
-    width: 100%;
-}
-
-.timeline-label {
-    margin: 0 0 6px;
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-    font-size: 0.75rem;
-    color: rgba(255, 255, 255, 0.75);
-}
-
-.calendar-hero__timeline h3 {
-    margin: 0;
-    color: #fff;
-}
-
-.timeline-range {
-    margin: 4px 0 0;
-    color: rgba(255, 255, 255, 0.8);
-    font-size: 0.9rem;
-}
-
 @media (max-width: 768px) {
     .calendar-hero-card {
         padding: 28px;
     }
 
-    .calendar-hero__panel {
-        width: 100%;
-        align-items: flex-start;
+    .calendar-hero__top {
+        flex-direction: column;
     }
 
-    .calendar-hero__timeline {
-        text-align: left;
+    .calendar-view-controls {
+        justify-content: flex-start;
     }
 }
 
