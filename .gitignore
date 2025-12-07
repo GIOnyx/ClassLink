@@ -56,3 +56,6 @@ mobile/.expo-shared/
 
 # Metro bundler cache
 mobile/metro-cache
+
+.vscode
+.copilot-instructions
