@@ -299,6 +299,44 @@
   margin-top: 22px;
 }
 
+/* Profile-specific button treatments so actions stay visible on light cards */
+.profile-card .admin-primary-btn,
+.profile-card .admin-ghost-btn {
+  border-radius: 999px;
+  padding: 10px 22px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.profile-card .admin-primary-btn {
+  background: #7b111c;
+  color: #fff;
+  border: none;
+  box-shadow: 0 12px 24px rgba(123, 17, 28, 0.18);
+}
+
+.profile-card .admin-primary-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.profile-card .admin-primary-btn:not(:disabled):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 18px 32px rgba(123, 17, 28, 0.2);
+}
+
+.profile-card .admin-ghost-btn {
+  background: transparent;
+  color: #7b111c;
+  border: 1px solid rgba(123, 17, 28, 0.35);
+}
+
+.profile-card .admin-ghost-btn:hover {
+  background: rgba(123, 17, 28, 0.08);
+}
+
 .change-password-form {
   display: flex;
   flex-direction: column;

@@ -408,7 +408,6 @@ const EnrollmentPage = () => {
           </div>
           <div className="enrollment-admin__status-card">
             <span className={`status-label ${statusClass}`}>{status}</span>
-            <p className="enrollment-admin__status-muted">Last updated {lastUpdated}</p>
             {hasAccountId ? (
               <div className="enrollment-admin__account-chip">
                 <p>Official Account ID</p>
