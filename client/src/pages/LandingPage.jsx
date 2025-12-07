@@ -1,4 +1,5 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import BrandHeader from '../components/BrandHeader.jsx';
 import Login from '../components/Login.jsx';
 import Register from '../components/Register.jsx';
@@ -8,35 +9,53 @@ import './LandingPage.css';
 import useDepartments from '../hooks/useDepartments';
 import usePrograms from '../hooks/usePrograms';
 
-const DepartmentCard = ({ department, accentClass }) => {
-    const { programs, loading } = usePrograms(department.id);
-    const programItems = programs?.slice(0, 4) || [];
-    const hasPrograms = programItems.length > 0;
+const ProgramModal = ({ department, anchor, onMouseEnter, onMouseLeave }) => {
+    const { programs, loading } = usePrograms(department?.id);
+    if (!department || !anchor) {
+        return null;
+    }
 
-    return (
-        <article className={`program-panel ${accentClass}`}>
-            <div className="program-panel__content">
-                <span className="program-panel-label">Department</span>
-                <h3>{department.name}</h3>
-                <span className="program-panel-dots" aria-hidden="true">•••</span>
+    const hasPrograms = programs && programs.length > 0;
+
+    const overlayClass = anchor.isMobile
+        ? 'program-modal-overlay program-modal-overlay--mobile'
+        : 'program-modal-overlay';
+
+    if (typeof document === 'undefined') {
+        return null;
+    }
+
+    return createPortal(
+        <div
+            className={overlayClass}
+            style={{ left: anchor.left, top: anchor.top }}
+            onMouseEnter={onMouseEnter}
+            onMouseLeave={onMouseLeave}
+            role="dialog"
+            aria-live="polite"
+            aria-label={`${department.name} programs`}
+        >
+            <div className="program-modal-card">
+                <div className="program-modal-header">
+                    <span className="program-modal-label">Programs</span>
+                    <h3>{department.name}</h3>
+                </div>
+                <div className="program-modal-body">
+                    {loading ? (
+                        <p className="program-modal-state">Loading programs…</p>
+                    ) : hasPrograms ? (
+                        <ul className="program-modal-list">
+                            {programs.map((program) => (
+                                <li key={program.id ?? program.name}>{program.name}</li>
+                            ))}
+                        </ul>
+                    ) : (
+                        <p className="program-modal-state">Programs coming soon.</p>
+                    )}
+                </div>
             </div>
-            <div className="program-panel__programs" aria-live="polite">
-                <span className="program-panel-label program-panel-programs-label">Programs</span>
-                {loading ? (
-                    <p className="program-panel-programs-state">Loading…</p>
-                ) : hasPrograms ? (
-                    <ul className="program-panel-programs-list">
-                        {programItems.map((program) => (
-                            <li key={program.id ?? program.name} className="program-panel-programs-item">
-                                {program.name}
-                            </li>
-                        ))}
-                    </ul>
-                ) : (
-                    <p className="program-panel-programs-state">Programs coming soon.</p>
-                )}
-            </div>
-        </article>
+        </div>,
+        document.body
     );
 };
 
@@ -44,9 +63,80 @@ const LandingPage = ({ onLoginSuccess }) => {
     // State to control the visibility of the login pop-up
     const [isLoginVisible, setIsLoginVisible] = useState(false);
     const [isRegisterVisible, setIsRegisterVisible] = useState(false);
+    const [hoveredDepartment, setHoveredDepartment] = useState(null);
+    const [modalAnchor, setModalAnchor] = useState(null);
+    const hoverTimeoutRef = useRef(null);
+    const hoveredCardRef = useRef(null);
 
-    const sliderRef = useRef(null);
     const { departments } = useDepartments();
+
+    const updateModalAnchor = useCallback((target) => {
+        if (!target || typeof window === 'undefined') {
+            setModalAnchor(null);
+            return;
+        }
+        const rect = target.getBoundingClientRect();
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+        const isMobile = viewportWidth < 768;
+        setModalAnchor({
+            left: isMobile ? viewportWidth / 2 : rect.left + rect.width / 2,
+            top: isMobile ? viewportHeight : rect.top,
+            isMobile,
+        });
+    }, []);
+
+    const cancelScheduledClose = () => {
+        if (hoverTimeoutRef.current) {
+            clearTimeout(hoverTimeoutRef.current);
+            hoverTimeoutRef.current = null;
+        }
+    };
+
+    useEffect(() => () => cancelScheduledClose(), []);
+
+    const scheduleModalClose = () => {
+        const closeModal = () => {
+            setHoveredDepartment(null);
+            setModalAnchor(null);
+            hoveredCardRef.current = null;
+        };
+        cancelScheduledClose();
+        if (typeof window === 'undefined') {
+            closeModal();
+            return;
+        }
+        hoverTimeoutRef.current = window.setTimeout(closeModal, 120);
+    };
+
+    const handleDepartmentHover = (department, target) => {
+        if (!target || typeof window === 'undefined') {
+            return;
+        }
+        cancelScheduledClose();
+        hoveredCardRef.current = target;
+        updateModalAnchor(target);
+        setHoveredDepartment(department);
+    };
+
+    const handleModalMouseEnter = () => cancelScheduledClose();
+    const handleModalMouseLeave = () => scheduleModalClose();
+
+    useEffect(() => {
+        if (!hoveredDepartment || !hoveredCardRef.current) {
+            return undefined;
+        }
+
+        const reposition = () => updateModalAnchor(hoveredCardRef.current);
+        reposition();
+        window.addEventListener('scroll', reposition, true);
+        window.addEventListener('resize', reposition);
+
+        return () => {
+            window.removeEventListener('scroll', reposition, true);
+            window.removeEventListener('resize', reposition);
+        };
+    }, [hoveredDepartment, updateModalAnchor]);
 
     const visionPillars = [
         'TRUSTED EDUCATION PROVIDER',
@@ -91,9 +181,6 @@ const LandingPage = ({ onLoginSuccess }) => {
             copy: 'We celebrate diversity and ensure learning spaces remain inclusive and accessible.'
         }
     ];
-
-    const programClassNames = ['accent-one', 'accent-two', 'accent-three', 'accent-four'];
-
 
     return (
         <div className="landing-page">
@@ -207,22 +294,45 @@ const LandingPage = ({ onLoginSuccess }) => {
                             <h2>Enroll NOW in our Future-Forward programs and UNLEASH your creative power!</h2>
                         </div>
                     </div>
-                    <div className="programs-panel-grid" ref={sliderRef}>
+                    <div className="programs-panel-grid">
                         {departments.length > 0 ? (
-                            departments.map((department, index) => (
-                                <DepartmentCard
-                                    key={department.id}
-                                    department={department}
-                                    accentClass={programClassNames[index % programClassNames.length]}
-                                />
+                            departments.map((department) => (
+                                <article
+                                    className="program-card-red"
+                                    key={department.id ?? department.name}
+                                    tabIndex={0}
+                                    onMouseEnter={(event) => handleDepartmentHover(department, event.currentTarget)}
+                                    onFocus={(event) => handleDepartmentHover(department, event.currentTarget)}
+                                    onMouseLeave={scheduleModalClose}
+                                    onBlur={scheduleModalClose}
+                                >
+                                    <span className="program-card-red__tag">Department</span>
+                                    <h3>{department.name}</h3>
+                                    <div className="program-card-red__footer">
+                                        <p className="program-card-red__hint">Hover to view programs</p>
+                                        <span className="program-card-red__dots" aria-hidden="true">•••</span>
+                                    </div>
+                                </article>
                             ))
                         ) : (
-                            <article className="program-panel accent-one loading">
-                                <span className="program-panel-label">Department</span>
+                            <article className="program-card-red program-card-red--loading">
+                                <span className="program-card-red__tag">Department</span>
                                 <h3>Loading programs…</h3>
+                                <div className="program-card-red__footer">
+                                    <p className="program-card-red__hint">Hover to view programs</p>
+                                    <span className="program-card-red__dots" aria-hidden="true">•••</span>
+                                </div>
                             </article>
                         )}
                     </div>
+                    {hoveredDepartment && modalAnchor && (
+                        <ProgramModal
+                            department={hoveredDepartment}
+                            anchor={modalAnchor}
+                            onMouseEnter={handleModalMouseEnter}
+                            onMouseLeave={handleModalMouseLeave}
+                        />
+                    )}
                 </section>
             </main>
 
