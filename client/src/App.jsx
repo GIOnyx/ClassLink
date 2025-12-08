@@ -19,7 +19,6 @@ import ErrorBoundary from './components/ErrorBoundary.jsx';
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [role, setRole] = useState(null); // 'ADMIN' or 'STUDENT'
-  const [shouldOpenProfile, setShouldOpenProfile] = useState(false);
   const [pendingPasswordReset, setPendingPasswordReset] = useState(null);
   const pendingResetMetaRef = useRef('');
 
@@ -39,7 +38,6 @@ function App() {
           });
           setIsLoggedIn(false);
           setRole(null);
-          setShouldOpenProfile(false);
           return;
         }
         pendingResetMetaRef.current = '';
@@ -47,20 +45,17 @@ function App() {
         setIsLoggedIn(true);
         const sessionRole = res.data?.role || null;
         setRole(sessionRole);
-        setShouldOpenProfile(sessionRole === 'STUDENT');
       } else {
         pendingResetMetaRef.current = '';
         setPendingPasswordReset(null);
         setIsLoggedIn(false);
         setRole(null);
-        setShouldOpenProfile(false);
       }
     } catch (e) {
       pendingResetMetaRef.current = '';
       setPendingPasswordReset(null);
       setIsLoggedIn(false);
       setRole(null);
-      setShouldOpenProfile(false);
     }
   }, []);
 
@@ -85,7 +80,6 @@ function App() {
     try { await apiLogout(); } catch {}
     setIsLoggedIn(false);
     setRole(null);
-    setShouldOpenProfile(false);
     setPendingPasswordReset(null);
     pendingResetMetaRef.current = '';
   };
@@ -112,8 +106,6 @@ function App() {
               <MainLayout
                 onLogout={handleLogout}
                 role={role}
-                shouldOpenProfile={shouldOpenProfile}
-                onProfileRedirectComplete={() => setShouldOpenProfile(false)}
               />
             }
           >

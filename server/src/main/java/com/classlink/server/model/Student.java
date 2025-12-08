@@ -41,7 +41,7 @@ public class Student {
     private String semester;
     private String password;
     
-    @Column(name = "password_reset_required")
+    @Column(name = "password_reset_required", nullable = false)
     private boolean passwordResetRequired;
 
     @Column(name = "email_login_grace_active")
