@@ -50,13 +50,6 @@ public class SchemaInspector implements CommandLineRunner {
                 rs.getString("COLUMN_KEY"),
                 rs.getString("EXTRA")));
 
-        jdbcTemplate.query(
-            "SELECT COLUMN_NAME, COLUMN_KEY, EXTRA FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'enrollment'",
-            (RowCallbackHandler) rs -> log.info("enrollment column {} key={} extra={}",
-                rs.getString("COLUMN_NAME"),
-                rs.getString("COLUMN_KEY"),
-                rs.getString("EXTRA")));
-
         Integer historyExists = jdbcTemplate.queryForObject(
             "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'flyway_schema_history'",
             Integer.class);

@@ -2,8 +2,6 @@ package com.classlink.server.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import java.util.List;
 
 @Entity
 @Table(name = "course")
@@ -36,7 +34,4 @@ public class Course {
     @JoinColumn(name = "curriculum_version_id")
     private Curriculum curriculum;
 
-    @OneToMany(mappedBy = "course")
-    @JsonIgnore
-    private List<Enrollment> enrolledStudents;
 }
