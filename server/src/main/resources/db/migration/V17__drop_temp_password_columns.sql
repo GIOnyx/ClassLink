@@ -26,16 +26,25 @@ SET @drop_approval_email_login := (
 );
 PREPARE stmt FROM @drop_approval_email_login; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
--- Rename temp_password_active to password_reset_required for clarity
+-- Only rename if the old column still exists and the new one was not already created
 SET @rename_flag := (
   SELECT IF(
-    COUNT(*) > 0,
-    'ALTER TABLE `student` CHANGE COLUMN `temp_password_active` `password_reset_required` BIT(1) NOT NULL DEFAULT 0',
+    (
+      SELECT COUNT(*)
+      FROM information_schema.columns
+      WHERE table_schema = DATABASE()
+        AND table_name = 'student'
+        AND column_name = 'temp_password_active'
+    ) > 0
+    AND (
+      SELECT COUNT(*)
+      FROM information_schema.columns
+      WHERE table_schema = DATABASE()
+        AND table_name = 'student'
+        AND column_name = 'password_reset_required'
+    ) = 0,
+    'ALTER TABLE `student` CHANGE COLUMN `temp_password_active` `password_reset_required` TINYINT(1) NOT NULL DEFAULT 0',
     'SELECT 1'
   )
-  FROM information_schema.columns
-  WHERE table_schema = DATABASE()
-    AND table_name = 'student'
-    AND column_name = 'temp_password_active'
 );
 PREPARE stmt FROM @rename_flag; EXECUTE stmt; DEALLOCATE PREPARE stmt;

@@ -458,7 +458,7 @@ const ProfilePage = () => {
                         </div>
                         <form className="change-password-form" onSubmit={handlePasswordSubmit}>
                             <label>
-                                Old password (use the password you created during registration)
+                                Old password
                                 <input
                                     type="password"
                                     name="oldPassword"

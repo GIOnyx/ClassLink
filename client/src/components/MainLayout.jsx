@@ -1,12 +1,12 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
 import Navbar from './Navbar';
 import SecondaryNavbar from './SecondaryNavbar';
 import Footer from './Footer';
 import LogoutModal from './LogoutModal';
 import { getMyNotifications, getUnreadNotificationCount, markNotificationAsRead, getMyStudent, getMyAdmin } from '../services/backend';
 
-const MainLayout = ({ onLogout, role, shouldOpenProfile, onProfileRedirectComplete }) => {
+const MainLayout = ({ onLogout, role }) => {
     const [notifications, setNotifications] = useState([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const [notificationsLoading, setNotificationsLoading] = useState(false);
@@ -15,17 +15,7 @@ const MainLayout = ({ onLogout, role, shouldOpenProfile, onProfileRedirectComple
     const [profileSummary, setProfileSummary] = useState({ name: '', avatarUrl: '', roleLabel: '' });
     const [profileLoading, setProfileLoading] = useState(false);
     const [studentRecord, setStudentRecord] = useState(null);
-    const navigate = useNavigate();
-    const location = useLocation();
-        useEffect(() => {
-            if (!shouldOpenProfile || role !== 'STUDENT') {
-                return;
-            }
-            if (location.pathname !== '/profile') {
-                navigate('/profile', { replace: true });
-            }
-            onProfileRedirectComplete?.();
-        }, [shouldOpenProfile, role, navigate, location.pathname, onProfileRedirectComplete]);
+    
 
     const resolveImageSrc = (url) => {
         if (!url) return '';
