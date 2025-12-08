@@ -4,6 +4,7 @@ import BrandHeader from '../components/BrandHeader.jsx';
 import Login from '../components/Login.jsx';
 import Register from '../components/Register.jsx';
 import Footer from '../components/Footer.jsx';
+import ForcedPasswordResetModal from '../components/ForcedPasswordResetModal.jsx';
 import '../App.css';
 import './LandingPage.css';
 import useDepartments from '../hooks/useDepartments';
@@ -59,7 +60,12 @@ const ProgramModal = ({ department, anchor, onMouseEnter, onMouseLeave }) => {
     );
 };
 
-const LandingPage = ({ onLoginSuccess }) => {
+const LandingPage = ({
+    onLoginSuccess,
+    pendingPasswordReset = null,
+    onPasswordResetComplete,
+    onPasswordResetCancel
+}) => {
     // State to control the visibility of the login pop-up
     const [isLoginVisible, setIsLoginVisible] = useState(false);
     const [isRegisterVisible, setIsRegisterVisible] = useState(false);
@@ -348,6 +354,16 @@ const LandingPage = ({ onLoginSuccess }) => {
                 <Register
                     onRegisterSuccess={onLoginSuccess}
                     onClose={() => setIsRegisterVisible(false)}
+                />
+            )}
+
+            {pendingPasswordReset && (
+                <ForcedPasswordResetModal
+                    visible
+                    studentName={`${pendingPasswordReset.firstName ?? ''} ${pendingPasswordReset.lastName ?? ''}`.trim()}
+                    defaultOldPassword={pendingPasswordReset.defaultOldPassword || ''}
+                    onSuccess={onPasswordResetComplete}
+                    onCancel={onPasswordResetCancel}
                 />
             )}
 

@@ -56,12 +56,7 @@ public class ClasslinkUserDetails implements UserDetails {
     public static ClasslinkUserDetails forStudent(Student student, String usernameUsed) {
         boolean active = student.getStatus() != StudentStatus.INACTIVE;
         String resolvedUsername = usernameUsed != null ? usernameUsed.trim() : "";
-        boolean loggingInWithAccountId = resolvedUsername.equalsIgnoreCase(student.getAccountId());
         String credential = student.getPassword();
-        if (loggingInWithAccountId && student.isTempPasswordActive()
-                && student.getTempPassword() != null && !student.getTempPassword().isBlank()) {
-            credential = student.getTempPassword();
-        }
 
         return new ClasslinkUserDetails(
             student.getId(),
