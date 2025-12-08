@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useOutletContext } from 'react-router-dom';
 import { submitStudentApplication, getMyStudent, uploadMyRequirementsDocument } from '../services/backend';
 import useDepartments from '../hooks/useDepartments';
 import usePrograms from '../hooks/usePrograms';
@@ -163,8 +162,6 @@ const EnrollmentPage = () => {
   const [requirementsUploading, setRequirementsUploading] = useState(false);
   const [requirementsUploadError, setRequirementsUploadError] = useState('');
   const [officialStudentId, setOfficialStudentId] = useState('');
-  const outletContext = typeof useOutletContext === 'function' ? useOutletContext() : {};
-  const { openCredentialModal, credentialModalVisible } = outletContext || {};
   
   const handleChange = (e) => {
     const { name } = e.target;
@@ -457,11 +454,6 @@ const EnrollmentPage = () => {
     const statusDetail = STATUS_CARD_DETAIL[status] || STATUS_CARD_DETAIL.DEFAULT;
     const normalizedStatus = status.toLowerCase();
     const statusToneClass = ['approved', 'pending', 'rejected'].includes(normalizedStatus) ? normalizedStatus : 'default';
-    const showViewCredentialsButton =
-      status === 'APPROVED'
-      && existingApp?.tempPasswordActive
-      && !credentialModalVisible
-      && typeof openCredentialModal === 'function';
 
     return (
       <div className="standard-page-layout enrollment-admin">
@@ -472,15 +464,6 @@ const EnrollmentPage = () => {
             <p className="enrollment-admin__hero-copy-text">{statusCopy.copy}</p>
             {status === 'PENDING' && (
               <p className="enrollment-admin__inline-note">We will notify you via email once the review is complete.</p>
-            )}
-            {showViewCredentialsButton && (
-              <button
-                type="button"
-                className="enrollment-submit-btn enrollment-submit-btn--ghost"
-                onClick={() => openCredentialModal?.()}
-              >
-                View login credentials
-              </button>
             )}
             {canQuickEdit && (
               <button type="button" className="enrollment-submit-btn enrollment-submit-btn--ghost" onClick={startEdit}>

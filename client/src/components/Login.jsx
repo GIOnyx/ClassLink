@@ -31,7 +31,12 @@ const Login = ({ onLoginSuccess, onClose }) => {
             const res = await login(identifier, password);
             console.log('Logged in:', res.data);
             setErrors({});
-            onLoginSuccess?.(res.data);
+            const payload = res.data;
+            await onLoginSuccess?.(payload, { identifier, password });
+            if (payload?.mustChangePassword) {
+                setShowForgotForm(false);
+                setForgotFeedback(null);
+            }
             onClose?.();
         } catch (err) {
             console.error('Login failed:', err);

@@ -110,6 +110,7 @@ public class AuthController {
                 payload.put("role", "STUDENT");
                 payload.put("firstName", student.getFirstName());
                 payload.put("lastName", student.getLastName());
+                payload.put("mustChangePassword", student.isPasswordResetRequired());
             } else {
                 Admin admin = adminRepository.findById(principal.getUserId()).orElse(null);
                 if (admin == null) {
@@ -119,6 +120,7 @@ public class AuthController {
                 payload.put("userId", admin.getAdminId());
                 payload.put("role", "ADMIN");
                 payload.put("name", admin.getName());
+                payload.put("mustChangePassword", false);
             }
 
             storeAuthentication(authentication, request);
@@ -164,10 +166,12 @@ public class AuthController {
         payload.put("userType", principal.getUserType());
         payload.put("userId", principal.getUserId());
         payload.put("role", principal.getRole());
+        payload.put("mustChangePassword", false);
         if (principal.isStudent()) {
             studentRepository.findById(principal.getUserId()).ifPresent(student -> {
                 payload.put("firstName", student.getFirstName());
                 payload.put("lastName", student.getLastName());
+                payload.put("mustChangePassword", student.isPasswordResetRequired());
             });
         } else {
             adminRepository.findById(principal.getUserId()).ifPresent(admin -> payload.put("name", admin.getName()));
@@ -248,14 +252,12 @@ public class AuthController {
         if (student == null) {
             return ResponseEntity.status(404).body(Map.of("error", "Account not found"));
         }
-        String tempPassword = student.getTempPassword();
-        boolean matchesTemp = tempPassword != null && body.oldPassword().equals(tempPassword);
-        if (!matchesTemp) {
+        boolean matchesCurrent = body.oldPassword().equals(student.getPassword());
+        if (!matchesCurrent) {
             return ResponseEntity.status(400).body(Map.of("error", "Old password is incorrect"));
         }
         student.setPassword(body.newPassword());
-        student.setTempPassword(null);
-        student.setTempPasswordActive(false);
+        student.setPasswordResetRequired(false);
         studentRepository.save(student);
         return ResponseEntity.ok(Map.of("ok", true));
     }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
 // Component & Page Imports
@@ -20,33 +20,65 @@ function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [role, setRole] = useState(null); // 'ADMIN' or 'STUDENT'
   const [shouldOpenProfile, setShouldOpenProfile] = useState(false);
+  const [pendingPasswordReset, setPendingPasswordReset] = useState(null);
+  const pendingResetMetaRef = useRef('');
 
-  // On first load, ask the server if there's an active session
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await me();
-        if (res.data?.authenticated) {
-          setIsLoggedIn(true);
-          setRole(res.data?.role || null);
-        }
-      } catch (e) {
-        // not logged in or server unavailable
-      }
-    })();
-  }, []);
-
-  const handleLoginSuccess = async () => {
-    // After login, fetch session to know role
+  const refreshSession = useCallback(async () => {
     try {
       const res = await me();
       if (res.data?.authenticated) {
+        const mustReset = Boolean(res.data?.mustChangePassword) && res.data?.userType === 'student';
+        if (mustReset) {
+          setPendingPasswordReset((prev) => {
+            const defaultOldPassword = pendingResetMetaRef.current || prev?.defaultOldPassword || '';
+            return {
+              firstName: res.data?.firstName || prev?.firstName || '',
+              lastName: res.data?.lastName || prev?.lastName || '',
+              defaultOldPassword
+            };
+          });
+          setIsLoggedIn(false);
+          setRole(null);
+          setShouldOpenProfile(false);
+          return;
+        }
+        pendingResetMetaRef.current = '';
+        setPendingPasswordReset(null);
         setIsLoggedIn(true);
         const sessionRole = res.data?.role || null;
         setRole(sessionRole);
         setShouldOpenProfile(sessionRole === 'STUDENT');
+      } else {
+        pendingResetMetaRef.current = '';
+        setPendingPasswordReset(null);
+        setIsLoggedIn(false);
+        setRole(null);
+        setShouldOpenProfile(false);
       }
-    } catch {}
+    } catch (e) {
+      pendingResetMetaRef.current = '';
+      setPendingPasswordReset(null);
+      setIsLoggedIn(false);
+      setRole(null);
+      setShouldOpenProfile(false);
+    }
+  }, []);
+
+  // On first load, ask the server if there's an active session
+  useEffect(() => {
+    refreshSession();
+  }, [refreshSession]);
+
+  const handleLoginSuccess = async (loginPayload = {}, meta = {}) => {
+    if (loginPayload?.mustChangePassword) {
+      pendingResetMetaRef.current = meta?.password || '';
+      setPendingPasswordReset((prev) => ({
+        firstName: loginPayload.firstName || prev?.firstName || '',
+        lastName: loginPayload.lastName || prev?.lastName || '',
+        defaultOldPassword: meta?.password || prev?.defaultOldPassword || ''
+      }));
+    }
+    await refreshSession();
   };
 
   const handleLogout = async () => {
@@ -54,6 +86,18 @@ function App() {
     setIsLoggedIn(false);
     setRole(null);
     setShouldOpenProfile(false);
+    setPendingPasswordReset(null);
+    pendingResetMetaRef.current = '';
+  };
+
+  const handlePasswordResetComplete = async () => {
+    setPendingPasswordReset(null);
+    pendingResetMetaRef.current = '';
+    await refreshSession();
+  };
+
+  const handlePasswordResetCancel = async () => {
+    await handleLogout();
   };
 
   return (
@@ -87,7 +131,17 @@ function App() {
           // --- PUBLIC (NOT LOGGED-IN) ROUTES ---
           // This is now much simpler. We only have one public view.
           // It handles all paths (/*) and passes the login function down.
-          <Route path="/*" element={<LandingPage onLoginSuccess={handleLoginSuccess} />} />
+          <Route
+            path="/*"
+            element={
+              <LandingPage
+                onLoginSuccess={handleLoginSuccess}
+                pendingPasswordReset={pendingPasswordReset}
+                onPasswordResetComplete={handlePasswordResetComplete}
+                onPasswordResetCancel={handlePasswordResetCancel}
+              />
+            }
+          />
         )}
       </Routes>
       </ErrorBoundary>
