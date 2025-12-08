@@ -1,9 +1,6 @@
 package com.classlink.server.model;
 
 import java.time.LocalDate; // ✅ ADD THIS IMPORT
-import java.util.List;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -14,7 +11,6 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
 import lombok.Data;
 
 @Entity
@@ -59,10 +55,6 @@ public class Student {
 
     @Enumerated(EnumType.STRING)
     private ApplicantType applicantType;
-
-    @OneToMany(mappedBy = "student")
-    @JsonIgnore
-    private List<Enrollment> enrollments;
 
     // --- ✅ ADD ALL THESE NEW FIELDS ---
     private LocalDate birthDate;

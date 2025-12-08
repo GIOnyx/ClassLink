@@ -11,9 +11,6 @@ const API = axios.create({
   withCredentials: true
 });
 
-export const getEnrollments = () => API.get('/enrollments');
-export const postEnrollment = (payload) => API.post('/enrollments', payload);
-
 // Auth/session helpers
 export const login = (identifier, password) =>
   API.post('/auth/login', { identifier, password });
@@ -83,12 +80,5 @@ export const getCurriculum = (programCode) => API.get(`/curricula/${encodeURICom
 export const getCurriculumByProgramId = (programId) => API.get(`/curricula/byProgramId/${programId}`);
 export const createCurriculum = (payload) => API.post('/curricula', payload);
 export const updateCurriculum = (id, payload) => API.put(`/curricula/${id}`, payload);
-
-export const getFilteredEnrollmentForms = (filters) => {
-    // Note: Axios automatically serializes the 'filters' object into URL query parameters (?department=X&yearLevel=Y)
-    return axios.get('/api/enrollments/forms', {
-        params: filters
-    });
-};
 
 export default API;

@@ -248,9 +248,9 @@ public class AuthController {
         if (student == null) {
             return ResponseEntity.status(404).body(Map.of("error", "Account not found"));
         }
-        boolean matchesPrimary = body.oldPassword().equals(student.getPassword());
-        boolean matchesTemp = student.getTempPassword() != null && body.oldPassword().equals(student.getTempPassword());
-        if (!matchesPrimary && !matchesTemp) {
+        String tempPassword = student.getTempPassword();
+        boolean matchesTemp = tempPassword != null && body.oldPassword().equals(tempPassword);
+        if (!matchesTemp) {
             return ResponseEntity.status(400).body(Map.of("error", "Old password is incorrect"));
         }
         student.setPassword(body.newPassword());
