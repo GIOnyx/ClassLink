@@ -89,39 +89,37 @@
 .notification-link:hover:not(.disabled), .notification-link.open { background-color: rgba(128, 0, 0, 0.12); color: #800000; }
 .navbar-links a:hover, .notification-link:hover { color: #800000; }
 .notification-icon { stroke: currentColor; }
-.notification-badge { position: absolute; top: 2px; right: 2px; background-color: #c62828; color: #fff; border-radius: 999px; font-size: 0.65rem; line-height: 1; padding: 2px 5px; min-width: 20px; text-align: center; font-weight: 600; }
+.notification-badge { position: absolute; top: 4px; right: 6px; border-radius: 50%; display: inline-block; }
+.notification-badge--dot { width: 12px; height: 12px; background-color: #c62828; box-shadow: 0 0 0 3px rgba(198, 40, 40, 0.25); }
 
 .notification-dropdown { position: absolute; right: 0; top: calc(100% + 12px); width: 360px; background: #fff; border: 1px solid rgba(15, 23, 42, 0.08); border-radius: 24px; box-shadow: 0 25px 60px rgba(15, 23, 42, 0.25); padding: 22px; z-index: 1100; color: #0f172a; }
 .notification-dropdown::before { content: ''; position: absolute; top: -10px; right: 28px; width: 20px; height: 20px; background: #fff; border-left: 1px solid rgba(15, 23, 42, 0.08); border-top: 1px solid rgba(15, 23, 42, 0.08); transform: rotate(45deg); }
 .notification-dropdown__header { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 16px; align-items: flex-start; }
 .notification-dropdown__title { font-size: 1rem; font-weight: 600; margin: 0; text-transform: uppercase; letter-spacing: 0.08em; color: #7b111c; }
 .notification-dropdown__subtitle { margin: 4px 0 0; color: #475569; font-size: 0.85rem; line-height: 1.4; }
+.notification-dropdown__tabs { display: flex; gap: 8px; padding: 4px; background: rgba(15, 23, 42, 0.04); border-radius: 999px; margin-bottom: 16px; }
+.notification-tab { flex: 1; border: none; background: transparent; color: #475569; font-weight: 600; border-radius: 999px; padding: 8px 12px; cursor: pointer; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; gap: 6px; transition: background-color 0.2s ease, color 0.2s ease; }
+.notification-tab span { display: inline-flex; align-items: center; justify-content: center; min-width: 32px; padding: 2px 8px; border-radius: 999px; background: rgba(15, 23, 42, 0.08); font-size: 0.75rem; font-weight: 600; }
+.notification-tab.is-active { background: rgba(123, 17, 28, 0.12); color: #7b111c; }
+.notification-tab.is-active span { background: rgba(123, 17, 28, 0.18); color: #7b111c; }
+.notification-tab:focus-visible { outline: 2px solid rgba(123, 17, 28, 0.35); outline-offset: 2px; }
 .notification-dropdown__refresh {
-	/* Make this look like a small text link with minimal highlight */
-	background: rgba(123, 17, 28, 0.08) !important;
-	border: 1px solid rgba(123, 17, 28, 0.25) !important;
+	background: transparent;
+	border: none;
 	color: #7b111c;
 	font-weight: 600;
 	cursor: pointer;
-	padding: 6px 12px !important;
+	padding: 0;
 	margin: 0;
-	font-size: 0.8rem !important;
-	line-height: 1.2;
-	box-shadow: none !important;
-	border-radius: 999px !important;
+	font-size: 0.85rem;
+	text-decoration: underline;
+	white-space: nowrap;
 }
-	notification-dropdown__refresh,
-	notification-dropdown__refresh:focus,
-	notification-dropdown__refresh:active,
-	notification-dropdown__refresh:hover {
-		outline: none;
-		border: 1px solid rgba(123, 17, 28, 0.25) !important;
-		box-shadow: none !important;
-	}
-.notification-dropdown__refresh:hover:not(:disabled) {
-	background: rgba(123, 17, 28, 0.15) !important;
+.notification-dropdown__refresh:disabled {
+	opacity: 0.4;
+	cursor: not-allowed;
+	text-decoration: none;
 }
-.notification-dropdown__refresh:disabled { opacity: 0.5; cursor: not-allowed; }
 .notification-dropdown__list { max-height: 360px; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; padding-right: 6px; }
 .notification-empty { color: #475569; font-size: 0.9rem; margin: 0; padding: 24px 0; text-align: center; }
 .notification-item { border: 1px solid rgba(15, 23, 42, 0.08); border-radius: 18px; padding: 14px 16px; display: flex; gap: 12px; justify-content: space-between; align-items: flex-start; background: #fff7f7; box-shadow: 0 15px 35px rgba(15, 23, 42, 0.1); }

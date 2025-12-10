@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import '../App.css';
 import './Navbar.css';
 import './BrandHeader.css';
@@ -7,6 +7,11 @@ const typeLabels = {
     APPLICATION_STATUS: 'Application Update',
     CALENDAR_EVENT: 'Calendar Event',
     GENERAL: 'Notification'
+};
+
+const NOTIFICATION_FILTERS = {
+    ALL: 'ALL',
+    UNREAD: 'UNREAD'
 };
 
 const Navbar = ({
@@ -21,6 +26,7 @@ const Navbar = ({
     profileLoading = false
 }) => {
     const [isDropdownOpen, setDropdownOpen] = useState(false);
+    const [notificationFilter, setNotificationFilter] = useState(NOTIFICATION_FILTERS.ALL);
     const [isOnline, setIsOnline] = useState(typeof navigator === 'undefined' ? true : navigator.onLine);
     const dropdownRef = useRef(null);
 
@@ -52,6 +58,34 @@ const Navbar = ({
             onRefreshNotifications();
         }
     }, [isDropdownOpen, onRefreshNotifications]);
+
+    const unreadNotifications = useMemo(
+        () => notifications.filter((item) => !item.read),
+        [notifications]
+    );
+
+    const filteredNotifications = useMemo(
+        () => (notificationFilter === NOTIFICATION_FILTERS.UNREAD ? unreadNotifications : notifications),
+        [notificationFilter, notifications, unreadNotifications]
+    );
+
+    const totalNotificationsCount = notifications.length;
+    const unreadNotificationsCount = unreadNotifications.length;
+
+    const handleMarkAllAsRead = useCallback(async () => {
+        if (typeof onMarkNotificationRead !== 'function' || role !== 'STUDENT') return;
+        if (unreadNotificationsCount === 0) return;
+        const ids = unreadNotifications
+            .map((item) => item.id)
+            .filter(Boolean);
+        if (ids.length === 0) return;
+        try {
+            await Promise.all(ids.map((id) => onMarkNotificationRead(id)));
+            await onRefreshNotifications?.();
+        } catch (err) {
+            console.error('Failed to mark all notifications as read', err);
+        }
+    }, [onMarkNotificationRead, onRefreshNotifications, role, unreadNotifications, unreadNotificationsCount]);
 
     const toggleDropdown = () => setDropdownOpen((prev) => !prev);
     const closeDropdown = () => setDropdownOpen(false);
@@ -109,7 +143,11 @@ const Navbar = ({
                     <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
                 </svg>
                 {role === 'STUDENT' && unreadCount > 0 && (
-                    <span className="notification-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>
+                    <span
+                        className="notification-badge notification-badge--dot"
+                        aria-label={`${unreadCount} unread notifications`}
+                        role="status"
+                    />
                 )}
             </button>
             {isDropdownOpen && (
@@ -119,24 +157,52 @@ const Navbar = ({
                             <p className="notification-dropdown__title">Notifications</p>
                             <p className="notification-dropdown__subtitle">We will alert you about application updates and new events.</p>
                         </div>
-                        <button
-                            type="button"
-                            className="notification-dropdown__refresh"
-                            onClick={onRefreshNotifications}
-                            disabled={notificationsLoading}
-                        >
-                            {notificationsLoading ? 'Refreshing…' : 'Refresh'}
-                        </button>
+                        {role === 'STUDENT' && (
+                            <button
+                                type="button"
+                                className="notification-dropdown__refresh"
+                                onClick={handleMarkAllAsRead}
+                                disabled={notificationsLoading || unreadNotificationsCount === 0}
+                            >
+                                Mark all as read
+                            </button>
+                        )}
                     </div>
+                    {role === 'STUDENT' && (
+                        <div className="notification-dropdown__tabs" role="tablist" aria-label="Notification filters">
+                            <button
+                                type="button"
+                                className={`notification-tab ${notificationFilter === NOTIFICATION_FILTERS.ALL ? 'is-active' : ''}`}
+                                onClick={() => setNotificationFilter(NOTIFICATION_FILTERS.ALL)}
+                                aria-pressed={notificationFilter === NOTIFICATION_FILTERS.ALL}
+                            >
+                                All
+                                <span>{totalNotificationsCount}</span>
+                            </button>
+                            <button
+                                type="button"
+                                className={`notification-tab ${notificationFilter === NOTIFICATION_FILTERS.UNREAD ? 'is-active' : ''}`}
+                                onClick={() => setNotificationFilter(NOTIFICATION_FILTERS.UNREAD)}
+                                aria-pressed={notificationFilter === NOTIFICATION_FILTERS.UNREAD}
+                            >
+                                Unread
+                                <span>{unreadNotificationsCount}</span>
+                            </button>
+                        </div>
+                    )}
                     <div className="notification-dropdown__list">
                         {role !== 'STUDENT' ? (
                             <p className="notification-empty">Notifications are currently available to student accounts.</p>
                         ) : notificationsLoading ? (
                             <p className="notification-empty">Loading notifications…</p>
-                        ) : notifications.length === 0 ? (
+                        ) : totalNotificationsCount === 0 ? (
                             <p className="notification-empty">You're all caught up!</p>
+                        ) : filteredNotifications.length === 0 ? (
+                            <p className="notification-empty">
+                                {notificationFilter === NOTIFICATION_FILTERS.UNREAD ? 'No unread notifications.' : 'Nothing to show yet.'}
+                            </p>
                         ) : (
-                            notifications.map((notification) => (
+                            filteredNotifications.map((notification) => (
                                 <div
                                     key={notification.id}
                                     className={`notification-item ${notification.read ? 'notification-item--read' : ''}`}
