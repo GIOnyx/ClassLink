@@ -26,7 +26,7 @@ const Navbar = ({
     profileLoading = false
 }) => {
     const [isDropdownOpen, setDropdownOpen] = useState(false);
-    const [notificationFilter, setNotificationFilter] = useState(NOTIFICATION_FILTERS.ALL);
+    const [notificationFilter, setNotificationFilter] = useState(NOTIFICATION_FILTERS.UNREAD);
     const [isOnline, setIsOnline] = useState(typeof navigator === 'undefined' ? true : navigator.onLine);
     const dropdownRef = useRef(null);
 
@@ -56,6 +56,9 @@ const Navbar = ({
     useEffect(() => {
         if (isDropdownOpen && typeof onRefreshNotifications === 'function') {
             onRefreshNotifications();
+        }
+        if (isDropdownOpen) {
+            setNotificationFilter(NOTIFICATION_FILTERS.UNREAD);
         }
     }, [isDropdownOpen, onRefreshNotifications]);
 
