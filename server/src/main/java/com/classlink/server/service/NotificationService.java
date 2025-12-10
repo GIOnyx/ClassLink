@@ -103,6 +103,30 @@ public class NotificationService {
         }
     }
 
+    @Transactional
+    public void markAsUnread(Long notificationId, Long studentId) {
+        Optional<Notification> notificationOpt = notificationRepository.findByIdAndStudentId(notificationId, studentId);
+        if (notificationOpt.isEmpty()) {
+            log.debug("Notification {} not found for student {}", notificationId, studentId);
+            return;
+        }
+        Notification notification = notificationOpt.get();
+        if (notification.isRead()) {
+            notification.setRead(false);
+            notificationRepository.save(notification);
+        }
+    }
+
+    @Transactional
+    public void deleteNotification(Long notificationId, Long studentId) {
+        Optional<Notification> notificationOpt = notificationRepository.findByIdAndStudentId(notificationId, studentId);
+        if (notificationOpt.isEmpty()) {
+            log.debug("Notification {} not found for student {}", notificationId, studentId);
+            return;
+        }
+        notificationRepository.delete(notificationOpt.get());
+    }
+
     private NotificationDto toDto(Notification entity) {
         return new NotificationDto(
             entity.getId(),

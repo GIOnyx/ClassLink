@@ -4,7 +4,7 @@ import Navbar from './Navbar';
 import SecondaryNavbar from './SecondaryNavbar';
 import Footer from './Footer';
 import LogoutModal from './LogoutModal';
-import { getMyNotifications, getUnreadNotificationCount, markNotificationAsRead, getMyStudent, getMyAdmin } from '../services/backend';
+import { getMyNotifications, getUnreadNotificationCount, markNotificationAsRead, markNotificationAsUnread, deleteNotification, getMyStudent, getMyAdmin } from '../services/backend';
 
 const MainLayout = ({ onLogout, role }) => {
     const [notifications, setNotifications] = useState([]);
@@ -93,6 +93,53 @@ const MainLayout = ({ onLogout, role }) => {
         await loadNotifications();
         await refreshUnreadCount();
     }, [role, loadNotifications, refreshUnreadCount]);
+
+    const handleMarkNotificationUnread = useCallback(async (notificationId) => {
+        if (role !== 'STUDENT') {
+            return;
+        }
+        try {
+            await markNotificationAsUnread(notificationId);
+            setNotifications((prev) => {
+                let incremented = false;
+                const updated = prev.map((notification) => {
+                    if (notification.id === notificationId) {
+                        if (notification.read) {
+                            incremented = true;
+                        }
+                        return { ...notification, read: false };
+                    }
+                    return notification;
+                });
+                if (incremented) {
+                    setUnreadCount((count) => count + 1);
+                }
+                return updated;
+            });
+        } catch (err) {
+            console.error('Failed to mark notification as unread', err);
+        }
+    }, [role]);
+
+    const handleDeleteNotification = useCallback(async (notificationId) => {
+        if (role !== 'STUDENT') {
+            return;
+        }
+        try {
+            await deleteNotification(notificationId);
+            setNotifications((prev) => {
+                const target = prev.find((n) => n.id === notificationId);
+                const wasUnread = target ? !target.read : false;
+                const updated = prev.filter((n) => n.id !== notificationId);
+                if (wasUnread) {
+                    setUnreadCount((count) => Math.max(0, count - 1));
+                }
+                return updated;
+            });
+        } catch (err) {
+            console.error('Failed to delete notification', err);
+        }
+    }, [role]);
 
     useEffect(() => {
         if (role !== 'STUDENT') {
@@ -186,6 +233,8 @@ const MainLayout = ({ onLogout, role }) => {
                 unreadCount={unreadCount}
                 onRefreshNotifications={handleRefreshNotifications}
                 onMarkNotificationRead={handleMarkNotificationRead}
+                onMarkNotificationUnread={handleMarkNotificationUnread}
+                onDeleteNotification={handleDeleteNotification}
                 notificationsLoading={notificationsLoading}
                 userProfile={profileSummary}
                 profileLoading={profileLoading}
