@@ -1,6 +1,6 @@
 package com.classlink.server.model;
 
-import java.time.LocalDate; // ✅ ADD THIS IMPORT
+import java.time.LocalDate; 
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -53,7 +53,7 @@ public class Student {
     @Enumerated(EnumType.STRING)
     private ApplicantType applicantType;
 
-    // --- ✅ ADD ALL THESE NEW FIELDS ---
+    
     private LocalDate birthDate;
     private String gender;
     private String studentAddress;
@@ -62,15 +62,15 @@ public class Student {
     private String relationshipToStudent;
     private String parentContactNumber;
     private String parentEmailAddress;
-    // removed gradeProgramApplyingFor string in favor of Program relation
+   
     private String previousSchool;
 
     private String rejectionReason;
     
-    // Profile image URL (stored as a relative or absolute path rather than a BLOB for simplicity/performance)
+   
     private String profileImageUrl;
 
-    // PDF of submitted requirements for admin review
+    
     private String requirementsDocumentUrl;
 
 }
