@@ -52,6 +52,8 @@ export const getMyApplicationHistory = () => API.get('/students/me/history');
 export const getMyNotifications = () => API.get('/notifications');
 export const getUnreadNotificationCount = () => API.get('/notifications/unread-count');
 export const markNotificationAsRead = (id) => API.post(`/notifications/${id}/read`);
+export const markNotificationAsUnread = (id) => API.post(`/notifications/${id}/unread`);
+export const deleteNotification = (id) => API.delete(`/notifications/${id}`);
 export const uploadMyProfileImage = (file) => {
   const formData = new FormData();
   formData.append('file', file);

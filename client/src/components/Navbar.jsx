@@ -21,6 +21,8 @@ const Navbar = ({
     unreadCount = 0,
     onRefreshNotifications,
     onMarkNotificationRead,
+    onMarkNotificationUnread,
+    onDeleteNotification,
     notificationsLoading = false,
     userProfile = {},
     profileLoading = false
@@ -29,6 +31,7 @@ const Navbar = ({
     const [notificationFilter, setNotificationFilter] = useState(NOTIFICATION_FILTERS.UNREAD);
     const [isOnline, setIsOnline] = useState(typeof navigator === 'undefined' ? true : navigator.onLine);
     const dropdownRef = useRef(null);
+    const [openMenuId, setOpenMenuId] = useState(null);
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -91,7 +94,10 @@ const Navbar = ({
     }, [onMarkNotificationRead, onRefreshNotifications, role, unreadNotifications, unreadNotificationsCount]);
 
     const toggleDropdown = () => setDropdownOpen((prev) => !prev);
-    const closeDropdown = () => setDropdownOpen(false);
+    const closeDropdown = () => {
+        setDropdownOpen(false);
+        setOpenMenuId(null);
+    };
 
     const formatRelativeTime = (value) => {
         if (!value) return '';
@@ -215,15 +221,51 @@ const Navbar = ({
                                         <p className="notification-item__message">{notification.message || 'No additional details provided.'}</p>
                                         <span className="notification-item__timestamp">{formatRelativeTime(notification.createdAt)}</span>
                                     </div>
-                                    {!notification.read && (
-                                        <button
-                                            type="button"
-                                            className="notification-item__mark"
-                                            onClick={() => onMarkNotificationRead?.(notification.id)}
-                                        >
-                                            Mark as read
-                                        </button>
-                                    )}
+                                    <div className="notification-item__actions">
+                                        {!notification.read ? (
+                                            <button
+                                                type="button"
+                                                className="notification-item__mark"
+                                                onClick={() => onMarkNotificationRead?.(notification.id)}
+                                            >
+                                                Mark as read
+                                            </button>
+                                        ) : (
+                                            <div className="notification-item__menu">
+                                                <button
+                                                    type="button"
+                                                    className="notification-item__more"
+                                                    aria-haspopup="true"
+                                                    aria-expanded={openMenuId === notification.id}
+                                                    onClick={() => setOpenMenuId((prev) => prev === notification.id ? null : notification.id)}
+                                                >
+                                                    ⋯
+                                                </button>
+                                                {openMenuId === notification.id && (
+                                                    <div className="notification-item__menu-panel">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setOpenMenuId(null);
+                                                                onMarkNotificationUnread?.(notification.id);
+                                                            }}
+                                                        >
+                                                            Mark as unread
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setOpenMenuId(null);
+                                                                onDeleteNotification?.(notification.id);
+                                                            }}
+                                                        >
+                                                            Delete
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             ))
                         )}
