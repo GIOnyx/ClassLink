@@ -2,8 +2,24 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import '../App.css';
 import './StudentPage.css';
 import { me, getAdminAccounts, createAdminAccount, removeAdminAccount } from '../services/backend';
+import useRequireAdmin from '../hooks/useRequireAdmin';
 
 const StudentPage = () => {
+  const { authorized, loading: authLoading } = useRequireAdmin();
+
+  if (authLoading) {
+    return <div className="admin-access-page standard-page-layout">Checking admin access…</div>;
+  }
+
+  if (!authorized) {
+    return (
+      <div className="admin-access-page standard-page-layout">
+        <h1>Not authorized</h1>
+        <p>You must be signed in as an administrator to view this page.</p>
+      </div>
+    );
+  }
+
   const [info, setInfo] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
