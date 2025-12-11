@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import '../App.css';
 import './CurriculumPage.css';
-import { getCurriculumByProgramId, createCurriculum, updateCurriculum } from '../services/backend';
+import { getCurriculumByProgramId, createCurriculum, updateCurriculum, deleteCurriculum } from '../services/backend';
 import useDepartments from '../hooks/useDepartments';
 import usePrograms from '../hooks/usePrograms';
 
@@ -595,9 +595,33 @@ const CurriculumPage = ({ role }) => {
                             <button
                               type="button"
                               className="ghost-action subtle"
-                              onClick={() => {
-                                if (window.confirm('Delete program?')) {
-                                  alert('Delete not implemented');
+                              onClick={async () => {
+                                const confirmed = window.confirm('Delete curriculum for this program? This cannot be undone.');
+                                if (!confirmed) return;
+
+                                try {
+                                  // First load the curriculum to find its curriculumId
+                                  const res = await getCurriculumByProgramId(p.id);
+                                  const data = res?.data;
+                                  const curriculumId = data && (data.curriculumId || data.id);
+
+                                  if (!curriculumId) {
+                                    alert('No curriculum found to delete for this program.');
+                                    return;
+                                  }
+
+                                  await deleteCurriculum(curriculumId);
+                                  alert('Curriculum deleted.');
+
+                                  // Clear any open views/editors and refresh current selection state
+                                  setViewingCurriculum(null);
+                                  setEditingCurriculum(null);
+                                  if (String(selectedProgramId) === String(p.id)) {
+                                    setCurrent(null);
+                                  }
+                                } catch (e) {
+                                  console.error('Failed to delete curriculum', e);
+                                  alert('Failed to delete curriculum. Please try again.');
                                 }
                               }}
                             >

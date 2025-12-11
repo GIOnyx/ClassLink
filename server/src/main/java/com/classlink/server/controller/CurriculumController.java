@@ -425,7 +425,18 @@ public class CurriculumController {
         if (!isAdmin(principal)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Admin access required");
         }
-        if (!curriculumRepository.existsById(id)) return ResponseEntity.notFound().build();
+        var maybeCurriculum = curriculumRepository.findById(id);
+        if (maybeCurriculum.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        // Remove all course rows that reference this curriculum version to avoid
+        // foreign key constraint violations when deleting the curriculum.
+        var linkedCourses = courseRepository.findAllByCurriculum_Id(id);
+        if (linkedCourses != null && !linkedCourses.isEmpty()) {
+            courseRepository.deleteAll(linkedCourses);
+        }
+
         curriculumRepository.deleteById(id);
         return ResponseEntity.ok().build();
     }

@@ -82,5 +82,6 @@ export const getCurriculum = (programCode) => API.get(`/curricula/${encodeURICom
 export const getCurriculumByProgramId = (programId) => API.get(`/curricula/byProgramId/${programId}`);
 export const createCurriculum = (payload) => API.post('/curricula', payload);
 export const updateCurriculum = (id, payload) => API.put(`/curricula/${id}`, payload);
+export const deleteCurriculum = (id) => API.delete(`/curricula/${id}`);
 
 export default API;
