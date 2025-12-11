@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import '../App.css';
 import './AdminPage.css';
 import { getStudentsByStatus, approveStudent, rejectStudent, getDepartments, getPrograms } from '../services/backend';
+import useRequireAdmin from '../hooks/useRequireAdmin';
 
 const SEMESTER_OPTIONS = ['1st', '2nd', 'Summer'];
 const MAX_YEARS = 5; // Assuming max 5 years based on Program data loader
@@ -12,6 +13,21 @@ const APPLICANT_TYPE_LABELS = {
 };
 
 const AdminPage = () => {
+  const { authorized, loading: authLoading } = useRequireAdmin();
+
+  if (authLoading) {
+    return <div className="standard-page-layout admin-page">Checking admin access…</div>;
+  }
+
+  if (!authorized) {
+    return (
+      <div className="standard-page-layout admin-page">
+        <h1>Not authorized</h1>
+        <p>You must be signed in as an administrator to view this page.</p>
+      </div>
+    );
+  }
+
   const [allPending, setAllPending] = useState([]); // Holds all pending students
   const [departments, setDepartments] = useState([]);
   const [programs, setPrograms] = useState([]);

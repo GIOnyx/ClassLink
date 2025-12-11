@@ -4,6 +4,7 @@ import './CurriculumPage.css';
 import { getCurriculumByProgramId, createCurriculum, updateCurriculum, deleteCurriculum } from '../services/backend';
 import useDepartments from '../hooks/useDepartments';
 import usePrograms from '../hooks/usePrograms';
+import useRequireAdmin from '../hooks/useRequireAdmin';
 
 const YEAR_LABELS = [
   'First Year',
@@ -60,6 +61,8 @@ const getYearNumberFromItem = (item) => {
 // when curriculum data comes from the server, it will be a flat list of items with yearLabel and termTitle
 
 const CurriculumPage = ({ role }) => {
+  const isAdminRole = role === 'ADMIN';
+  const { authorized, loading: authLoading } = useRequireAdmin();
   const [selectedDept, setSelectedDept] = useState('');
   const [current, setCurrent] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -220,7 +223,7 @@ const CurriculumPage = ({ role }) => {
     }
   }, [editingCurriculum, role, adminDepartments]);
 
-  const isAdmin = role === 'ADMIN';
+  const isAdmin = role === 'ADMIN' && authorized;
   const showAdminDashboard = isAdmin && !viewingCurriculum && !editingCurriculum;
 
   const filteredPrograms = useMemo(() => {

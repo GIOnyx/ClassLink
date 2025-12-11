@@ -1,16 +1,18 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
 // Component & Page Imports
 import MainLayout from './components/MainLayout.jsx';
-import LandingPage from './pages/LandingPage.jsx'; // This will be our main public page
-import EnrollmentPage from './pages/EnrollmentPage.jsx';
-import StudentPage from './pages/StudentPage.jsx';
-import StudentsListPage from './pages/StudentsListPage.jsx';
-import AdminPage from './pages/AdminPage.jsx';
-import ProfilePage from './pages/ProfilePage.jsx';
-import CalendarPage from './pages/CalendarPage.jsx';
-import CurriculumPage from './pages/CurriculumPage.jsx';
+
+// Lazily-loaded pages to enable code splitting (admin and heavy routes)
+const LandingPage = lazy(() => import('./pages/LandingPage.jsx'));
+const EnrollmentPage = lazy(() => import('./pages/EnrollmentPage.jsx'));
+const StudentPage = lazy(() => import('./pages/StudentPage.jsx'));
+const StudentsListPage = lazy(() => import('./pages/StudentsListPage.jsx'));
+const AdminPage = lazy(() => import('./pages/AdminPage.jsx'));
+const ProfilePage = lazy(() => import('./pages/ProfilePage.jsx'));
+const CalendarPage = lazy(() => import('./pages/CalendarPage.jsx'));
+const CurriculumPage = lazy(() => import('./pages/CurriculumPage.jsx'));
 
 import './App.css';
 import { me, logout as apiLogout } from './services/backend';
@@ -57,6 +59,8 @@ function App() {
       setIsLoggedIn(false);
       setRole(null);
     }
+
+    
   }, []);
 
   // On first load, ask the server if there's an active session
@@ -97,45 +101,47 @@ function App() {
   return (
     <BrowserRouter>
       <ErrorBoundary>
-      <Routes>
-        {isLoggedIn ? (
-          // --- LOGGED-IN ROUTES ---
-          <Route
-            path="/*"
-            element={
-              <MainLayout
-                onLogout={handleLogout}
-                role={role}
+        <Suspense fallback={<div>Loading...</div>}>
+          <Routes>
+            {isLoggedIn ? (
+              // --- LOGGED-IN ROUTES ---
+              <Route
+                path="/*"
+                element={
+                  <MainLayout
+                    onLogout={handleLogout}
+                    role={role}
+                  />
+                }
+              >
+                {/* Default landing after login per role */}
+                <Route index element={role === 'ADMIN' ? <AdminPage /> : <EnrollmentPage />} />
+                <Route path="admin" element={role === 'ADMIN' ? <AdminPage /> : <Navigate to="/" />} />
+                <Route path="admins" element={role === 'ADMIN' ? <StudentPage /> : <Navigate to="/" />} />
+                <Route path="students" element={role === 'ADMIN' ? <StudentsListPage /> : <Navigate to="/" />} />
+                <Route path="profile" element={<ProfilePage />} />
+                <Route path="calendar" element={<CalendarPage />} />
+                <Route path="curriculum" element={<CurriculumPage role={role} />} />
+                <Route path="*" element={<Navigate to="/" />} />
+              </Route>
+            ) : (
+              // --- PUBLIC (NOT LOGGED-IN) ROUTES ---
+              // This is now much simpler. We only have one public view.
+              // It handles all paths (/*) and passes the login function down.
+              <Route
+                path="/*"
+                element={
+                  <LandingPage
+                    onLoginSuccess={handleLoginSuccess}
+                    pendingPasswordReset={pendingPasswordReset}
+                    onPasswordResetComplete={handlePasswordResetComplete}
+                    onPasswordResetCancel={handlePasswordResetCancel}
+                  />
+                }
               />
-            }
-          >
-            {/* Default landing after login per role */}
-            <Route index element={role === 'ADMIN' ? <AdminPage /> : <EnrollmentPage />} />
-            <Route path="admin" element={role === 'ADMIN' ? <AdminPage /> : <Navigate to="/" />} />
-            <Route path="admins" element={role === 'ADMIN' ? <StudentPage /> : <Navigate to="/" />} />
-            <Route path="students" element={role === 'ADMIN' ? <StudentsListPage /> : <Navigate to="/" />} />
-            <Route path="profile" element={<ProfilePage />} />
-            <Route path="calendar" element={<CalendarPage />} />
-            <Route path="curriculum" element={<CurriculumPage role={role} />} />
-            <Route path="*" element={<Navigate to="/" />} />
-          </Route>
-        ) : (
-          // --- PUBLIC (NOT LOGGED-IN) ROUTES ---
-          // This is now much simpler. We only have one public view.
-          // It handles all paths (/*) and passes the login function down.
-          <Route
-            path="/*"
-            element={
-              <LandingPage
-                onLoginSuccess={handleLoginSuccess}
-                pendingPasswordReset={pendingPasswordReset}
-                onPasswordResetComplete={handlePasswordResetComplete}
-                onPasswordResetCancel={handlePasswordResetCancel}
-              />
-            }
-          />
-        )}
-      </Routes>
+            )}
+          </Routes>
+        </Suspense>
       </ErrorBoundary>
     </BrowserRouter>
   );

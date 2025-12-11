@@ -2,6 +2,8 @@ package com.classlink.server.model;
 
 import java.time.LocalDate; 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -39,6 +41,8 @@ public class Student {
 
     private Integer yearLevel;
     private String semester;
+
+    @JsonIgnore
     private String password;
     
     @Column(name = "password_reset_required", nullable = false)
