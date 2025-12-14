@@ -9,19 +9,6 @@ const defaultFilters = { program: '', year: '', semester: '', processedBy: '' };
 const StudentsListPage = () => {
   const { authorized, loading: authLoading } = useRequireAdmin();
 
-  if (authLoading) {
-    return <div className="standard-page-layout students-roster-page">Checking admin access…</div>;
-  }
-
-  if (!authorized) {
-    return (
-      <div className="standard-page-layout students-roster-page">
-        <h1>Not authorized</h1>
-        <p>You must be signed in as an administrator to view this page.</p>
-      </div>
-    );
-  }
-
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -45,8 +32,11 @@ const StudentsListPage = () => {
   }, []);
 
   useEffect(() => {
+    if (!authorized || authLoading) {
+      return;
+    }
     loadStudents();
-  }, [loadStudents]);
+  }, [authLoading, authorized, loadStudents]);
 
   const programOptions = useMemo(() => {
     const set = new Set();
@@ -199,6 +189,19 @@ const StudentsListPage = () => {
 
   const heroStatusClass = loading ? 'status-chip syncing' : 'status-chip live';
   const heroStatusLabel = loading ? 'Syncing roster…' : 'Roster current';
+
+  if (authLoading) {
+    return <div className="standard-page-layout students-roster-page">Checking admin access…</div>;
+  }
+
+  if (!authorized) {
+    return (
+      <div className="standard-page-layout students-roster-page">
+        <h1>Not authorized</h1>
+        <p>You must be signed in as an administrator to view this page.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="standard-page-layout students-roster-page">
