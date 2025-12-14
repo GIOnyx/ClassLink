@@ -3,7 +3,7 @@ import '../App.css';
 import './StudentsListPage.css';
 import { getStudentsByStatus } from '../services/backend';
 
-const defaultFilters = { program: '', year: '', semester: '' };
+const defaultFilters = { program: '', year: '', semester: '', processedBy: '' };
 
 const StudentsListPage = () => {
   const [students, setStudents] = useState([]);
@@ -40,6 +40,16 @@ const StudentsListPage = () => {
       }
     });
     return Array.from(set).sort();
+  }, [students]);
+
+  const processedByOptions = useMemo(() => {
+    const set = new Set();
+    students.forEach((student) => {
+      if (student.processedBy) {
+        set.add(student.processedBy);
+      }
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
   }, [students]);
 
   const yearOptions = useMemo(() => {
@@ -91,9 +101,16 @@ const StudentsListPage = () => {
         }
       }
 
+      if (filters.processedBy) {
+        const reviewer = student.processedBy || 'Unassigned';
+        if (reviewer !== filters.processedBy) {
+          return false;
+        }
+      }
+
       return true;
     });
-  }, [filters.program, filters.semester, filters.year, search, students]);
+  }, [filters.program, filters.semester, filters.year, filters.processedBy, search, students]);
 
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
@@ -270,6 +287,18 @@ const StudentsListPage = () => {
                 ))}
               </select>
             </label>
+            <label>
+              Processed by
+              <select name="processedBy" value={filters.processedBy} onChange={handleFilterChange}>
+                <option value="">All reviewers</option>
+                {processedByOptions.map((admin) => (
+                  <option key={admin} value={admin}>
+                    {admin}
+                  </option>
+                ))}
+                <option value="Unassigned">Unassigned</option>
+              </select>
+            </label>
           </div>
 
           <button type="button" className="btn-clear-filters" onClick={clearFilters}>
@@ -323,7 +352,7 @@ const StudentsListPage = () => {
               <div className="students-loading">Loading students…</div>
             ) : filtered.length === 0 ? (
               <p className="students-empty">
-                {search || filters.program || filters.year || filters.semester
+                {search || filters.program || filters.year || filters.semester || filters.processedBy
                   ? 'No students match the current filters.'
                   : 'No enrolled students found.'}
               </p>
@@ -335,6 +364,7 @@ const StudentsListPage = () => {
                     <th>Program</th>
                     <th>Year</th>
                     <th>Semester</th>
+                    <th>Processed by</th>
                     <th>Email</th>
                   </tr>
                 </thead>
@@ -353,6 +383,7 @@ const StudentsListPage = () => {
                       </td>
                       <td>{student.yearLevel || '—'}</td>
                       <td>{student.semester || '—'}</td>
+                      <td>{student.processedBy || 'Unassigned'}</td>
                       <td>{student.email || '—'}</td>
                     </tr>
                   ))}

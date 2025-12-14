@@ -9,9 +9,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -29,13 +31,11 @@ import com.classlink.server.model.Admin;
 import com.classlink.server.model.ApplicationHistory;
 import com.classlink.server.model.Student;
 import com.classlink.server.model.StudentStatus;
-import com.classlink.server.repository.ApplicationHistoryRepository;
 import com.classlink.server.repository.AdminRepository;
+import com.classlink.server.repository.ApplicationHistoryRepository;
 import com.classlink.server.repository.StudentRepository;
-import com.classlink.server.service.NotificationService;
 import com.classlink.server.security.ClasslinkUserDetails;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.classlink.server.service.NotificationService;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -63,14 +63,34 @@ public class AdminController {
 	// /api/admin/students?status=PENDING
 	@GetMapping("/students")
 	public ResponseEntity<?> listStudents(@RequestParam(name = "status", required = false) String status) {
-		if (status == null || status.isBlank()) {
-			return ResponseEntity.ok(studentRepository.findAll());
+		StudentStatus statusFilter = null;
+		if (status != null && !status.isBlank()) {
+			try {
+				statusFilter = StudentStatus.valueOf(status.toUpperCase());
+			} catch (IllegalArgumentException ex) {
+				return ResponseEntity.badRequest().body("Invalid status value");
+			}
 		}
-		try {
-			StudentStatus s = StudentStatus.valueOf(status.toUpperCase());
-			return ResponseEntity.ok(studentRepository.findAllByStatus(s));
-		} catch (IllegalArgumentException ex) {
-			return ResponseEntity.badRequest().body("Invalid status value");
+
+		List<Student> students = (statusFilter == null)
+				? studentRepository.findAll()
+				: studentRepository.findAllByStatus(statusFilter);
+
+		if (statusFilter == StudentStatus.APPROVED || statusFilter == StudentStatus.REJECTED) {
+			enrichProcessedBy(students, statusFilter);
+		}
+
+		return ResponseEntity.ok(students);
+	}
+
+	private void enrichProcessedBy(List<Student> students, StudentStatus statusFilter) {
+		if (students == null || students.isEmpty()) {
+			return;
+		}
+		for (Student student : students) {
+			applicationHistoryRepository
+					.findTopByStudentIdAndStatusOrderByChangedAtDesc(student.getId(), statusFilter)
+					.ifPresent(history -> student.setProcessedBy(history.getProcessedBy()));
 		}
 	}
 
@@ -101,10 +121,17 @@ public class AdminController {
 
 	// Change status: PATCH /api/admin/students/{id}/status { "status": "APPROVED" }
 	@PatchMapping("/students/{id}/status")
-	public ResponseEntity<?> setStatus(@PathVariable Long id, @RequestBody Map<String, String> body) {
+	public ResponseEntity<?> setStatus(@PathVariable Long id,
+			@RequestBody Map<String, String> body,
+			@AuthenticationPrincipal ClasslinkUserDetails principal) {
 		Student student = studentRepository.findById(id).orElse(null);
 		if (student == null)
 			return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Student not found");
+
+		Admin actingAdmin = null;
+		if (principal != null) {
+			actingAdmin = adminRepository.findById(principal.getUserId()).orElse(null);
+		}
 
 		String statusStr = body.get("status");
 		if (statusStr == null || statusStr.isBlank())
@@ -136,7 +163,7 @@ public class AdminController {
 			}
 
 			Student saved = studentRepository.save(student);
-			recordStatusChange(saved, previousStatus, newStatus, body.get("reason"));
+			recordStatusChange(saved, previousStatus, newStatus, body.get("reason"), actingAdmin);
 			notificationService.notifyApplicationStatusChange(saved, newStatus, body.get("reason"));
 			return ResponseEntity.ok(saved);
 		} catch (IllegalArgumentException ex) {
@@ -146,18 +173,20 @@ public class AdminController {
 
 	// Convenience endpoints
 	@PostMapping("/students/{id}/approve")
-	public ResponseEntity<?> approve(@PathVariable Long id) {
-		return setStatus(id, Map.of("status", "APPROVED"));
+	public ResponseEntity<?> approve(@PathVariable Long id,
+			@AuthenticationPrincipal ClasslinkUserDetails principal) {
+		return setStatus(id, Map.of("status", "APPROVED"), principal);
 	}
 
 	@PostMapping("/students/{id}/reject")
-	public ResponseEntity<?> reject(@PathVariable Long id, @RequestBody Map<String, String> body) {
+	public ResponseEntity<?> reject(@PathVariable Long id, @RequestBody Map<String, String> body,
+			@AuthenticationPrincipal ClasslinkUserDetails principal) {
 		Map<String, String> payload = new HashMap<>(body);
 		payload.put("status", "REJECTED");
-		return setStatus(id, payload);
+		return setStatus(id, payload, principal);
 	}
 
-	private void recordStatusChange(Student student, StudentStatus previous, StudentStatus next, String remarks) {
+	private void recordStatusChange(Student student, StudentStatus previous, StudentStatus next, String remarks, Admin processedBy) {
 		if (student == null || next == null) {
 			return;
 		}
@@ -171,6 +200,13 @@ public class AdminController {
 		entry.setStudent(student);
 		entry.setStatus(next);
 		entry.setRemarks(remarks);
+		if (processedBy != null) {
+			String name = processedBy.getName();
+			if (name == null || name.isBlank()) {
+				name = processedBy.getEmail();
+			}
+			entry.setProcessedBy(name);
+		}
 		applicationHistoryRepository.save(entry);
 	}
 

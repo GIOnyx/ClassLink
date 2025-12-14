@@ -1,16 +1,15 @@
 package com.classlink.server.controller;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.UUID;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,23 +17,23 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import com.classlink.server.model.ApplicantType;
 import com.classlink.server.model.ApplicationHistory;
 import com.classlink.server.model.Student;
 import com.classlink.server.model.StudentStatus;
+import com.classlink.server.repository.ApplicationHistoryRepository;
 import com.classlink.server.repository.DepartmentRepository;
 import com.classlink.server.repository.ProgramRepository;
 import com.classlink.server.repository.StudentRepository;
-import com.classlink.server.repository.ApplicationHistoryRepository;
-
 import com.classlink.server.security.ClasslinkUserDetails;
 
 @RestController
@@ -192,6 +191,7 @@ public class StudentController {
             row.put("id", entry.getId());
             row.put("status", entry.getStatus());
             row.put("remarks", entry.getRemarks());
+            row.put("processedBy", entry.getProcessedBy());
             row.put("changedAt", entry.getChangedAt());
             payload.add(row);
         }

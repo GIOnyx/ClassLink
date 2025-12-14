@@ -33,6 +33,9 @@ public class ApplicationHistory {
     @Column(length = 512)
     private String remarks;
 
+    @Column(name = "processed_by", length = 255)
+    private String processedBy;
+
     private LocalDateTime changedAt;
 
     @PrePersist
