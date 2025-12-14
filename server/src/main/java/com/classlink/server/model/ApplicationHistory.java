@@ -2,6 +2,8 @@ package com.classlink.server.model;
 
 import java.time.LocalDateTime;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -13,6 +15,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
+import jakarta.persistence.Transient;
 import lombok.Data;
 
 @Entity
@@ -33,8 +36,10 @@ public class ApplicationHistory {
     @Column(length = 512)
     private String remarks;
 
-    @Column(name = "processed_by", length = 255)
-    private String processedBy;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "processed_by")
+    @JsonIgnore
+    private Admin processedByAdmin;
 
     private LocalDateTime changedAt;
 
@@ -43,5 +48,17 @@ public class ApplicationHistory {
         if (changedAt == null) {
             changedAt = LocalDateTime.now();
         }
+    }
+
+    @Transient
+    public String getProcessedByName() {
+        if (processedByAdmin == null) {
+            return null;
+        }
+        String name = processedByAdmin.getName();
+        if (name == null || name.isBlank()) {
+            return processedByAdmin.getEmail();
+        }
+        return name;
     }
 }
