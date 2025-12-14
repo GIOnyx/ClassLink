@@ -36,7 +36,7 @@ public class ApplicationHistory {
     @Column(length = 512)
     private String remarks;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "processed_by")
     @JsonIgnore
     private Admin processedByAdmin;
