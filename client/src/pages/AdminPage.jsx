@@ -15,19 +15,6 @@ const APPLICANT_TYPE_LABELS = {
 const AdminPage = () => {
   const { authorized, loading: authLoading } = useRequireAdmin();
 
-  if (authLoading) {
-    return <div className="standard-page-layout admin-page">Checking admin access…</div>;
-  }
-
-  if (!authorized) {
-    return (
-      <div className="standard-page-layout admin-page">
-        <h1>Not authorized</h1>
-        <p>You must be signed in as an administrator to view this page.</p>
-      </div>
-    );
-  }
-
   const [allPending, setAllPending] = useState([]); // Holds all pending students
   const [departments, setDepartments] = useState([]);
   const [programs, setPrograms] = useState([]);
@@ -78,10 +65,13 @@ const AdminPage = () => {
     }
   };
 
-  useEffect(() => { 
-    loadPendingStudents(); 
+  useEffect(() => {
+    if (authLoading || !authorized) {
+      return;
+    }
+    loadPendingStudents();
     loadFilterData();
-  }, []); //
+  }, [authLoading, authorized]);
 
   // Filter change handler
   const handleFilterChange = (e) => {
@@ -226,6 +216,19 @@ const AdminPage = () => {
 
   
   const getApplicantTypeLabel = (type) => APPLICANT_TYPE_LABELS[type] || '—';
+
+  if (authLoading) {
+    return <div className="standard-page-layout admin-page">Checking admin access…</div>;
+  }
+
+  if (!authorized) {
+    return (
+      <div className="standard-page-layout admin-page">
+        <h1>Not authorized</h1>
+        <p>You must be signed in as an administrator to view this page.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="admin-page standard-page-layout">
