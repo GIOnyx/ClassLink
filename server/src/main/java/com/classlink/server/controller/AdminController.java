@@ -90,7 +90,7 @@ public class AdminController {
 		for (Student student : students) {
 			applicationHistoryRepository
 					.findTopByStudentIdAndStatusOrderByChangedAtDesc(student.getId(), statusFilter)
-					.ifPresent(history -> student.setProcessedBy(history.getProcessedBy()));
+					.ifPresent(history -> student.setProcessedBy(history.getProcessedByName()));
 		}
 	}
 
@@ -201,11 +201,7 @@ public class AdminController {
 		entry.setStatus(next);
 		entry.setRemarks(remarks);
 		if (processedBy != null) {
-			String name = processedBy.getName();
-			if (name == null || name.isBlank()) {
-				name = processedBy.getEmail();
-			}
-			entry.setProcessedBy(name);
+			entry.setProcessedByAdmin(processedBy);
 		}
 		applicationHistoryRepository.save(entry);
 	}

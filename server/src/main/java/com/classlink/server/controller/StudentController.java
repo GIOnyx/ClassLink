@@ -191,7 +191,7 @@ public class StudentController {
             row.put("id", entry.getId());
             row.put("status", entry.getStatus());
             row.put("remarks", entry.getRemarks());
-            row.put("processedBy", entry.getProcessedBy());
+            row.put("processedBy", entry.getProcessedByName());
             row.put("changedAt", entry.getChangedAt());
             payload.add(row);
         }
