@@ -13,6 +13,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Transient;
 import lombok.Data;
 
 @Entity
@@ -76,5 +77,8 @@ public class Student {
 
     
     private String requirementsDocumentUrl;
+
+    @Transient
+    private String processedBy;
 
 }
